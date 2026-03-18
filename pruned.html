@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pruned Stats</title>
+    <!-- CSS mapped locally for offline viewing -->
+    <link rel="stylesheet" href="public/css/main.css">
+    <!-- Included FontAwesome from CDN since the navbar relies on fa-heartbeat class -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  </head>
+  <body>
+    <!-- Header extracted from header.jade -->
+    <div class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <i class="fa fa-heartbeat"></i> Babyname Stats
+          </a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="/status">Live Status</a></li>
+            <li><a href="/historical">Historical Data</a></li>
+            <li><a href="/tags">Tags</a></li>
+            <li class="active"><a href="/pruned">Pruned</a></li>
+            <li><a href="/admin">Admin</a></li>
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li class="dropdown">
+              <a class="dropdown-toggle" href="#" data-toggle="dropdown">
+                User&nbsp;<i class="caret"></i>
+              </a>
+              <ul class="dropdown-menu">
+                <li><a href="/account">My Account</a></li>
+                <li class="divider"></li>
+                <li><a href="/logout">Logout</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Container extracted from pruned.jade -->
+    <div class="container">
+      <p class="lead">Pruned view</p>
+      <hr>
+      <div class="row">
+        <div class="col-sm-12">
+          <div id="MAINGRAPHPRUNED" style="min-width: 310px; height: 600px; margin: 0 auto"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <p class="text-center">
+            <small>you can click on the legend names (O2, BPM, PI) at the bottom of the graph to turn on and off different results</small>
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <a class="btn btn-primary" onclick="prev_week()">Prev. Week</a>
+          <a class="btn btn-primary" onclick="prev_day()">Prev. Day</a>
+          <a class="btn btn-primary" onclick="next_day()">Next Day</a>
+          <a class="btn btn-primary" onclick="next_week()">Next Week</a>
+          <hr>
+          <div class="row">
+            <div class="col-md-12">
+              <a class="btn btn-primary" onclick="day_1()">31/1/2017</a>
+              <a class="btn btn-primary" onclick="day_2()">4/2/2017</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer extracted from footer.jade -->
+    <footer>
+      <div class="container text-center">
+        <p class="pull-left">© 2015-2016 Iukekini Baby Monitor Masimo Pulse Oximeter</p>
+      </div>
+    </footer>
+
+    <!-- Scripts, referencing relative paths so the page works locally without a server -->
+    <script src="public/js/lib/jquery.min.js"></script>
+    <script src="public/js/lib/bootstrap.min.js"></script>
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+    <script src="https://code.highcharts.com/stock/highcharts-more.js"></script>
+    <script src="public/js/theme.js"></script>
+    <script src="public/js/pruned.js"></script>
+  </body>
+</html>
