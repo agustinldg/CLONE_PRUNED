@@ -77,6 +77,7 @@
             <div class="col-md-12">
               <a class="btn btn-primary" onclick="day_1()">31/1/2017</a>
               <a class="btn btn-primary" onclick="day_2()">4/2/2017</a>
+              <a class="btn btn-success" onclick="day_3()">13/11/2025 (API Data)</a>
             </div>
           </div>
         </div>
@@ -93,9 +94,208 @@
     <!-- Scripts, referencing relative paths so the page works locally without a server -->
     <script src="public/js/lib/jquery.min.js"></script>
     <script src="public/js/lib/bootstrap.min.js"></script>
-    <script src="https://code.highcharts.com/stock/highstock.js"></script>
-    <script src="https://code.highcharts.com/stock/highcharts-more.js"></script>
+    <script src="https://unpkg.com/highcharts@11.4.0/highstock.js"></script>
+    <script src="https://unpkg.com/highcharts@11.4.0/highcharts-more.js"></script>
     <script src="public/js/theme.js"></script>
-    <script src="public/js/pruned.js"></script>
+    <script>
+    var globalChart;
+    $(document).ready(function () {
+        globalChart = Highcharts.stockChart('MAINGRAPHPRUNED', {
+            chart: { zoomType: 'x' },
+            loading: {
+                style: { backgroundColor: 'silver' },
+                labelStyle: { color: 'black' }
+            },
+            navigator: { adaptToUpdatedData: true },
+            scrollbar: { liveRedraw: false },
+            title: { text: 'Oxygen Levels' },
+            xAxis: { type: 'datetime' },
+            yAxis: [
+                {
+                    labels: { align: 'right', x: -4 },
+                    title: { text: 'SpO2 & bpm' }
+                },
+                {
+                    labels: { align: 'left', x: 8 },
+                    title: { text: 'P.I.' },
+                    top: '75%',
+                    height: '25%',
+                    offset: 0
+                }
+            ],
+            legend: { enabled: true },
+            plotOptions: {
+                line: { connectNulls: false },
+                columnrange: {
+                    pointPadding: -0.25,
+                    minPointLength: 5,
+                    dataGrouping: { groupPixelWidth: 50 }
+                }
+            },
+            tooltip: { valueDecimals: 2 },
+            rangeSelector: {
+                buttons: [
+                    { type: 'minute', count: 1, text: '1M' },
+                    { type: 'minute', count: 10, text: '10M' },
+                    { type: 'hour', count: 1, text: '1H' },
+                    { type: 'all', text: 'All' }
+                ],
+                selected: 3,
+                inputEnabled: true
+            },
+            series: [
+                {
+                    type: 'columnrange',
+                    name: 'O2%',
+                    turboThreshold: 0,
+                    pointPlacement: "between"
+                },
+                {
+                    type: 'spline',
+                    name: 'O2%',
+                    id: 'spo2',
+                    turboThreshold: 0,
+                    pointPlacement: "between"
+                },
+                {
+                    type: 'spline',
+                    name: 'BPM',
+                    id: 'bpm',
+                    turboThreshold: 0,
+                    pointPlacement: "between",
+                    visible: true
+                },
+                {
+                    type: 'spline',
+                    yAxis: 1,
+                    name: 'PI',
+                    id: 'pi',
+                    turboThreshold: 0,
+                    pointPlacement: "between",
+                    visible: false,
+                    negativeColor: '#FF0000',
+                    threshold: 1
+                }
+            ]
+        });
+        
+        load_last_avail_day();
+    });
+
+    var appState = {
+        currentDate: null
+    };
+
+    function load_last_avail_day() {
+        var now = new Date();
+        var targetDate = new Date(now);
+        targetDate.setHours(14, 0, 0, 0);
+
+        if (now.getHours() < 14) {
+            targetDate.setDate(targetDate.getDate() - 1);
+        }
+
+        appState.currentDate = targetDate;
+        load_day();
+    }
+
+    function prev_day() {
+        appState.currentDate.setDate(appState.currentDate.getDate() - 1);
+        load_day();
+    }
+    
+    function next_day() {
+        appState.currentDate.setDate(appState.currentDate.getDate() + 1);
+        load_day();
+    }
+    
+    function prev_week() {
+        appState.currentDate.setDate(appState.currentDate.getDate() - 7);
+        load_day();
+    }
+    
+    function next_week() {
+        appState.currentDate.setDate(appState.currentDate.getDate() + 7);
+        load_day();
+    }
+
+    function day_1() {
+        appState.currentDate = new Date(2017, 0, 31, 14, 0, 0, 0); 
+        load_day();
+    }
+    
+    function day_2() {
+        appState.currentDate = new Date(2017, 1, 4, 14, 0, 0, 0); 
+        load_day();
+    }
+
+    function day_3() {
+        appState.currentDate = new Date(2025, 10, 13, 14, 0, 0, 0); 
+        load_day();
+    }
+
+    function load_day() {
+        var chart = globalChart;
+        if (!chart) return;
+        chart.showLoading('Loading data from server...');
+
+        var d = appState.currentDate;
+        var year = d.getFullYear();
+        var month = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        var hours = String(d.getHours()).padStart(2, '0');
+        var minutes = String(d.getMinutes()).padStart(2, '0');
+        var seconds = String(d.getSeconds()).padStart(2, '0');
+        
+        var dateString = year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":" + seconds;
+        var encodedDate = encodeURIComponent(dateString);
+
+        $.getJSON('https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/PULSI/pulsi/v6/lecturas?start_date=' + encodedDate, function (response) {
+            
+            var spo2DataPointLowHigh = [];
+            var spo2DataPoint = [];
+            var bpmDataPoint = [];
+            var piDataPoint = [];
+
+            if (response.status === "OK" && response.data) {
+                response.data.forEach(function(row) {
+                    var timeParts = row[0].split(/[ \-:]/);
+                    if (timeParts.length === 6) {
+                        var msTime = new Date(timeParts[0], timeParts[1]-1, timeParts[2], timeParts[3], timeParts[4], timeParts[5]).getTime();
+                        
+                        var spo2 = row[1];
+                        var bpm = row[2];
+                        var pi = row[3];
+
+                        if (spo2 !== null && spo2 !== undefined) {
+                            spo2DataPointLowHigh.push([msTime, spo2, spo2]);
+                            spo2DataPoint.push([msTime, spo2]);
+                        }
+                        if (bpm !== null && bpm !== undefined) {
+                            bpmDataPoint.push([msTime, bpm]);
+                        }
+                        if (pi !== null && pi !== undefined) {
+                            piDataPoint.push([msTime, pi]);
+                        }
+                    }
+                });
+            }
+
+            chart.series[0].setData(spo2DataPointLowHigh, false); 
+            chart.series[1].setData(spo2DataPoint, false);        
+            chart.series[2].setData(bpmDataPoint, false);         
+            chart.series[3].setData(piDataPoint, false);          
+            
+            chart.redraw();
+            chart.hideLoading();
+            
+            if(chart.rangeSelector) {
+                chart.rangeSelector.clickButton(3, true);
+            }
+        }).fail(function() {
+            chart.showLoading('Error fetching data from server');
+        });
+    }
+    </script>
   </body>
 </html>
