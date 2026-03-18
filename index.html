@@ -106,7 +106,10 @@
                 style: { backgroundColor: 'silver' },
                 labelStyle: { color: 'black' }
             },
-            navigator: { adaptToUpdatedData: true },
+            navigator: { 
+                adaptToUpdatedData: true,
+                baseSeries: 2 // Tells the navigator to load the BPM series (index 2)
+            },
             scrollbar: { liveRedraw: false },
             title: { text: 'Oxygen Levels' },
             xAxis: { type: 'datetime' },
