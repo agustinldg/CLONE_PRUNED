@@ -80,6 +80,19 @@
               <a class="btn btn-success" onclick="day_3()">13/11/2025 (API Data)</a>
             </div>
           </div>
+          <hr>
+          <div class="row">
+            <div class="col-md-12">
+              <strong>Grouping:</strong>&nbsp;
+              <a id="gpw-raw" class="btn btn-default" onclick="setGroupPixelWidth(null)">Raw</a>
+              <a id="gpw-5"   class="btn btn-default" onclick="setGroupPixelWidth(5)">5px</a>
+              <a id="gpw-10"  class="btn btn-default" onclick="setGroupPixelWidth(10)">10px</a>
+              <a id="gpw-25"  class="btn btn-default" onclick="setGroupPixelWidth(25)">25px</a>
+              <a id="gpw-50"  class="btn btn-default active" onclick="setGroupPixelWidth(50)">50px</a>
+              <a id="gpw-100" class="btn btn-default" onclick="setGroupPixelWidth(100)">100px</a>
+              <a id="gpw-200" class="btn btn-default" onclick="setGroupPixelWidth(200)">200px</a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -303,6 +316,33 @@
         }).fail(function() {
             chart.showLoading('Error fetching data from server');
         });
+    }
+
+    var gpwButtons = ['gpw-raw','gpw-5','gpw-10','gpw-25','gpw-50','gpw-100','gpw-200'];
+
+    function setGroupPixelWidth(value) {
+        var chart = globalChart;
+        if (!chart) return;
+
+        // Update active button highlight
+        gpwButtons.forEach(function(id) {
+            document.getElementById(id).classList.remove('active');
+        });
+        if (value === null) {
+            document.getElementById('gpw-raw').classList.add('active');
+        } else {
+            document.getElementById('gpw-' + value).classList.add('active');
+        }
+
+        // Apply dataGrouping update to every series
+        chart.series.forEach(function(s) {
+            if (value === null) {
+                s.update({ dataGrouping: { enabled: false } }, false);
+            } else {
+                s.update({ dataGrouping: { enabled: true, groupPixelWidth: value } }, false);
+            }
+        });
+        chart.redraw();
     }
     </script>
   </body>
