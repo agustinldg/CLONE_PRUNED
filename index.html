@@ -328,27 +328,37 @@
         }
         chart.gpwBtns = [];
 
-        // Position right after the last built-in range selector button
         var rsBtn = chart.rangeSelector.buttons[chart.rangeSelector.buttons.length - 1];
-        var x = rsBtn.translateX + rsBtn.getBBox().width + 12;
         var y = rsBtn.translateY;
 
+        var normalStyle = { fill: '#505053', stroke: '#000', 'stroke-width': 1, r: 3, padding: 3,
+                            style: { color: '#CCC', fontFamily: "'Unica One', sans-serif", fontSize: '10px' } };
+        var hoverStyle  = { fill: '#707073', stroke: '#000', style: { color: '#FFF' } };
+        var selectStyle = { fill: '#000003', stroke: '#000', style: { color: '#FFF' } };
+
+        // Render all buttons at x=0 first so we can measure their widths
+        var widths = [];
+        var cumX = 0;
         gpwGroups.forEach(function(g) {
             var btn = chart.renderer.button(
-                g.label, x, y,
+                g.label, cumX, y,
                 function() { setGroupPixelWidth(g.value); },
-                // normal state (matches theme.js)
-                { fill: '#505053', stroke: '#000', 'stroke-width': 1, r: 3, padding: 3,
-                  style: { color: '#CCC', fontFamily: "'Unica One', sans-serif", fontSize: '10px' } },
-                // hover state
-                { fill: '#707073', stroke: '#000', style: { color: '#FFF' } },
-                // selected state
-                { fill: '#000003', stroke: '#000', style: { color: '#FFF' } }
+                normalStyle, hoverStyle, selectStyle
             ).add();
-
-            if (g.value === currentGpw) { btn.setState(2); }
-            x += btn.getBBox().width + 3;
+            var w = btn.getBBox().width;
+            widths.push(w);
+            cumX += w + 3;
             chart.gpwBtns.push(btn);
+        });
+
+        // Now shift them all so the group is horizontally centered in the chart
+        var totalWidth = cumX - 3;
+        var startX = Math.round((chart.chartWidth - totalWidth) / 2);
+        var x = startX;
+        chart.gpwBtns.forEach(function(btn, i) {
+            btn.attr({ translateX: x });
+            x += widths[i] + 3;
+            if (gpwGroups[i].value === currentGpw) { btn.setState(2); }
         });
     }
 
