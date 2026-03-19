@@ -80,19 +80,7 @@
               <a class="btn btn-success" onclick="day_3()">13/11/2025 (API Data)</a>
             </div>
           </div>
-          <hr>
-          <div class="row">
-            <div class="col-md-12">
-              <strong>Grouping:</strong>&nbsp;
-              <a id="gpw-raw" class="btn btn-default" onclick="setGroupPixelWidth(null)">Raw</a>
-              <a id="gpw-5"   class="btn btn-default" onclick="setGroupPixelWidth(5)">5px</a>
-              <a id="gpw-10"  class="btn btn-default" onclick="setGroupPixelWidth(10)">10px</a>
-              <a id="gpw-25"  class="btn btn-default" onclick="setGroupPixelWidth(25)">25px</a>
-              <a id="gpw-50"  class="btn btn-default active" onclick="setGroupPixelWidth(50)">50px</a>
-              <a id="gpw-100" class="btn btn-default" onclick="setGroupPixelWidth(100)">100px</a>
-              <a id="gpw-200" class="btn btn-default" onclick="setGroupPixelWidth(200)">200px</a>
-            </div>
-          </div>
+
         </div>
       </div>
     </div>
@@ -114,7 +102,12 @@
     var globalChart;
     $(document).ready(function () {
         globalChart = Highcharts.stockChart('MAINGRAPHPRUNED', {
-            chart: { zoomType: 'x' },
+            chart: {
+                zoomType: 'x',
+                events: {
+                    load: function() { addGroupingButtons(this); }
+                }
+            },
             loading: {
                 style: { backgroundColor: 'silver' },
                 labelStyle: { color: 'black' }
@@ -318,29 +311,64 @@
         });
     }
 
-    var gpwButtons = ['gpw-raw','gpw-5','gpw-10','gpw-25','gpw-50','gpw-100','gpw-200'];
+    var gpwGroups = [
+        { label: 'Raw', value: null },
+        { label: '5px',  value: 5   },
+        { label: '10px', value: 10  },
+        { label: '25px', value: 25  },
+        { label: '50px', value: 50  },
+        { label: '100px',value: 100 },
+        { label: '200px',value: 200 }
+    ];
+    var currentGpw = 50; // default
+
+    function addGroupingButtons(chart) {
+        if (chart.gpwBtns) {
+            chart.gpwBtns.forEach(function(b) { b.destroy(); });
+        }
+        chart.gpwBtns = [];
+
+        // Position right after the last built-in range selector button
+        var rsBtn = chart.rangeSelector.buttons[chart.rangeSelector.buttons.length - 1];
+        var x = rsBtn.translateX + rsBtn.getBBox().width + 12;
+        var y = rsBtn.translateY;
+
+        gpwGroups.forEach(function(g) {
+            var btn = chart.renderer.button(
+                g.label, x, y,
+                function() { setGroupPixelWidth(g.value); },
+                // normal state (matches theme.js)
+                { fill: '#505053', stroke: '#000', 'stroke-width': 1, r: 3, padding: 3,
+                  style: { color: '#CCC', fontFamily: "'Unica One', sans-serif", fontSize: '10px' } },
+                // hover state
+                { fill: '#707073', stroke: '#000', style: { color: '#FFF' } },
+                // selected state
+                { fill: '#000003', stroke: '#000', style: { color: '#FFF' } }
+            ).add();
+
+            if (g.value === currentGpw) { btn.setState(2); }
+            x += btn.getBBox().width + 3;
+            chart.gpwBtns.push(btn);
+        });
+    }
 
     function setGroupPixelWidth(value) {
         var chart = globalChart;
         if (!chart) return;
+        currentGpw = value;
 
-        // Update active button highlight
-        gpwButtons.forEach(function(id) {
-            document.getElementById(id).classList.remove('active');
+        // Update button visual states
+        chart.gpwBtns.forEach(function(btn, i) {
+            btn.setState(gpwGroups[i].value === value ? 2 : 0);
         });
-        if (value === null) {
-            document.getElementById('gpw-raw').classList.add('active');
-        } else {
-            document.getElementById('gpw-' + value).classList.add('active');
-        }
 
         // Apply dataGrouping update to every series
         chart.series.forEach(function(s) {
-            if (value === null) {
-                s.update({ dataGrouping: { enabled: false } }, false);
-            } else {
-                s.update({ dataGrouping: { enabled: true, groupPixelWidth: value } }, false);
-            }
+            s.update({
+                dataGrouping: value === null
+                    ? { enabled: false }
+                    : { enabled: true, groupPixelWidth: value }
+            }, false);
         });
         chart.redraw();
     }
