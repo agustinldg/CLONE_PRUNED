@@ -337,6 +337,7 @@
         var selectStyle = { fill: '#000003', stroke: '#000', style: { color: '#FFF' } };
 
         // Render all buttons at x=0 first so we can measure their widths
+        // Adding to rangeSelector.group so local Y coords align with zoom buttons
         var widths = [];
         var cumX = 0;
         gpwGroups.forEach(function(g) {
@@ -344,7 +345,7 @@
                 g.label, cumX, y,
                 function() { setGroupPixelWidth(g.value); },
                 normalStyle, hoverStyle, selectStyle
-            ).add();
+            ).add(chart.rangeSelector.group);
             var w = btn.getBBox().width;
             widths.push(w);
             cumX += w + 3;
