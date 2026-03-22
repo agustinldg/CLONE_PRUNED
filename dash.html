@@ -4,8 +4,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Highcharts Dashboard</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css?family=Unica+One" rel="stylesheet">
     <!-- Simple default styling -->
     <style>
         :root {
@@ -29,7 +27,7 @@
         }
 
         body {
-            font-family: 'Unica One', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 20px;
             background-color: var(--bg-page);
             color: var(--text-main);
@@ -194,17 +192,7 @@
                 { type: 'columnrange', name: 'O2%', turboThreshold: 0, pointPlacement: "between" },
                 { type: 'spline', name: 'O2%', id: 'spo2', turboThreshold: 0, pointPlacement: "between" },
                 { type: 'spline', name: 'BPM', id: 'bpm', turboThreshold: 0, pointPlacement: "between" },
-                { 
-                    type: 'spline', 
-                    yAxis: 1, 
-                    name: 'PI', 
-                    id: 'pi', 
-                    turboThreshold: 0, 
-                    pointPlacement: "between", 
-                    visible: false,
-                    negativeColor: '#FF0000',
-                    threshold: 1
-                }
+                { type: 'spline', yAxis: 1, name: 'PI', id: 'pi', turboThreshold: 0, pointPlacement: "between", visible: false }
             ]
         });
         
@@ -281,16 +269,14 @@
 
     var themes = {
         light: {
-            colors: ["#2b908f", "#90ee7e", "#f45b5b", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
-            chart: { backgroundColor: '#ffffff', plotBorderColor: '#cccccc', style: { fontFamily: "'Unica One', sans-serif" } },
+            chart: { backgroundColor: '#ffffff', plotBorderColor: '#cccccc' },
             title: { style: { color: '#333333' } },
             xAxis: { gridLineColor: '#e6e6e6', labels: { style: { color: '#666666' } }, lineColor: '#ccd6eb', tickColor: '#ccd6eb' },
             yAxis: { gridLineColor: '#e6e6e6', labels: { style: { color: '#666666' } }, lineColor: '#ccd6eb', tickColor: '#ccd6eb' },
             legend: { itemStyle: { color: '#333333' }, itemHoverStyle: { color: '#000000' } }
         },
         dark: {
-            colors: ["#2b908f", "#90ee7e", "#f45b5b", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
-            chart: { backgroundColor: '#2a2a2b', plotBorderColor: '#606063', style: { fontFamily: "'Unica One', sans-serif" } },
+            chart: { backgroundColor: '#2a2a2b', plotBorderColor: '#606063' },
             title: { style: { color: '#E0E0E3' } },
             xAxis: { gridLineColor: '#707073', labels: { style: { color: '#E0E0E3' } }, lineColor: '#707073', tickColor: '#707073' },
             yAxis: { gridLineColor: '#707073', labels: { style: { color: '#E0E0E3' } }, lineColor: '#707073', tickColor: '#707073' },
