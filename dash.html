@@ -102,7 +102,6 @@
 </div>
 
 <!-- Scripts -->
-<script src="public/js/lib/jquery.min.js"></script>
 <script src="https://unpkg.com/highcharts@11.4.0/highstock.js"></script>
 <script src="https://unpkg.com/highcharts@11.4.0/highcharts-more.js"></script>
 
@@ -112,8 +111,8 @@
         currentDate: null
     };
 
-    $(document).ready(function () {
-        // Initialize Chart with default theme (no custom theme.js)
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize Chart with default theme
         globalChart = Highcharts.stockChart('MAINGRAPHPRUNED', {
             chart: {
                 zoomType: 'x',
@@ -203,28 +202,32 @@
         
         var url = 'https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/PULSI/pulsi/v6/lecturas?start_date=' + encodeURIComponent(dateString);
 
-        $.getJSON(url, function (response) {
-            var spo2CR = [], spo2S = [], bpmS = [], piS = [];
-            if (response.status === "OK" && response.data) {
-                response.data.forEach(function(row) {
-                    var t = row[0].split(/[ \-:]/);
-                    if (t.length === 6) {
-                        var ms = new Date(t[0], t[1]-1, t[2], t[3], t[4], t[5]).getTime();
-                        if (row[1] !== null) { spo2CR.push([ms, row[1], row[1]]); spo2S.push([ms, row[1]]); }
-                        if (row[2] !== null) bpmS.push([ms, row[2]]);
-                        if (row[3] !== null) piS.push([ms, row[3]]);
-                    }
-                });
-            }
-            chart.series[0].setData(spo2CR, false);
-            chart.series[1].setData(spo2S, false);
-            chart.series[2].setData(bpmS, false);
-            chart.series[3].setData(piS, false);
-            chart.redraw();
-            chart.hideLoading();
-        }).fail(function() {
-            chart.showLoading('Error fetching data from server');
-        });
+        fetch(url)
+            .then(response => response.json())
+            .then(response => {
+                var spo2CR = [], spo2S = [], bpmS = [], piS = [];
+                if (response.status === "OK" && response.data) {
+                    response.data.forEach(function(row) {
+                        var t = row[0].split(/[ \-:]/);
+                        if (t.length === 6) {
+                            var ms = new Date(t[0], t[1]-1, t[2], t[3], t[4], t[5]).getTime();
+                            if (row[1] !== null) { spo2CR.push([ms, row[1], row[1]]); spo2S.push([ms, row[1]]); }
+                            if (row[2] !== null) bpmS.push([ms, row[2]]);
+                            if (row[3] !== null) piS.push([ms, row[3]]);
+                        }
+                    });
+                }
+                chart.series[0].setData(spo2CR, false);
+                chart.series[1].setData(spo2S, false);
+                chart.series[2].setData(bpmS, false);
+                chart.series[3].setData(piS, false);
+                chart.redraw();
+                chart.hideLoading();
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                chart.showLoading('Error fetching data from server');
+            });
     }
 
     var gpwGroups = [
