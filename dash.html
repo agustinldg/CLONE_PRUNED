@@ -163,7 +163,33 @@
                 { type: 'columnrange', name: 'O2%', turboThreshold: 0, pointPlacement: "between" },
                 { type: 'spline', name: 'O2%', id: 'spo2', turboThreshold: 0, pointPlacement: "between" },
                 { type: 'spline', name: 'BPM', id: 'bpm', turboThreshold: 0, pointPlacement: "between" },
-                { type: 'candlestick', name: 'bpm stats', id: 'bpm_stats', turboThreshold: 0 , pointPlacement: "between"},
+                { 
+                    type: 'candlestick', 
+                    name: 'bpm stats', 
+                    id: 'bpm_stats', 
+                    turboThreshold: 0, 
+                    pointPlacement: "between",
+                    dataGrouping: {
+                        enabled: true,
+                        approximation: function(values) {
+                            if (!values || !values.length) return null;
+                            let sum = 0, max = -Infinity, min = Infinity;
+                            for (let v of values) {
+                                sum += v;
+                                if (v > max) max = v;
+                                if (v < min) min = v;
+                            }
+                            const mean = sum / values.length;
+                            let diffSum = 0;
+                            for (let v of values) {
+                                diffSum += Math.abs(v - mean);
+                            }
+                            const meanDev = diffSum / values.length;
+                            // Returning [Open, High, Low, Close]
+                            return [mean + meanDev, max, min, mean - meanDev];
+                        }
+                    }
+                },
                 { type: 'spline', yAxis: 1, name: 'PI', id: 'pi', turboThreshold: 0, pointPlacement: "between", visible: false }
             ]
         });
