@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Highcharts Dashboard</title>
+    <!-- Simple default styling -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #MAINGRAPHPRUNED {
+            width: 100%;
+            height: 600px;
+        }
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            color: #333;
+            border-radius: 4px;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #f0f0f0;
+            border-color: #bbb;
+        }
+        .btn-success {
+            background-color: #dff0d8;
+            border-color: #d6e9c6;
+            color: #3c763d;
+        }
+        .btn-success:hover {
+            background-color: #d0e9c6;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #eee;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Oxygen Levels Dashboard</h1>
+        <p>Simplified View</p>
+    </div>
+
+    <div id="MAINGRAPHPRUNED"></div>
+
+    <div class="controls">
+        <button class="btn" onclick="prev_week()">Prev. Week</button>
+        <button class="btn" onclick="prev_day()">Prev. Day</button>
+        <button class="btn" onclick="next_day()">Next Day</button>
+        <button class="btn" onclick="next_week()">Next Week</button>
+    </div>
+
+    <hr>
+
+    <div class="controls">
+        <button class="btn" onclick="day_1()">31/1/2017</button>
+        <button class="btn" onclick="day_2()">4/2/2017</button>
+        <button class="btn btn-success" onclick="day_3()">13/11/2025 (API Data)</button>
+    </div>
+
+    <div class="footer">
+        © 2026 Baby Monitor Dashboard - Highcharts Default Inspired
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="public/js/lib/jquery.min.js"></script>
+<script src="https://unpkg.com/highcharts@11.4.0/highstock.js"></script>
+<script src="https://unpkg.com/highcharts@11.4.0/highcharts-more.js"></script>
+
+<script>
+    var globalChart;
+    var appState = {
+        currentDate: null
+    };
+
+    $(document).ready(function () {
+        // Initialize Chart with default theme (no custom theme.js)
+        globalChart = Highcharts.stockChart('MAINGRAPHPRUNED', {
+            chart: {
+                zoomType: 'x',
+                events: {
+                    load: function() { addGroupingButtons(this); }
+                }
+            },
+            navigator: { 
+                adaptToUpdatedData: true,
+                baseSeries: 2
+            },
+            scrollbar: { liveRedraw: false },
+            title: { text: 'Oxygen Levels' },
+            xAxis: { type: 'datetime' },
+            yAxis: [
+                {
+                    labels: { align: 'right', x: -4 },
+                    title: { text: 'SpO2 & bpm' }
+                },
+                {
+                    labels: { align: 'left', x: 8 },
+                    title: { text: 'P.I.' },
+                    top: '75%',
+                    height: '25%',
+                    offset: 0
+                }
+            ],
+            legend: { enabled: true },
+            plotOptions: {
+                series: { gapSize: 60 },
+                columnrange: {
+                    pointPadding: -0.25,
+                    minPointLength: 5,
+                    dataGrouping: { groupPixelWidth: 50 }
+                }
+            },
+            rangeSelector: {
+                buttons: [
+                    { type: 'minute', count: 1, text: '1M' },
+                    { type: 'minute', count: 10, text: '10M' },
+                    { type: 'hour', count: 1, text: '1H' },
+                    { type: 'all', text: 'All' }
+                ],
+                selected: 3,
+                inputEnabled: true
+            },
+            series: [
+                { type: 'columnrange', name: 'O2%', turboThreshold: 0, pointPlacement: "between" },
+                { type: 'spline', name: 'O2%', id: 'spo2', turboThreshold: 0, pointPlacement: "between" },
+                { type: 'spline', name: 'BPM', id: 'bpm', turboThreshold: 0, pointPlacement: "between" },
+                { type: 'spline', yAxis: 1, name: 'PI', id: 'pi', turboThreshold: 0, pointPlacement: "between", visible: false }
+            ]
+        });
+        
+        load_last_avail_day();
+    });
+
+    function load_last_avail_day() {
+        var now = new Date();
+        var targetDate = new Date(now);
+        targetDate.setHours(14, 0, 0, 0);
+        if (now.getHours() < 14) targetDate.setDate(targetDate.getDate() - 1);
+        appState.currentDate = targetDate;
+        load_day();
+    }
+
+    function prev_day() { appState.currentDate.setDate(appState.currentDate.getDate() - 1); load_day(); }
+    function next_day() { appState.currentDate.setDate(appState.currentDate.getDate() + 1); load_day(); }
+    function prev_week() { appState.currentDate.setDate(appState.currentDate.getDate() - 7); load_day(); }
+    function next_week() { appState.currentDate.setDate(appState.currentDate.getDate() + 7); load_day(); }
+    function day_1() { appState.currentDate = new Date(2017, 0, 31, 14, 0, 0, 0); load_day(); }
+    function day_2() { appState.currentDate = new Date(2017, 1, 4, 14, 0, 0, 0); load_day(); }
+    function day_3() { appState.currentDate = new Date(2025, 10, 13, 14, 0, 0, 0); load_day(); }
+
+    function load_day() {
+        var chart = globalChart;
+        if (!chart) return;
+        chart.showLoading('Loading data from server...');
+
+        var d = appState.currentDate;
+        var dateString = d.getFullYear() + "-" + 
+                         String(d.getMonth() + 1).padStart(2, '0') + "-" + 
+                         String(d.getDate()).padStart(2, '0') + " " + 
+                         String(d.getHours()).padStart(2, '0') + ":" + 
+                         String(d.getMinutes()).padStart(2, '0') + ":" + 
+                         String(d.getSeconds()).padStart(2, '0');
+        
+        var url = 'https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/PULSI/pulsi/v6/lecturas?start_date=' + encodeURIComponent(dateString);
+
+        $.getJSON(url, function (response) {
+            var spo2CR = [], spo2S = [], bpmS = [], piS = [];
+            if (response.status === "OK" && response.data) {
+                response.data.forEach(function(row) {
+                    var t = row[0].split(/[ \-:]/);
+                    if (t.length === 6) {
+                        var ms = new Date(t[0], t[1]-1, t[2], t[3], t[4], t[5]).getTime();
+                        if (row[1] !== null) { spo2CR.push([ms, row[1], row[1]]); spo2S.push([ms, row[1]]); }
+                        if (row[2] !== null) bpmS.push([ms, row[2]]);
+                        if (row[3] !== null) piS.push([ms, row[3]]);
+                    }
+                });
+            }
+            chart.series[0].setData(spo2CR, false);
+            chart.series[1].setData(spo2S, false);
+            chart.series[2].setData(bpmS, false);
+            chart.series[3].setData(piS, false);
+            chart.redraw();
+            chart.hideLoading();
+        }).fail(function() {
+            chart.showLoading('Error fetching data from server');
+        });
+    }
+
+    var gpwGroups = [
+        { label: 'Raw', value: null },
+        { label: '5px', value: 5 },
+        { label: '50px', value: 50 },
+        { label: '100px', value: 100 }
+    ];
+    var currentGpw = 50;
+
+    function addGroupingButtons(chart) {
+        if (chart.gpwBtns) chart.gpwBtns.forEach(function(b) { b.destroy(); });
+        chart.gpwBtns = [];
+
+        var y = chart.rangeSelector.buttons[0].translateY;
+        
+        // Simplified Highcharts styles for grouping buttons
+        var normalStyle = { fill: '#f7f7f7', stroke: '#cccccc', 'stroke-width': 1, r: 2, padding: 5, style: { color: '#333', fontSize: '11px' } };
+        var hoverStyle  = { fill: '#e6e6e6', stroke: '#adadad', style: { color: '#000' } };
+        var selectStyle = { fill: '#eeeeee', stroke: '#adadad', style: { color: '#000', fontWeight: 'bold' } };
+
+        var widths = [], cumX = 0;
+        gpwGroups.forEach(function(g) {
+            var btn = chart.renderer.button(g.label, cumX, y, function() { setGroupPixelWidth(g.value); }, normalStyle, hoverStyle, selectStyle)
+                .add(chart.rangeSelector.group);
+            var w = btn.getBBox().width;
+            widths.push(w);
+            cumX += w + 5;
+            chart.gpwBtns.push(btn);
+        });
+
+        var totalWidth = cumX - 5;
+        var x = Math.round((chart.chartWidth - totalWidth) / 2);
+        chart.gpwBtns.forEach(function(btn, i) {
+            btn.attr({ translateX: x });
+            x += widths[i] + 5;
+            if (gpwGroups[i].value === currentGpw) btn.setState(2);
+        });
+    }
+
+    function setGroupPixelWidth(value) {
+        var chart = globalChart;
+        if (!chart) return;
+        currentGpw = value;
+        chart.gpwBtns.forEach(function(btn, i) { btn.setState(gpwGroups[i].value === value ? 2 : 0); });
+        chart.series.forEach(function(s) {
+            s.update({ dataGrouping: value === null ? { enabled: false } : { enabled: true, groupPixelWidth: value } }, false);
+        });
+        chart.redraw();
+    }
+</script>
+
+</body>
+</html>
