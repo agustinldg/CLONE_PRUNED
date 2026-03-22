@@ -93,7 +93,7 @@
     <div class="controls">
         <button class="btn" onclick="day_1()">31/1/2017</button>
         <button class="btn" onclick="day_2()">4/2/2017</button>
-        <button class="btn btn-success" onclick="day_3()">13/11/2025 (API Data)</button>
+        <button class="btn btn-success" onclick="day_3()">20/3/2026 (API Data)</button>
     </div>
 
     <div class="footer">
@@ -163,6 +163,7 @@
                 { type: 'columnrange', name: 'O2%', turboThreshold: 0, pointPlacement: "between" },
                 { type: 'spline', name: 'O2%', id: 'spo2', turboThreshold: 0, pointPlacement: "between" },
                 { type: 'spline', name: 'BPM', id: 'bpm', turboThreshold: 0, pointPlacement: "between" },
+                { type: 'candlestick', name: 'bpm stats', id: 'bpm_stats', turboThreshold: 0 , pointPlacement: "between"},
                 { type: 'spline', yAxis: 1, name: 'PI', id: 'pi', turboThreshold: 0, pointPlacement: "between", visible: false }
             ]
         });
@@ -185,7 +186,7 @@
     function next_week() { appState.currentDate.setDate(appState.currentDate.getDate() + 7); load_day(); }
     function day_1() { appState.currentDate = new Date(2017, 0, 31, 14, 0, 0, 0); load_day(); }
     function day_2() { appState.currentDate = new Date(2017, 1, 4, 14, 0, 0, 0); load_day(); }
-    function day_3() { appState.currentDate = new Date(2025, 10, 13, 14, 0, 0, 0); load_day(); }
+    function day_3() { appState.currentDate = new Date(2026, 2, 20, 14, 0, 0, 0); load_day(); }
 
     function load_day() {
         var chart = globalChart;
@@ -205,14 +206,17 @@
         fetch(url)
             .then(response => response.json())
             .then(response => {
-                var spo2CR = [], spo2S = [], bpmS = [], piS = [];
+                var spo2CR = [], spo2S = [], bpmS = [], bpmOHLC = [], piS = [];
                 if (response.status === "OK" && response.data) {
                     response.data.forEach(function(row) {
                         var t = row[0].split(/[ \-:]/);
                         if (t.length === 6) {
                             var ms = new Date(t[0], t[1]-1, t[2], t[3], t[4], t[5]).getTime();
                             if (row[1] !== null) { spo2CR.push([ms, row[1], row[1]]); spo2S.push([ms, row[1]]); }
-                            if (row[2] !== null) bpmS.push([ms, row[2]]);
+                            if (row[2] !== null) {
+                                bpmS.push([ms, row[2]]);
+                                bpmOHLC.push([ms, row[2], row[2], row[2], row[2]]);
+                            }
                             if (row[3] !== null) piS.push([ms, row[3]]);
                         }
                     });
@@ -220,7 +224,8 @@
                 chart.series[0].setData(spo2CR, false);
                 chart.series[1].setData(spo2S, false);
                 chart.series[2].setData(bpmS, false);
-                chart.series[3].setData(piS, false);
+                chart.series[3].setData(bpmOHLC, false);
+                chart.series[4].setData(piS, false);
                 chart.redraw();
                 chart.hideLoading();
             })
