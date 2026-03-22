@@ -1,0 +1,291 @@
+Implementing BPM Mean Deviation Candlesticks
+Implementing a custom BPM candlestick series that dynamically recalculates mean deviation buckets upon zoom or grouping changes.
+
+
+chatgpt
+custom approximation in datagrouping , does it work with candlesticks
+
+can you make me the approximation to obtaint high,mean+average deviation,mean-average deviation, low
+
+Yes — you can build that with a custom approximation for a candlestick series in Highcharts Highstock, but there’s one important constraint:
+
+👉 A candlestick must return 4 values → [open, high, low, close]
+
+So we’ll map your idea like this:
+
+Your metric	Candlestick slot
+High (max)	High
+Mean + avg deviation	Close
+Mean − avg deviation	Open
+Low (min)	Low
+🧠 What we’ll compute
+
+From grouped OHLC points:
+
+Extract a single value per candle (usually close)
+
+Compute:
+
+Mean
+
+Average deviation (mean absolute deviation)
+
+Return:
+
+[
+  mean - avgDev,
+  max,
+  min,
+  mean + avgDev
+]
+⚙️ Custom approximation
+dataGrouping: {
+  approximation: function (groupedYValues) {
+
+    // Use CLOSE price (index 3)
+    const values = groupedYValues.map(p => p[3]);
+
+    const n = values.length;
+    if (!n) return;
+
+    // Mean
+    const mean = values.reduce((sum, v) => sum + v, 0) / n;
+
+    // Average deviation (mean absolute deviation)
+    const avgDev = values.reduce((sum, v) => sum + Math.abs(v - mean), 0) / n;
+
+    // High & Low from actual highs/lows
+    const highs = groupedYValues.map(p => p[1]);
+    const lows  = groupedYValues.map(p => p[2]);
+
+    const max = Math.max(...highs);
+    const min = Math.min(...lows);
+
+    return [
+      mean - avgDev, // open
+      max,           // high
+      min,           // low
+      mean + avgDev  // close
+    ];
+  }
+}
+📊 What this produces visually
+
+Each candle becomes:
+
+Top wick → real max
+
+Bottom wick → real min
+
+Body → statistical band around mean
+
+👉 So instead of price action, you're visualizing:
+
+Central tendency (mean)
+
+Dispersion (average deviation)
+
+Extremes (true high/low)
+
+⚠️ Important notes
+❗ This is NOT a real candlestick anymore
+
+Open/Close no longer represent trades
+
+It becomes a statistical range visualization
+
+❗ You chose mean absolute deviation (MAD)
+
+If you want standard deviation instead, change:
+
+const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / n;
+const std = Math.sqrt(variance);
+❗ Data choice matters
+
+Right now:
+
+Mean & deviation → based on close
+
+Extremes → from high/low
+
+👉 You can switch to:
+
+(high + low)/2
+
+or (open + close)/2
+
+💡 Pro tip
+
+This kind of candle is often better shown as:
+
+columnrange (for bands)
+
+line for mean
+
+…but using candlesticks gives you a compact “distribution candle” look
+
+If you want, I can:
+
+Turn this into a Bollinger-like indicator
+
+Or combine it with real candlesticks for comparison 📈
+
+will this impact the performance/speed?
+
+Yes — it can impact performance, but how much depends on your data size and how often grouping runs.
+
+In Highcharts Highstock, a custom approximation is executed every time dataGrouping recalculates, which happens more often than people expect.
+
+⚡ When your function runs
+
+Your custom function runs:
+
+On initial render
+
+Every zoom in/out
+
+When resizing chart
+
+When new data is added
+
+When navigator range changes
+
+👉 So it’s not “once” — it can run many times per interaction
+
+📊 What affects performance most
+🔴 1. Number of points per group
+
+If you group:
+
+10 points → cheap
+
+500+ points → expensive
+
+Because your function loops multiple times:
+
+map → reduce → map → map → Math.max/min
+🔴 2. Number of groups
+
+Example:
+
+10,000 raw points
+
+grouped into 500 buckets
+
+👉 Your function runs 500 times
+
+🔴 3. Complexity of your math
+
+Your current logic is:
+
+Mean → O(n)
+
+Avg deviation → O(n)
+
+Min/max → O(n)
+
+👉 Total ≈ 3–4 passes over data per group
+
+🚀 Real-world impact
+🟢 Small datasets (< 5k points)
+
+👉 You won’t notice anything
+
+🟡 Medium datasets (5k–50k)
+
+👉 Slight lag when zooming
+
+🔴 Large datasets (100k+)
+
+👉 Can become:
+
+Noticeably slow zoom
+
+UI lag in navigator
+
+Delayed redraws
+
+🛠️ How to optimize (important)
+✅ 1. Reduce passes (big win)
+
+Instead of multiple .map() calls, do one loop:
+
+approximation: function (groupedYValues) {
+  let sum = 0, devSum = 0;
+  let max = -Infinity, min = Infinity;
+
+  const n = groupedYValues.length;
+  if (!n) return;
+
+  // First pass: mean + min/max
+  for (let i = 0; i < n; i++) {
+    const p = groupedYValues[i];
+    const v = p[3]; // close
+
+    sum += v;
+
+    if (p[1] > max) max = p[1];
+    if (p[2] < min) min = p[2];
+  }
+
+  const mean = sum / n;
+
+  // Second pass: deviation
+  for (let i = 0; i < n; i++) {
+    devSum += Math.abs(groupedYValues[i][3] - mean);
+  }
+
+  const avgDev = devSum / n;
+
+  return [
+    mean - avgDev,
+    max,
+    min,
+    mean + avgDev
+  ];
+}
+
+👉 Cuts overhead significantly
+
+✅ 2. Limit grouping size
+dataGrouping: {
+  groupPixelWidth: 10
+}
+
+👉 Fewer points per group = faster
+
+✅ 3. Preprocess data (best for heavy apps)
+
+If performance matters a lot:
+
+Precompute values server-side or beforehand
+
+Avoid runtime math entirely
+
+✅ 4. Disable grouping when not needed
+dataGrouping: {
+  enabled: false
+}
+⚠️ Hidden cost: garbage collection
+
+Using .map() creates arrays → more memory → more GC pauses
+
+👉 Loops are faster and cleaner
+
+💡 Bottom line
+
+✔ Yes, it impacts performance
+
+✔ Usually fine for normal datasets
+
+❗ Can slow down large financial datasets
+
+🚀 Optimizing loops makes a big difference
+
+If you tell me roughly:
+
+how many points you have
+
+and your target (real-time vs static)
+
+I can tell you whether this will actually be a problem in your case 👍
