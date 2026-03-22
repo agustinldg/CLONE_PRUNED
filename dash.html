@@ -6,24 +6,49 @@
     <title>Highcharts Dashboard</title>
     <!-- Simple default styling -->
     <style>
+        :root {
+            --bg-page: #f4f7f6;
+            --bg-container: #fff;
+            --text-main: #333;
+            --border-color: #eee;
+            --btn-bg: #fff;
+            --btn-text: #333;
+            --btn-hover: #f0f0f0;
+        }
+
+        [data-theme="dark"] {
+            --bg-page: #1a1a1a;
+            --bg-container: #2a2a2b;
+            --text-main: #E0E0E3;
+            --border-color: #404043;
+            --btn-bg: #404043;
+            --btn-text: #E0E0E3;
+            --btn-hover: #505053;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 20px;
-            background-color: #f4f7f6;
-            color: #333;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            transition: background-color 0.3s, color 0.3s;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: #fff;
+            background: var(--bg-container);
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.3s;
         }
         .header {
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
         }
+        .header h1 { margin: 0; font-size: 24px; }
         #MAINGRAPHPRUNED {
             width: 100%;
             height: 600px;
@@ -40,27 +65,28 @@
             padding: 8px 16px;
             font-size: 14px;
             cursor: pointer;
-            border: 1px solid #ccc;
-            background-color: #fff;
-            color: #333;
+            border: 1px solid var(--border-color);
+            background-color: var(--btn-bg);
+            color: var(--btn-text);
             border-radius: 4px;
-            transition: background-color 0.2s, border-color 0.2s;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
         }
         .btn:hover {
-            background-color: #f0f0f0;
-            border-color: #bbb;
+            background-color: var(--btn-hover);
         }
         .btn-success {
             background-color: #dff0d8;
             border-color: #d6e9c6;
             color: #3c763d;
         }
-        .btn-success:hover {
-            background-color: #d0e9c6;
+        [data-theme="dark"] .btn-success {
+            background-color: #3c763d;
+            border-color: #2e592d;
+            color: #dff0d8;
         }
         hr {
             border: 0;
-            border-top: 1px solid #eee;
+            border-top: 1px solid var(--border-color);
             margin: 20px 0;
         }
         .footer {
@@ -71,12 +97,15 @@
         }
     </style>
 </head>
-<body>
+<body data-theme="light">
 
 <div class="container">
     <div class="header">
-        <h1>Oxygen Levels Dashboard</h1>
-        <p>Simplified View</p>
+        <div>
+            <h1>Oxygen Levels Dashboard</h1>
+            <p style="margin: 5px 0 0 0;">Simplified View</p>
+        </div>
+        <button class="btn" onclick="toggleTheme()" id="themeToggle">Night Mode</button>
     </div>
 
     <div id="MAINGRAPHPRUNED"></div>
@@ -238,16 +267,53 @@
     ];
     var currentGpw = 50;
 
+    var themes = {
+        light: {
+            chart: { backgroundColor: '#ffffff', plotBorderColor: '#cccccc' },
+            title: { style: { color: '#333333' } },
+            xAxis: { gridLineColor: '#e6e6e6', labels: { style: { color: '#666666' } }, lineColor: '#ccd6eb', tickColor: '#ccd6eb' },
+            yAxis: { gridLineColor: '#e6e6e6', labels: { style: { color: '#666666' } }, lineColor: '#ccd6eb', tickColor: '#ccd6eb' },
+            legend: { itemStyle: { color: '#333333' }, itemHoverStyle: { color: '#000000' } }
+        },
+        dark: {
+            chart: { backgroundColor: '#2a2a2b', plotBorderColor: '#606063' },
+            title: { style: { color: '#E0E0E3' } },
+            xAxis: { gridLineColor: '#707073', labels: { style: { color: '#E0E0E3' } }, lineColor: '#707073', tickColor: '#707073' },
+            yAxis: { gridLineColor: '#707073', labels: { style: { color: '#E0E0E3' } }, lineColor: '#707073', tickColor: '#707073' },
+            legend: { itemStyle: { color: '#E0E0E3' }, itemHoverStyle: { color: '#FFF' } }
+        }
+    };
+
+    function toggleTheme() {
+        var body = document.body;
+        var current = body.getAttribute('data-theme');
+        var next = current === 'light' ? 'dark' : 'light';
+        body.setAttribute('data-theme', next);
+        document.getElementById('themeToggle').innerText = next === 'light' ? 'Night Mode' : 'Day Mode';
+
+        globalChart.update(themes[next]);
+        addGroupingButtons(globalChart); // Re-render grouping buttons with new theme styles
+    }
+
     function addGroupingButtons(chart) {
         if (chart.gpwBtns) chart.gpwBtns.forEach(function(b) { b.destroy(); });
         chart.gpwBtns = [];
 
+        var isDark = document.body.getAttribute('data-theme') === 'dark';
         var y = chart.rangeSelector.buttons[0].translateY;
         
         // Simplified Highcharts styles for grouping buttons
-        var normalStyle = { fill: '#f7f7f7', stroke: '#cccccc', 'stroke-width': 1, r: 2, padding: 5, style: { color: '#333', fontSize: '11px' } };
-        var hoverStyle  = { fill: '#e6e6e6', stroke: '#adadad', style: { color: '#000' } };
-        var selectStyle = { fill: '#eeeeee', stroke: '#adadad', style: { color: '#000', fontWeight: 'bold' } };
+        var normalStyle = isDark 
+            ? { fill: '#404043', stroke: '#606063', 'stroke-width': 1, r: 2, padding: 5, style: { color: '#E0E0E3', fontSize: '11px' } }
+            : { fill: '#f7f7f7', stroke: '#cccccc', 'stroke-width': 1, r: 2, padding: 5, style: { color: '#333', fontSize: '11px' } };
+        
+        var hoverStyle  = isDark
+            ? { fill: '#505053', stroke: '#707073', style: { color: '#FFF' } }
+            : { fill: '#e6e6e6', stroke: '#adadad', style: { color: '#000' } };
+        
+        var selectStyle = isDark
+            ? { fill: '#000003', stroke: '#808083', style: { color: '#FFF', fontWeight: 'bold' } }
+            : { fill: '#eeeeee', stroke: '#adadad', style: { color: '#000', fontWeight: 'bold' } };
 
         var widths = [], cumX = 0;
         gpwGroups.forEach(function(g) {
