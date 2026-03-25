@@ -188,6 +188,10 @@
                     name: 'bpm stats', 
                     id: 'bpm_stats', 
                     zIndex: 0, // Put this in the background
+                    color: 'rgba(244, 91, 91, 0.7)', // Highcharts reddish, 70% opacity
+                    upColor: 'rgba(244, 91, 91, 0.7)',
+                    lineColor: '#f45b5b',
+                    upLineColor: '#f45b5b',
                     turboThreshold: 0, 
                     pointPlacement: "between",
                     visible: false,
@@ -412,7 +416,7 @@
 
         // Apply dataGrouping update to every series
 
-//test borreme
+
         chart.series.forEach(function(s) {
             s.update({
                 dataGrouping: value === null
