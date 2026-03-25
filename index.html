@@ -179,6 +179,34 @@
                     pointPlacement: "between",
                     visible: true
                 },
+                { 
+                    type: 'candlestick', 
+                    name: 'bpm stats', 
+                    id: 'bpm_stats', 
+                    turboThreshold: 0, 
+                    pointPlacement: "between",
+                    visible: false,
+                    dataGrouping: {
+                        enabled: true,
+                        approximation: function(values) {
+                            if (!values || !values.length) return null;
+                            let sum = 0, max = -Infinity, min = Infinity;
+                            for (let v of values) {
+                                sum += v;
+                                if (v > max) max = v;
+                                if (v < min) min = v;
+                            }
+                            const mean = sum / values.length;
+                            let diffSum = 0;
+                            for (let v of values) {
+                                diffSum += Math.abs(v - mean);
+                            }
+                            const meanDev = diffSum / values.length;
+                            // Returning [Open, High, Low, Close]
+                            return [mean + meanDev, max, min, mean - meanDev];
+                        }
+                    }
+                },
                 {
                     type: 'spline',
                     yAxis: 1,
@@ -244,7 +272,7 @@
     }
 
     function day_3() {
-        appState.currentDate = new Date(2025, 10, 13, 14, 0, 0, 0); 
+        appState.currentDate = new Date(2026, 2, 20, 14, 0, 0, 0); 
         load_day();
     }
 
@@ -269,6 +297,7 @@
             var spo2DataPointLowHigh = [];
             var spo2DataPoint = [];
             var bpmDataPoint = [];
+            var bpmOHLC = [];
             var piDataPoint = [];
 
             if (response.status === "OK" && response.data) {
@@ -287,6 +316,7 @@
                         }
                         if (bpm !== null && bpm !== undefined) {
                             bpmDataPoint.push([msTime, bpm]);
+                            bpmOHLC.push([msTime, bpm, bpm, bpm, bpm]);
                         }
                         if (pi !== null && pi !== undefined) {
                             piDataPoint.push([msTime, pi]);
@@ -298,7 +328,8 @@
             chart.series[0].setData(spo2DataPointLowHigh, false); 
             chart.series[1].setData(spo2DataPoint, false);        
             chart.series[2].setData(bpmDataPoint, false);         
-            chart.series[3].setData(piDataPoint, false);          
+            chart.series[3].setData(bpmOHLC, false);          
+            chart.series[4].setData(piDataPoint, false);          
             
             chart.redraw();
             chart.hideLoading();
