@@ -416,8 +416,11 @@
 
         // Apply dataGrouping update to every series
 
-
         chart.series.forEach(function(s) {
+            // Exclude the navigator series from manual grouping width to preserve its internal scaling
+            // !!!!!!!!!!!!!!!!!
+            if (s.options.id === 'highcharts-navigator-series') return;
+
             s.update({
                 dataGrouping: value === null
                     ? { enabled: false }

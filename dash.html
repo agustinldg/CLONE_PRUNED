@@ -305,6 +305,7 @@
         currentGpw = value;
         chart.gpwBtns.forEach(function(btn, i) { btn.setState(gpwGroups[i].value === value ? 2 : 0); });
         chart.series.forEach(function(s) {
+            if (s.options.id === 'highcharts-navigator-series') return;
             s.update({ dataGrouping: value === null ? { enabled: false } : { enabled: true, groupPixelWidth: value } }, false);
         });
         chart.redraw();
