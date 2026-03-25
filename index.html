@@ -158,32 +158,11 @@
                 inputEnabled: true
             },
             series: [
-                {
-                    type: 'columnrange',
-                    name: 'O2%',
-                    turboThreshold: 0,
-                    pointPlacement: "between"
-                },
-                {
-                    type: 'spline',
-                    name: 'O2%',
-                    id: 'spo2',
-                    turboThreshold: 0,
-                    pointPlacement: "between"
-                },
-                {
-                    type: 'spline',
-                    name: 'BPM',
-                    id: 'bpm',
-                    turboThreshold: 0,
-                    pointPlacement: "between",
-                    visible: true
-                },
                 { 
                     type: 'candlestick', 
                     name: 'bpm stats', 
                     id: 'bpm_stats', 
-                    zIndex: 0, // Put this in the background
+                    //zIndex: 0, // Put this in the background No funciona ,pongo la serie la primera
                     turboThreshold: 0, 
                     pointPlacement: "between",
                     visible: false,
@@ -208,6 +187,27 @@
                         }
                     }
                 },
+                {
+                    type: 'columnrange',
+                    name: 'O2%',
+                    turboThreshold: 0,
+                    pointPlacement: "between"
+                },
+                {
+                    type: 'spline',
+                    name: 'O2%',
+                    id: 'spo2',
+                    turboThreshold: 0,
+                    pointPlacement: "between"
+                },
+                {
+                    type: 'spline',
+                    name: 'BPM',
+                    id: 'bpm',
+                    turboThreshold: 0,
+                    pointPlacement: "between",
+                    visible: true
+                },                
                 {
                     type: 'spline',
                     yAxis: 1,
