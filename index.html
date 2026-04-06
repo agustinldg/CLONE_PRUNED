@@ -70,6 +70,7 @@
         <div class="col-md-12">
           <a class="btn btn-primary" onclick="prev_week()">Prev. Week</a>
           <a class="btn btn-primary" onclick="prev_day()">Prev. Day</a>
+          <a class="btn btn-primary" onclick="today()">Today</a>
           <a class="btn btn-primary" onclick="next_day()">Next Day</a>
           <a class="btn btn-primary" onclick="next_week()">Next Week</a>
           <hr>
@@ -239,11 +240,13 @@
     };
 
     function load_last_avail_day() {
+        // los dias van de las 18:00 a las 17:59 del siguiente
+        // pero incialmente cargamos el dia anterior (de 18:00 a 17:59) si es antes de las 23:00
         var now = new Date();
         var targetDate = new Date(now);
-        targetDate.setHours(14, 0, 0, 0);
+        targetDate.setHours(18, 0, 0, 0);
 
-        if (now.getHours() < 14) {
+        if (now.getHours() < 23) {
             targetDate.setDate(targetDate.getDate() - 1);
         }
 
@@ -256,6 +259,10 @@
         load_day();
     }
     
+    function today() {
+        load_last_avail_day();
+    }
+
     function next_day() {
         appState.currentDate.setDate(appState.currentDate.getDate() + 1);
         load_day();
@@ -272,17 +279,17 @@
     }
 
     function day_1() {
-        appState.currentDate = new Date(2017, 0, 31, 14, 0, 0, 0); 
+        appState.currentDate = new Date(2017, 0, 31, 18, 0, 0, 0); 
         load_day();
     }
     
     function day_2() {
-        appState.currentDate = new Date(2017, 1, 4, 14, 0, 0, 0); 
+        appState.currentDate = new Date(2017, 1, 4, 18, 0, 0, 0); 
         load_day();
     }
 
     function day_3() {
-        appState.currentDate = new Date(2026, 2, 20, 14, 0, 0, 0); 
+        appState.currentDate = new Date(2026, 2, 20, 18, 0, 0, 0); 
         load_day();
     }
 
@@ -314,7 +321,7 @@
                 response.data.forEach(function(row) {
                     var timeParts = row[0].split(/[ \-:]/);
                     if (timeParts.length === 6) {
-                        var msTime = new Date(timeParts[0], timeParts[1]-1, timeParts[2], timeParts[3], timeParts[4], timeParts[5]).getTime();
+                        var msTime = Date.UTC(timeParts[0], timeParts[1]-1, timeParts[2], timeParts[3], timeParts[4], timeParts[5]);
                         
                         var spo2 = row[1];
                         var bpm = row[2];
