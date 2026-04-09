@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pruned Stats – Dashboard</title>
+
+    <!-- Highcharts Dashboards CSS from unpkg -->
+    <link rel="stylesheet" href="https://unpkg.com/@highcharts/dashboards@3.1.0/css/dashboards.css">
+
+    <style>
+        /* ── Reset & Base ───────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* ── Dashboard wrapper ──────────────────────────────── */
+        #dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
+        /* ── Dashboard header ───────────────────────────────── */
+        .dash-header {
+            text-align: center;
+            padding: 24px 0 12px;
+        }
+        .dash-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #7b2ff7, #f107a3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+        .dash-header p {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        /* ── Override Dashboards cells for dark look ─────── */
+        .highcharts-dashboards-component {
+            background: #16213e !important;
+            border: 1px solid #0f3460 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+        }
+
+        /* Force chart cell to have enough height */
+        #cell-chart {
+            min-height: 650px;
+        }
+
+        /* ── Navigation buttons ──────────────────────────── */
+        .nav-controls {
+            max-width: 1400px;
+            margin: 16px auto 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px;
+            background: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .nav-controls .separator {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #0f3460, transparent);
+            margin: 4px 0;
+        }
+        .nav-btn {
+            display: inline-block;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid #0f3460;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #a5b4fc;
+            border-radius: 6px;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            user-select: none;
+        }
+        .nav-btn:hover {
+            background: linear-gradient(135deg, #7b2ff7, #f107a3);
+            color: #fff;
+            border-color: #7b2ff7;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(123,47,247,0.35);
+        }
+        .nav-btn:active { transform: translateY(0); }
+        .nav-btn.accent {
+            background: linear-gradient(135deg, #0f3460, #533483);
+            border-color: #533483;
+            color: #c4b5fd;
+        }
+        .nav-btn.accent:hover {
+            background: linear-gradient(135deg, #7b2ff7, #f107a3);
+            color: #fff;
+        }
+        .nav-info {
+            width: 100%;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #666;
+            padding: 4px 0 0;
+        }
+
+        /* ── Footer ─────────────────────────────────────────── */
+        .dash-footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #555;
+            padding: 18px 0 10px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="dash-header">
+    <h1>♡ Oxygen Levels Dashboard</h1>
+    <p>Pruned view — Highcharts Dashboard</p>
+</div>
+
+<!-- Dashboard container (Highcharts Dashboards renders the chart here) -->
+<div id="dashboard-container"></div>
+
+<!-- Navigation buttons (plain HTML, outside dashboard to avoid onclick issues) -->
+<div class="nav-controls">
+    <a class="nav-btn" onclick="prev_week()">⏪ Prev. Week</a>
+    <a class="nav-btn" onclick="prev_day()">◀ Prev. Day</a>
+    <a class="nav-btn accent" onclick="today()">● Today</a>
+    <a class="nav-btn" onclick="next_day()">Next Day ▶</a>
+    <a class="nav-btn" onclick="next_week()">Next Week ⏩</a>
+    <div class="separator"></div>
+    <a class="nav-btn" onclick="day_1()">31/1/2017</a>
+    <a class="nav-btn" onclick="day_2()">4/2/2017</a>
+    <a class="nav-btn accent" onclick="day_3()">13/11/2025 (API Data)</a>
+    <p class="nav-info">Click on legend names (O2%, BPM, PI, bpm stats) below the chart to toggle series</p>
+</div>
+
+<!-- Footer -->
+<div class="dash-footer">© 2015-2026 Baby Monitor — Masimo Pulse Oximeter</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- Scripts (order matters)                                   -->
+<!-- ════════════════════════════════════════════════════════ -->
+
+<!-- 1. Highcharts Stock — same CDN & version as index.html -->
+<script src="https://unpkg.com/highcharts@11.4.0/highstock.js"></script>
+<script src="https://unpkg.com/highcharts@11.4.0/highcharts-more.js"></script>
+
+<!-- 2. Highcharts Dashboards + layout module -->
+<script src="https://unpkg.com/@highcharts/dashboards@3.1.0/dashboards.js"></script>
+<script src="https://unpkg.com/@highcharts/dashboards@3.1.0/modules/layout.js"></script>
+
+<script>
+/* ───────────────────────────────────────────────────────────
+   Connect Highcharts to Dashboards plugin system
+   ─────────────────────────────────────────────────────────── */
+Dashboards.HighchartsPlugin.custom.connectHighcharts(Highcharts);
+Dashboards.PluginHandler.addPlugin(Dashboards.HighchartsPlugin);
+
+/* ───────────────────────────────────────────────────────────
+   App State
+   ─────────────────────────────────────────────────────────── */
+var globalChart = null;
+var appState = { currentDate: null };
+
+/* ───────────────────────────────────────────────────────────
+   Dark theme (applied globally before board creation)
+   ─────────────────────────────────────────────────────────── */
+Highcharts.setOptions({
+    chart: {
+        backgroundColor: '#16213e',
+        style: { fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
+    },
+    title:    { style: { color: '#e0e0e0' } },
+    subtitle: { style: { color: '#999' } },
+    xAxis: {
+        gridLineColor: '#1e3a5f',
+        labels: { style: { color: '#aaa' } },
+        lineColor: '#1e3a5f',
+        tickColor: '#1e3a5f',
+        title: { style: { color: '#ccc' } }
+    },
+    yAxis: {
+        gridLineColor: '#1e3a5f',
+        labels: { style: { color: '#aaa' } },
+        lineColor: '#1e3a5f',
+        tickColor: '#1e3a5f',
+        title: { style: { color: '#ccc' } }
+    },
+    legend: {
+        backgroundColor: 'transparent',
+        itemStyle: { color: '#ccc' },
+        itemHoverStyle: { color: '#fff' },
+        itemHiddenStyle: { color: '#555' }
+    },
+    tooltip: {
+        backgroundColor: 'rgba(22,33,62,0.92)',
+        borderColor: '#0f3460',
+        style: { color: '#e0e0e0', fontSize: '14px' }
+    },
+    navigator: {
+        handles: { backgroundColor: '#7b2ff7', borderColor: '#aaa' },
+        outlineColor: '#0f3460',
+        maskFill: 'rgba(123,47,247,0.12)',
+        series: { color: '#7b2ff7', lineColor: '#7b2ff7' },
+        xAxis: { gridLineColor: '#1e3a5f' }
+    },
+    scrollbar: {
+        barBackgroundColor: '#333',
+        barBorderColor: '#444',
+        buttonBackgroundColor: '#333',
+        buttonBorderColor: '#444',
+        trackBackgroundColor: '#1a1a2e',
+        trackBorderColor: '#1a1a2e'
+    },
+    rangeSelector: {
+        buttonTheme: {
+            fill: '#1a1a2e',
+            stroke: '#0f3460',
+            style: { color: '#a5b4fc' },
+            states: {
+                hover:  { fill: '#7b2ff7', stroke: '#7b2ff7', style: { color: '#fff' } },
+                select: { fill: '#533483', stroke: '#533483', style: { color: '#fff' } }
+            }
+        },
+        inputStyle: { backgroundColor: '#1a1a2e', color: '#e0e0e0' },
+        labelStyle: { color: '#aaa' }
+    },
+    colors: ['#7b2ff7', '#2ed8a3', '#f107a3', '#f45b5b', '#ff9f43',
+             '#00cec9', '#6c5ce7', '#fdcb6e', '#e17055', '#0984e3']
+});
+
+/* ───────────────────────────────────────────────────────────
+   Build the Dashboard
+   ─────────────────────────────────────────────────────────── */
+Dashboards.board('dashboard-container', {
+    gui: {
+        layouts: [{
+            id: 'layout-1',
+            rows: [{
+                cells: [{ id: 'cell-chart' }]
+            }]
+        }]
+    },
+    components: [
+        {
+            renderTo: 'cell-chart',
+            type: 'Highcharts',
+            chartConstructor: 'stockChart',
+            chartOptions: {
+                chart: {
+                    zoomType: 'x',
+                    height: 620,
+                    events: {
+                        load: function () {
+                            globalChart = this;
+                            addGroupingButtons(this);
+                            load_last_avail_day();
+                        }
+                    }
+                },
+                loading: {
+                    style: { backgroundColor: 'rgba(22,33,62,0.85)' },
+                    labelStyle: { color: '#e0e0e0', fontSize: '16px' }
+                },
+                navigator: {
+                    adaptToUpdatedData: true,
+                    baseSeries: 2,
+                    series: { pointPlacement: 'between' }
+                },
+                scrollbar: { liveRedraw: false },
+                title: { text: 'Oxygen Levels' },
+                xAxis: { type: 'datetime' },
+                yAxis: [
+                    {
+                        labels: { align: 'right', x: -4 },
+                        title: { text: 'SpO2 & bpm' }
+                    },
+                    {
+                        labels: { align: 'left', x: 8 },
+                        title: { text: 'P.I.' },
+                        top: '75%',
+                        height: '25%',
+                        offset: 0
+                    }
+                ],
+                legend: { enabled: true },
+                plotOptions: {
+                    series: { gapSize: 60 },
+                    line: { connectNulls: false },
+                    columnrange: {
+                        pointPadding: -0.25,
+                        minPointLength: 5,
+                        dataGrouping: { groupPixelWidth: 50 }
+                    }
+                },
+                tooltip: {
+                    valueDecimals: 2,
+                    style: { fontSize: '14px' }
+                },
+                rangeSelector: {
+                    buttons: [
+                        { type: 'minute', count: 1,  text: '1M'  },
+                        { type: 'minute', count: 10, text: '10M' },
+                        { type: 'hour',   count: 1,  text: '1H'  },
+                        { type: 'all',                text: 'All' }
+                    ],
+                    selected: 3,
+                    inputEnabled: true
+                },
+                series: [
+                    {
+                        type: 'columnrange',
+                        name: 'O2%',
+                        zIndex: 1,
+                        opacity: 0.95,
+                        turboThreshold: 0,
+                        pointPlacement: 'between'
+                    },
+                    {
+                        type: 'spline',
+                        name: 'O2%',
+                        id: 'spo2',
+                        zIndex: 2,
+                        turboThreshold: 0,
+                        pointPlacement: 'between'
+                    },
+                    {
+                        type: 'spline',
+                        name: 'BPM',
+                        id: 'bpm',
+                        zIndex: 3,
+                        turboThreshold: 0,
+                        pointPlacement: 'between',
+                        visible: true
+                    },
+                    {
+                        type: 'candlestick',
+                        name: 'bpm stats',
+                        id: 'bpm_stats',
+                        zIndex: 0,
+                        color: 'rgba(244, 91, 91, 0.7)',
+                        upColor: 'rgba(244, 91, 91, 0.7)',
+                        lineColor: '#f45b5b',
+                        upLineColor: '#f45b5b',
+                        turboThreshold: 0,
+                        pointPlacement: 'between',
+                        visible: false,
+                        dataGrouping: {
+                            enabled: true,
+                            approximation: function (values) {
+                                if (!values || !values.length) return null;
+                                var sum = 0, max = -Infinity, min = Infinity;
+                                for (var i = 0; i < values.length; i++) {
+                                    sum += values[i];
+                                    if (values[i] > max) max = values[i];
+                                    if (values[i] < min) min = values[i];
+                                }
+                                var mean = sum / values.length;
+                                var diffSum = 0;
+                                for (var j = 0; j < values.length; j++) {
+                                    diffSum += Math.abs(values[j] - mean);
+                                }
+                                var meanDev = diffSum / values.length;
+                                return [mean + meanDev, max, min, mean - meanDev];
+                            }
+                        }
+                    },
+                    {
+                        type: 'spline',
+                        yAxis: 1,
+                        name: 'PI',
+                        id: 'pi',
+                        zIndex: 4,
+                        turboThreshold: 0,
+                        pointPlacement: 'between',
+                        visible: false,
+                        negativeColor: '#FF0000',
+                        threshold: 1
+                    }
+                ]
+            }
+        }
+    ]
+});
+
+/* ───────────────────────────────────────────────────────────
+   Data Loading Functions (same logic as index.html)
+   ─────────────────────────────────────────────────────────── */
+function load_last_avail_day() {
+    var now = new Date();
+    var targetDate = new Date(now);
+    targetDate.setHours(18, 0, 0, 0);
+    if (now.getHours() < 23) {
+        targetDate.setDate(targetDate.getDate() - 1);
+    }
+    appState.currentDate = targetDate;
+    load_day();
+}
+
+function prev_day()  { appState.currentDate.setDate(appState.currentDate.getDate() - 1); load_day(); }
+function today()     { load_last_avail_day(); }
+function next_day()  { appState.currentDate.setDate(appState.currentDate.getDate() + 1); load_day(); }
+function prev_week() { appState.currentDate.setDate(appState.currentDate.getDate() - 7); load_day(); }
+function next_week() { appState.currentDate.setDate(appState.currentDate.getDate() + 7); load_day(); }
+
+function day_1() { appState.currentDate = new Date(2017, 0, 31, 18, 0, 0, 0); load_day(); }
+function day_2() { appState.currentDate = new Date(2017, 1, 4,  18, 0, 0, 0); load_day(); }
+function day_3() { appState.currentDate = new Date(2026, 2, 20, 18, 0, 0, 0); load_day(); }
+
+function load_day() {
+    var chart = globalChart;
+    if (!chart) return;
+    chart.showLoading('Loading data from server...');
+
+    var d = appState.currentDate;
+    var year    = d.getFullYear();
+    var month   = String(d.getMonth() + 1).padStart(2, '0');
+    var day     = String(d.getDate()).padStart(2, '0');
+    var hours   = String(d.getHours()).padStart(2, '0');
+    var minutes = String(d.getMinutes()).padStart(2, '0');
+    var seconds = String(d.getSeconds()).padStart(2, '0');
+
+    var dateString  = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+    var encodedDate = encodeURIComponent(dateString);
+    var url = 'https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/PULSI/pulsi/v6/lecturas?start_date=' + encodedDate;
+
+    fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (response) {
+            var spo2DataPointLowHigh = [];
+            var spo2DataPoint = [];
+            var bpmDataPoint  = [];
+            var bpmOHLC       = [];
+            var piDataPoint   = [];
+
+            if (response.status === 'OK' && response.data) {
+                response.data.forEach(function (row) {
+                    var timeParts = row[0].split(/[ \-:]/);
+                    if (timeParts.length === 6) {
+                        var msTime = Date.UTC(
+                            timeParts[0], timeParts[1] - 1, timeParts[2],
+                            timeParts[3], timeParts[4], timeParts[5]
+                        );
+                        var spo2 = row[1], bpm = row[2], pi = row[3];
+
+                        if (spo2 !== null && spo2 !== undefined) {
+                            spo2DataPointLowHigh.push([msTime, spo2, spo2]);
+                            spo2DataPoint.push([msTime, spo2]);
+                        }
+                        if (bpm !== null && bpm !== undefined) {
+                            bpmDataPoint.push([msTime, bpm]);
+                            bpmOHLC.push([msTime, bpm, bpm, bpm, bpm]);
+                        }
+                        if (pi !== null && pi !== undefined) {
+                            piDataPoint.push([msTime, pi]);
+                        }
+                    }
+                });
+            }
+
+            chart.series[0].setData(spo2DataPointLowHigh, false);
+            chart.series[1].setData(spo2DataPoint, false);
+            chart.series[2].setData(bpmDataPoint, false);
+            chart.series[3].setData(bpmOHLC, false);
+            chart.series[4].setData(piDataPoint, false);
+
+            chart.redraw();
+            chart.hideLoading();
+
+            if (chart.rangeSelector) {
+                chart.rangeSelector.clickButton(3, true);
+            }
+        })
+        .catch(function () {
+            chart.showLoading('Error fetching data from server');
+        });
+}
+
+/* ───────────────────────────────────────────────────────────
+   Data Grouping Buttons (rendered inside chart SVG)
+   ─────────────────────────────────────────────────────────── */
+var gpwGroups = [
+    { label: 'Raw',   value: null },
+    { label: '5px',   value: 5    },
+    { label: '10px',  value: 10   },
+    { label: '25px',  value: 25   },
+    { label: '50px',  value: 50   },
+    { label: '100px', value: 100  },
+    { label: '200px', value: 200  }
+];
+var currentGpw = 50;
+
+function addGroupingButtons(chart) {
+    if (chart.gpwBtns) {
+        chart.gpwBtns.forEach(function (b) { b.destroy(); });
+    }
+    chart.gpwBtns = [];
+
+    var rsBtn = chart.rangeSelector.buttons[chart.rangeSelector.buttons.length - 1];
+    var y = rsBtn.translateY;
+
+    var normalStyle = {
+        fill: '#1a1a2e', stroke: '#0f3460', 'stroke-width': 1, r: 4, padding: 4,
+        style: { color: '#a5b4fc', fontFamily: 'inherit', fontSize: '10px' }
+    };
+    var hoverStyle = {
+        fill: '#7b2ff7', stroke: '#7b2ff7',
+        style: { color: '#fff' }
+    };
+    var selectStyle = {
+        fill: '#533483', stroke: '#533483',
+        style: { color: '#fff' }
+    };
+
+    var widths = [], cumX = 0;
+    gpwGroups.forEach(function (g) {
+        var btn = chart.renderer.button(
+            g.label, cumX, y,
+            function () { setGroupPixelWidth(g.value); },
+            normalStyle, hoverStyle, selectStyle
+        ).add(chart.rangeSelector.group);
+
+        var w = btn.getBBox().width;
+        widths.push(w);
+        cumX += w + 3;
+        chart.gpwBtns.push(btn);
+    });
+
+    var totalWidth = cumX - 3;
+    var startX = Math.round((chart.chartWidth - totalWidth) / 2);
+    var x = startX;
+    chart.gpwBtns.forEach(function (btn, i) {
+        btn.attr({ translateX: x });
+        x += widths[i] + 3;
+        if (gpwGroups[i].value === currentGpw) btn.setState(2);
+    });
+}
+
+function setGroupPixelWidth(value) {
+    var chart = globalChart;
+    if (!chart) return;
+    currentGpw = value;
+
+    chart.gpwBtns.forEach(function (btn, i) {
+        btn.setState(gpwGroups[i].value === value ? 2 : 0);
+    });
+
+    chart.series.forEach(function (s) {
+        if (s.options.id === 'highcharts-navigator-series') return;
+        s.update({
+            dataGrouping: value === null
+                ? { enabled: false }
+                : { enabled: true, groupPixelWidth: value }
+        }, false);
+    });
+    chart.redraw();
+}
+</script>
+
+</body>
+</html>
