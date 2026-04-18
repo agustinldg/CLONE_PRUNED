@@ -53,9 +53,12 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
         }
 
-        /* Force chart cell to have enough height */
+        /* Force chart cell to have enough height and disable default browser touch actions */
         #cell-chart {
             min-height: 650px;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         /* ── Navigation buttons ──────────────────────────── */
@@ -267,6 +270,11 @@ Dashboards.board('dashboard-container', {
             chartOptions: {
                 chart: {
                     zoomType: 'x',
+                    panning: {
+                        enabled: true,
+                        type: 'x'
+                    },
+                    zoomBySingleTouch: true,
                     height: 620,
                     events: {
                         load: function () {
