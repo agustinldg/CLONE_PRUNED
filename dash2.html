@@ -570,28 +570,49 @@ function addGroupingButtons(chart) {
         if (gpwGroups[i].value === currentGpw) btn.setState(2);
     });
 
-    // ── Y-Axis toggle button, placed below the legend ──────────
+    // ── Y-Axis toggle button + LED indicator, placed below the legend ──
     if (chart.yAxisToggleBtn) {
         chart.yAxisToggleBtn.destroy();
         chart.yAxisToggleBtn = null;
     }
+    if (chart.yAxisToggleDot) {
+        chart.yAxisToggleDot.destroy();
+        chart.yAxisToggleDot = null;
+    }
 
     var legendGroup = chart.legend.group;
     var lBBox       = legendGroup.getBBox();
-    var yToggleBtn  = chart.renderer.button(
-        yAxisFixed ? 'Auto Y-Axis' : 'Fixed Y-Axis',
+    var btnY        = Math.round(legendGroup.translateY + lBBox.height + 10);
+    var dotR        = 5;
+    var gap         = 7;
+
+    // Create the button first to measure its width
+    var yToggleBtn = chart.renderer.button(
+        'Auto Y-Axis',
         0, 0,
         function () { toggleYAxis(); },
         normalStyle, hoverStyle, selectStyle
     ).add();
 
-    var tBBox = yToggleBtn.getBBox();
+    var tBBox    = yToggleBtn.getBBox();
+    var totalW   = dotR * 2 + gap + tBBox.width;
+    var blockX   = Math.round((chart.chartWidth - totalW) / 2);
+    var dotCY    = Math.round(btnY + tBBox.height / 2);
+
+    // LED dot: green = auto, gray = fixed
+    var dotFill = yAxisFixed ? '#555' : '#4ade80';
+    var dotGlow = yAxisFixed ? 'none' : '#4ade80';
+    var yToggleDot = chart.renderer.circle(blockX + dotR, dotCY, dotR)
+        .attr({ fill: dotFill, stroke: dotGlow, 'stroke-width': yAxisFixed ? 0 : 2, zIndex: 6 })
+        .add();
+
     yToggleBtn.attr({
-        translateX: Math.round((chart.chartWidth - tBBox.width) / 2),
-        translateY: Math.round(legendGroup.translateY + lBBox.height + 10)
+        translateX: blockX + dotR * 2 + gap,
+        translateY: btnY
     });
-    if (yAxisFixed) yToggleBtn.setState(2);
+
     chart.yAxisToggleBtn = yToggleBtn;
+    chart.yAxisToggleDot = yToggleDot;
 }
 
 function setGroupPixelWidth(value) {
@@ -633,9 +654,12 @@ function toggleYAxis() {
     yAxisFixed = !yAxisFixed;
     applyYAxisRanges(chart);
 
-    if (chart.yAxisToggleBtn) {
-        chart.yAxisToggleBtn.attr({ text: yAxisFixed ? 'Auto Y-Axis' : 'Fixed Y-Axis' });
-        chart.yAxisToggleBtn.setState(yAxisFixed ? 2 : 0);
+    // Update LED dot color only — button label stays 'Auto Y-Axis'
+    if (chart.yAxisToggleDot) {
+        var dotFill = yAxisFixed ? '#555' : '#4ade80';
+        var sw      = yAxisFixed ? 0 : 2;
+        var stroke  = yAxisFixed ? 'none' : '#4ade80';
+        chart.yAxisToggleDot.attr({ fill: dotFill, stroke: stroke, 'stroke-width': sw });
     }
 }
 </script>
