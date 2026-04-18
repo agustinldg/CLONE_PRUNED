@@ -282,6 +282,7 @@ Dashboards.board('dashboard-container', {
                             globalChart = this;
                             addGroupingButtons(this);
                             load_last_avail_day();
+                            applyYAxisRanges(this);
                         }
                     }
                 },
@@ -300,7 +301,9 @@ Dashboards.board('dashboard-container', {
                 yAxis: [
                     {
                         labels: { align: 'right', x: -4 },
-                        title: { text: 'SpO2 & bpm' }
+                        title: { text: 'SpO2 & bpm' },
+                        endOnTick: false,
+                        showLastLabel: true
                     },
                     {
                         labels: { align: 'left', x: 8 },
@@ -516,6 +519,11 @@ var gpwGroups = [
     { label: '200px', value: 200  }
 ];
 var currentGpw = 50;
+var yAxisFixed = true;
+var Y_FIXED = [
+    { min: 60, max: 105 },  // yAxis[0]: SpO2 & BPM
+    { min: 0,  max: 5   }   // yAxis[1]: P.I.
+];
 
 function addGroupingButtons(chart) {
     if (chart.gpwBtns) {
@@ -561,6 +569,29 @@ function addGroupingButtons(chart) {
         x += widths[i] + 3;
         if (gpwGroups[i].value === currentGpw) btn.setState(2);
     });
+
+    // ── Y-Axis toggle button, placed below the legend ──────────
+    if (chart.yAxisToggleBtn) {
+        chart.yAxisToggleBtn.destroy();
+        chart.yAxisToggleBtn = null;
+    }
+
+    var legendGroup = chart.legend.group;
+    var lBBox       = legendGroup.getBBox();
+    var yToggleBtn  = chart.renderer.button(
+        yAxisFixed ? 'Auto Y-Axis' : 'Fixed Y-Axis',
+        0, 0,
+        function () { toggleYAxis(); },
+        normalStyle, hoverStyle, selectStyle
+    ).add();
+
+    var tBBox = yToggleBtn.getBBox();
+    yToggleBtn.attr({
+        translateX: Math.round((chart.chartWidth - tBBox.width) / 2),
+        translateY: Math.round(legendGroup.translateY + lBBox.height + 10)
+    });
+    if (yAxisFixed) yToggleBtn.setState(2);
+    chart.yAxisToggleBtn = yToggleBtn;
 }
 
 function setGroupPixelWidth(value) {
@@ -581,6 +612,31 @@ function setGroupPixelWidth(value) {
         }, false);
     });
     chart.redraw();
+}
+
+function applyYAxisRanges(chart) {
+    chart.yAxis.forEach(function (ax, i) {
+        if (!Y_FIXED[i]) return;
+        ax.update(
+            yAxisFixed
+                ? { min: Y_FIXED[i].min, max: Y_FIXED[i].max, endOnTick: false, showLastLabel: true }
+                : { min: null, max: null, endOnTick: true },
+            false
+        );
+    });
+    chart.redraw();
+}
+
+function toggleYAxis() {
+    var chart = globalChart;
+    if (!chart) return;
+    yAxisFixed = !yAxisFixed;
+    applyYAxisRanges(chart);
+
+    if (chart.yAxisToggleBtn) {
+        chart.yAxisToggleBtn.attr({ text: yAxisFixed ? 'Auto Y-Axis' : 'Fixed Y-Axis' });
+        chart.yAxisToggleBtn.setState(yAxisFixed ? 2 : 0);
+    }
 }
 </script>
 
