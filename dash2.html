@@ -182,6 +182,7 @@ Dashboards.PluginHandler.addPlugin(Dashboards.HighchartsPlugin);
    ─────────────────────────────────────────────────────────── */
 var globalChart = null;
 var appState = { currentDate: null };
+var _resizeTimer = null;
 
 /* ───────────────────────────────────────────────────────────
    Dark theme (applied globally before board creation)
@@ -283,6 +284,13 @@ Dashboards.board('dashboard-container', {
                             addGroupingButtons(this);
                             load_last_avail_day();
                             applyYAxisRanges(this);
+                        },
+                        redraw: function () {
+                            var self = this;
+                            clearTimeout(_resizeTimer);
+                            _resizeTimer = setTimeout(function () {
+                                addGroupingButtons(self);
+                            }, 150);
                         }
                     }
                 },
