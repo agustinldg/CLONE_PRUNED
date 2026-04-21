@@ -702,25 +702,25 @@ function updateSummary(minVal, maxVal) {
 
     var durDiv = (durationSecs > 0) ? durationSecs : 1;
     var pct = function(val) {
-        return ((val / durDiv) * 100).toFixed(1) + '%';
+        return ((val / durDiv) * 100).toFixed(2) + '%';
     };
 
     var spo2Color = (chart.series[1] && chart.series[1].color) || '#90ee7e';
     var bpmColor  = (chart.series[2] && chart.series[2].color) || '#f45b5b';
 
     var html = '<h2>Resumen</h2>';
-    html += '<div class="s-row" style="font-size: 1.2rem; margin-bottom: 10px;"><strong>Duración:</strong> ' + formatDuration(durationMs) + '</div>';
+    html += '<div class="s-row" style="margin-bottom: 10px;"><strong>Duración:</strong> <span style="font-size: 1.25rem;">' + formatDuration(durationMs) + '</span></div>';
     html += '<div class="s-row"><strong>Inicio:</strong> ' + formatDate(startDate) + ' ' + formatTime(startDate) + ' &nbsp; <strong>Fin:</strong> ' + formatTime(endDate) + '</div>';
     html += '<div class="s-sub">Puntos no registrados: ' + missingSecs + ' seg (Diff: ' + durationSecs + 's - ' + numPoints + ' pts)</div>';
 
     html += '<div class="s-group" style="color: ' + spo2Color + '; border-left-color: ' + spo2Color + ';">';
-    html += '<div class="s-row" style="margin-bottom: 8px;"><strong>SpO2 = ' + spo2Mean.toFixed(2) + ' ± ' + spo2Dev.toFixed(2) + '</strong></div>';
+    html += '<div class="s-row" style="margin-bottom: 8px;"><strong>SpO2 = </strong><span style="font-size: 1.2rem; font-weight: bold;">' + spo2Mean.toFixed(2) + ' ± ' + spo2Dev.toFixed(2) + '</span></div>';
     html += '<div class="s-row">Tiempo SpO2 &lt; 90: ' + formatDuration(spo2_lt_90 * 1000) + ' (' + pct(spo2_lt_90) + ')</div>';
     html += '<div class="s-row">Tiempo SpO2 &lt; 85: ' + formatDuration(spo2_lt_85 * 1000) + ' (' + pct(spo2_lt_85) + ')</div>';
     html += '</div>';
 
     html += '<div class="s-group" style="color: ' + bpmColor + '; border-left-color: ' + bpmColor + ';">';
-    html += '<div class="s-row" style="margin-bottom: 8px;"><strong>BPM = ' + bpmMean.toFixed(2) + ' ± ' + bpmDev.toFixed(2) + '</strong></div>';
+    html += '<div class="s-row" style="margin-bottom: 8px;"><strong>BPM = </strong><span style="font-size: 1.2rem; font-weight: bold;">' + bpmMean.toFixed(2) + ' ± ' + bpmDev.toFixed(2) + '</span></div>';
     html += '<div class="s-row">Tiempo BPM &gt; 80: ' + formatDuration(bpm_gt_80 * 1000) + ' (' + pct(bpm_gt_80) + ')</div>';
     html += '<div class="s-row">Tiempo BPM &gt; 90: ' + formatDuration(bpm_gt_90 * 1000) + ' (' + pct(bpm_gt_90) + ')</div>';
     html += '<div class="s-row">Tiempo BPM &gt; 100: ' + formatDuration(bpm_gt_100 * 1000) + ' (' + pct(bpm_gt_100) + ')</div>';
