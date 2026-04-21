@@ -73,6 +73,40 @@
             user-select: none;
         }
 
+        /* Summary cell limits */
+        #cell-summary {
+            margin: 20px auto;
+            max-width: 50%;
+            min-width: 320px;
+        }
+        
+        #summary-content {
+            padding: 16px;
+            font-size: 14px;
+            color: #d1d5db;
+        }
+        #summary-content h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: #a5b4fc;
+            border-bottom: 1px solid #1e3a5f;
+            padding-bottom: 6px;
+        }
+        #summary-content .s-row {
+            margin-bottom: 6px;
+        }
+        #summary-content .s-sub {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: -2px;
+            margin-bottom: 12px;
+        }
+        #summary-content .s-group {
+            margin-top: 12px;
+            padding-left: 10px;
+            border-left: 2px solid #1e3a5f;
+        }
+
         /* ── Navigation buttons ──────────────────────────── */
         .nav-controls {
             max-width: 1400px;
@@ -208,7 +242,7 @@ Dashboards.PluginHandler.addPlugin(Dashboards.HighchartsPlugin);
    App State
    ─────────────────────────────────────────────────────────── */
 var globalChart = null;
-var appState = { currentDate: null };
+var appState = { currentDate: null, currentData: { spo2: [], bpm: [] } };
 var _resizeTimer = null;
 
 /* ───────────────────────────────────────────────────────────
@@ -287,6 +321,8 @@ Dashboards.board('dashboard-container', {
             id: 'layout-1',
             rows: [{
                 cells: [{ id: 'cell-chart' }]
+            }, {
+                cells: [{ id: 'cell-summary' }]
             }]
         }]
     },
@@ -332,7 +368,14 @@ Dashboards.board('dashboard-container', {
                 },
                 scrollbar: { liveRedraw: false },
                 title: { text: 'Oxygen Levels' },
-                xAxis: { type: 'datetime' },
+                xAxis: { 
+                    type: 'datetime',
+                    events: {
+                        afterSetExtremes: function (e) {
+                            updateSummary(e.min, e.max);
+                        }
+                    }
+                },
                 yAxis: [
                     {
                         labels: { align: 'right', x: -4 },
@@ -446,6 +489,11 @@ Dashboards.board('dashboard-container', {
                     }
                 ]
             }
+        },
+        {
+            renderTo: 'cell-summary',
+            type: 'HTML',
+            html: '<div id="summary-content">Cargando resumen...</div>'
         }
     ]
 });
@@ -525,6 +573,11 @@ function load_day() {
                 });
             }
 
+            appState.currentData = {
+                spo2: spo2DataPoint,
+                bpm: bpmDataPoint
+            };
+
             chart.series[0].setData(spo2DataPointLowHigh, false);
             chart.series[1].setData(spo2DataPoint, false);
             chart.series[2].setData(bpmDataPoint, false);
@@ -537,10 +590,120 @@ function load_day() {
             if (chart.rangeSelector) {
                 chart.rangeSelector.clickButton(3, true);
             }
+            setTimeout(function() {
+                var ex = chart.xAxis[0].getExtremes();
+                updateSummary(ex.min, ex.max);
+            }, 50);
         })
         .catch(function () {
             chart.showLoading('Error fetching data from server');
         });
+}
+
+// Function to format ms into HH:MM:SS
+function formatDuration(ms) {
+    if (ms < 0) ms = 0;
+    var totalSeconds = Math.floor(ms / 1000);
+    var h = Math.floor(totalSeconds / 3600);
+    var m = Math.floor((totalSeconds % 3600) / 60);
+    var s = totalSeconds % 60;
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function updateSummary(minVal, maxVal) {
+    var chart = globalChart;
+    if (!chart || !appState.currentData) return;
+    
+    var xAxis = chart.xAxis && chart.xAxis[0];
+    if (!xAxis) return;
+
+    if (!minVal || !maxVal) {
+        var extremes = xAxis.getExtremes();
+        minVal = extremes.min;
+        maxVal = extremes.max;
+    }
+
+    // Filter points within visible range
+    var visibleSpO2 = appState.currentData.spo2.filter(function(p) { return p[0] >= minVal && p[0] <= maxVal; });
+    var visibleBPM  = appState.currentData.bpm.filter(function(p) { return p[0] >= minVal && p[0] <= maxVal; });
+
+    if (visibleSpO2.length === 0 && visibleBPM.length === 0) {
+        var sumContent = document.getElementById('summary-content');
+        if (sumContent) sumContent.innerHTML = '<h2>Resumen</h2><p>No hay datos en este intervalo.</p>';
+        return;
+    }
+
+    var startMs = minVal;
+    var endMs = maxVal;
+    
+    // Better approximation for start/end based on valid data points if available
+    if (visibleSpO2.length > 0) {
+        startMs = visibleSpO2[0][0];
+        endMs = visibleSpO2[visibleSpO2.length - 1][0];
+    }
+    
+    var startDate = new Date(startMs);
+    var endDate   = new Date(endMs);
+    
+    var formatTime = function(d) {
+        return String(d.getUTCHours()).padStart(2, '0') + ':' + 
+               String(d.getUTCMinutes()).padStart(2, '0') + ':' + 
+               String(d.getUTCSeconds()).padStart(2, '0');
+    };
+    var formatDate = function(d) {
+        return String(d.getUTCDate()).padStart(2, '0') + '/' + 
+               String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + 
+               d.getUTCFullYear();
+    };
+
+    var durationMs = endMs - startMs;
+    var durationSecs = Math.floor(durationMs / 1000); 
+    
+    var numPoints = visibleSpO2.length;
+    var missingSecs = durationSecs - numPoints;
+    if (missingSecs < 0) missingSecs = 0;
+
+    var spo2_lt_90 = 0, spo2_lt_85 = 0;
+    for (var i = 0; i < visibleSpO2.length; i++) {
+        var v = visibleSpO2[i][1];
+        if (v < 90) spo2_lt_90++;
+        if (v < 85) spo2_lt_85++;
+    }
+
+    var bpm_gt_80 = 0, bpm_gt_90 = 0, bpm_gt_100 = 0;
+    for (var j = 0; j < visibleBPM.length; j++) {
+        var b = visibleBPM[j][1];
+        if (b > 80) bpm_gt_80++;
+        if (b > 90) bpm_gt_90++;
+        if (b > 100) bpm_gt_100++;
+    }
+
+    var durDiv = (durationSecs > 0) ? durationSecs : 1;
+    var pct = function(val) {
+        return ((val / durDiv) * 100).toFixed(1) + '%';
+    };
+
+    var spo2Color = (chart.series[1] && chart.series[1].color) || '#90ee7e';
+    var bpmColor  = (chart.series[2] && chart.series[2].color) || '#f45b5b';
+
+    var html = '<h2>Resumen</h2>';
+    html += '<div class="s-row"><strong>Duración:</strong> ' + formatDuration(durationMs) + '</div>';
+    html += '<div class="s-row"><strong>Inicio:</strong> ' + formatDate(startDate) + ' ' + formatTime(startDate) + ' &nbsp; <strong>Fin:</strong> ' + formatTime(endDate) + '</div>';
+    html += '<div class="s-sub">Puntos no registrados: ' + missingSecs + ' seg (Diff: ' + durationSecs + 's - ' + numPoints + ' pts)</div>';
+
+    html += '<div class="s-group" style="color: ' + spo2Color + '; border-left-color: ' + spo2Color + ';">';
+    html += '<div class="s-row">Tiempo SpO2 &lt; 90: ' + formatDuration(spo2_lt_90 * 1000) + ' (' + pct(spo2_lt_90) + ')</div>';
+    html += '<div class="s-row">Tiempo SpO2 &lt; 85: ' + formatDuration(spo2_lt_85 * 1000) + ' (' + pct(spo2_lt_85) + ')</div>';
+    html += '</div>';
+
+    html += '<div class="s-group" style="color: ' + bpmColor + '; border-left-color: ' + bpmColor + ';">';
+    html += '<div class="s-row">Tiempo BPM &gt; 80: ' + formatDuration(bpm_gt_80 * 1000) + ' (' + pct(bpm_gt_80) + ')</div>';
+    html += '<div class="s-row">Tiempo BPM &gt; 90: ' + formatDuration(bpm_gt_90 * 1000) + ' (' + pct(bpm_gt_90) + ')</div>';
+    html += '<div class="s-row">Tiempo BPM &gt; 100: ' + formatDuration(bpm_gt_100 * 1000) + ' (' + pct(bpm_gt_100) + ')</div>';
+    html += '</div>';
+
+    var sumContent = document.getElementById('summary-content');
+    if (sumContent) sumContent.innerHTML = html;
 }
 
 /* ───────────────────────────────────────────────────────────
