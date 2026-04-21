@@ -600,14 +600,14 @@ function load_day() {
         });
 }
 
-// Function to format ms into HH:MM:SS
+// Function to format ms into HHhMMmSSs
 function formatDuration(ms) {
     if (ms < 0) ms = 0;
     var totalSeconds = Math.floor(ms / 1000);
     var h = Math.floor(totalSeconds / 3600);
     var m = Math.floor((totalSeconds % 3600) / 60);
     var s = totalSeconds % 60;
-    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    return String(h).padStart(2, '0') + 'h' + String(m).padStart(2, '0') + 'm' + String(s).padStart(2, '0') + 's';
 }
 
 function updateSummary(minVal, maxVal) {
@@ -664,18 +664,40 @@ function updateSummary(minVal, maxVal) {
     if (missingSecs < 0) missingSecs = 0;
 
     var spo2_lt_90 = 0, spo2_lt_85 = 0;
+    var spo2Sum = 0;
     for (var i = 0; i < visibleSpO2.length; i++) {
         var v = visibleSpO2[i][1];
+        spo2Sum += v;
         if (v < 90) spo2_lt_90++;
         if (v < 85) spo2_lt_85++;
     }
+    var spo2Mean = 0, spo2Dev = 0;
+    if (visibleSpO2.length > 0) {
+        spo2Mean = spo2Sum / visibleSpO2.length;
+        var diffSum = 0;
+        for (var i = 0; i < visibleSpO2.length; i++) {
+            diffSum += Math.abs(visibleSpO2[i][1] - spo2Mean);
+        }
+        spo2Dev = diffSum / visibleSpO2.length;
+    }
 
     var bpm_gt_80 = 0, bpm_gt_90 = 0, bpm_gt_100 = 0;
+    var bpmSum = 0;
     for (var j = 0; j < visibleBPM.length; j++) {
         var b = visibleBPM[j][1];
+        bpmSum += b;
         if (b > 80) bpm_gt_80++;
         if (b > 90) bpm_gt_90++;
         if (b > 100) bpm_gt_100++;
+    }
+    var bpmMean = 0, bpmDev = 0;
+    if (visibleBPM.length > 0) {
+        bpmMean = bpmSum / visibleBPM.length;
+        var bDiffSum = 0;
+        for (var j = 0; j < visibleBPM.length; j++) {
+            bDiffSum += Math.abs(visibleBPM[j][1] - bpmMean);
+        }
+        bpmDev = bDiffSum / visibleBPM.length;
     }
 
     var durDiv = (durationSecs > 0) ? durationSecs : 1;
@@ -687,16 +709,18 @@ function updateSummary(minVal, maxVal) {
     var bpmColor  = (chart.series[2] && chart.series[2].color) || '#f45b5b';
 
     var html = '<h2>Resumen</h2>';
-    html += '<div class="s-row"><strong>Duración:</strong> ' + formatDuration(durationMs) + '</div>';
+    html += '<div class="s-row" style="font-size: 1.2rem; margin-bottom: 10px;"><strong>Duración:</strong> ' + formatDuration(durationMs) + '</div>';
     html += '<div class="s-row"><strong>Inicio:</strong> ' + formatDate(startDate) + ' ' + formatTime(startDate) + ' &nbsp; <strong>Fin:</strong> ' + formatTime(endDate) + '</div>';
     html += '<div class="s-sub">Puntos no registrados: ' + missingSecs + ' seg (Diff: ' + durationSecs + 's - ' + numPoints + ' pts)</div>';
 
     html += '<div class="s-group" style="color: ' + spo2Color + '; border-left-color: ' + spo2Color + ';">';
+    html += '<div class="s-row" style="margin-bottom: 8px;"><strong>SpO2 = ' + spo2Mean.toFixed(2) + ' ± ' + spo2Dev.toFixed(2) + '</strong></div>';
     html += '<div class="s-row">Tiempo SpO2 &lt; 90: ' + formatDuration(spo2_lt_90 * 1000) + ' (' + pct(spo2_lt_90) + ')</div>';
     html += '<div class="s-row">Tiempo SpO2 &lt; 85: ' + formatDuration(spo2_lt_85 * 1000) + ' (' + pct(spo2_lt_85) + ')</div>';
     html += '</div>';
 
     html += '<div class="s-group" style="color: ' + bpmColor + '; border-left-color: ' + bpmColor + ';">';
+    html += '<div class="s-row" style="margin-bottom: 8px;"><strong>BPM = ' + bpmMean.toFixed(2) + ' ± ' + bpmDev.toFixed(2) + '</strong></div>';
     html += '<div class="s-row">Tiempo BPM &gt; 80: ' + formatDuration(bpm_gt_80 * 1000) + ' (' + pct(bpm_gt_80) + ')</div>';
     html += '<div class="s-row">Tiempo BPM &gt; 90: ' + formatDuration(bpm_gt_90 * 1000) + ' (' + pct(bpm_gt_90) + ')</div>';
     html += '<div class="s-row">Tiempo BPM &gt; 100: ' + formatDuration(bpm_gt_100 * 1000) + ' (' + pct(bpm_gt_100) + ')</div>';
