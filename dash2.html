@@ -338,14 +338,16 @@ Dashboards.board('dashboard-container', {
                         labels: { align: 'right', x: -4 },
                         title: { text: 'SpO2 & bpm' },
                         endOnTick: false,
-                        showLastLabel: true
+                        showLastLabel: true,
+                        showEmpty: false
                     },
                     {
                         labels: { align: 'left', x: 8 },
                         title: { text: 'P.I.' },
                         top: '75%',
                         height: '25%',
-                        offset: 0
+                        offset: 0,
+                        showEmpty: false
                     }
                 ],
                 legend: { enabled: true },
