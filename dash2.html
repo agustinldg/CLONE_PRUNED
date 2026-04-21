@@ -577,7 +577,7 @@ function addGroupingButtons(chart) {
         if (gpwGroups[i].value === currentGpw) btn.setState(2);
     });
 
-    // ── Y-Axis toggle button + LED indicator, placed below the legend ──
+    // ── Y-Axis toggle button + LED indicator, placed to the left of legend ──
     if (chart.yAxisToggleBtn) {
         chart.yAxisToggleBtn.destroy();
         chart.yAxisToggleBtn = null;
@@ -588,8 +588,7 @@ function addGroupingButtons(chart) {
     }
 
     var legendGroup = chart.legend.group;
-    var lBBox       = legendGroup.getBBox();
-    var btnY        = Math.round(legendGroup.translateY + lBBox.height + 10);
+    var btnY        = Math.round(legendGroup.translateY);
     var dotR        = 5;
     var gap         = 7;
 
@@ -602,8 +601,7 @@ function addGroupingButtons(chart) {
     ).add();
 
     var tBBox    = yToggleBtn.getBBox();
-    var totalW   = dotR * 2 + gap + tBBox.width;
-    var blockX   = Math.round((chart.chartWidth - totalW) / 2);
+    var blockX   = 15; // Placed at the left
     var dotCY    = Math.round(btnY + tBBox.height / 2);
 
     // LED dot: green = auto, gray = fixed
