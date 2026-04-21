@@ -46,6 +46,18 @@
         }
 
         /* ── Override Dashboards cells for dark look ─────── */
+        :root, .highcharts-dashboards {
+            --highcharts-dashboards-color-surface: #16213e;
+            --highcharts-dashboards-color-background: transparent;
+        }
+        
+        .highcharts-dashboards, 
+        .highcharts-dashboards-wrapper, 
+        .highcharts-dashboards-board, 
+        .highcharts-dashboards-cell {
+            background: transparent !important;
+        }
+
         .highcharts-dashboards-component {
             background: #16213e !important;
             border: 1px solid #0f3460 !important;
@@ -126,6 +138,22 @@
             font-size: 0.7rem;
             color: #555;
             padding: 18px 0 10px;
+        }
+
+        /* ── Mobile Responsive Adjustments ──────────────────── */
+        @media (max-width: 768px) {
+            #dashboard-container {
+                padding: 10px 2px;
+            }
+            .nav-controls {
+                margin: 12px 4px 0;
+                padding: 12px 6px;
+                gap: 6px;
+            }
+            .nav-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
