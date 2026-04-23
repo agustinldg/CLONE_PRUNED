@@ -1,0 +1,90 @@
+Dame solo un plan de lo que debemos hacer, no cambies nada todavia , 
+Solo debes mirar/modificar el script dash2.html
+
+
+Añade 5 nuevos graficos al dashboard.(2 por linea,empezando por una nueva linea) :
+
+1. Grafico Temperatura: Mostrara las curvas de las temperaturas, tanto interior como exterior
+2. Grafico Humedad: Mostrara las curvas de las humedades, tanto interior como exterior.
+3. Grafico Pressure: Mostrara las curvas de las presiones, tanto interior como exterior.
+4. Grafico Noise: Mostrara la curva del ruido interior.
+5. Grafico CO2: Mostrara la curva del CO2 interior.
+
+
+
+La fecha/hora para llamar a su json es la misma que la del grafico principal load_last_avail_day()
+el grafico se titulara : Temperatura/Humedad/Co2/Ruido/Presion (dia de la semana), (dd/mm/yyyy hh24:mm ) del parametro mandado-24h .ejemplo:   Temperaturas  miercoles, 22/04/2026 18:00
+
+el json se compone de 2 series una D y una B, cada una con 9 campos de valores numericos
+La serie  "D" representa el dia actual y  "B" el dia anterior.
+
+Los valores son los siguientes:
+1. MEASURE_UTC ->es la fecha hora de los datos , el eje x 
+2. INDOOR_TEMPERATURE
+3. INDOOR_HUMIDITY
+4. INDOOR_CO2
+5. INDOOR_NOISE
+6. INDOOR_PRESSURE
+7. OUTDOOR_PRESSURE
+8. OUTDOOR_TEMPERATURE
+9. OUTDOOR_HUMIDITY
+
+
+
+Será un grafico de lineas .Es necesario que sea un highstock? Yo creo que no, por ahora solo necesitamos un highchart, pero si crees que es mejor un highstock, adelante.
+Representara todos los datos recibidos INDOOR frente a su dia/hora de la serie  "D"
+y los de la serie del dia anterior (serie "B") .sin añadir un nuevo eje pero suporponiendolo al otro.Es decir, se mmostraran  tambien sus valores pero en el mismo eje X ,probablemente tengas que sumar 24 horas a la fecha del dia anterior para que se posicionen bien.
+
+
+Para los graficos de temperatura/humedad y presion,en los que existe la informacion OUTDOOR existe dentro del json recibido se crearan las correspondientes series, (D y B) pero apareceran desactivadas.
+Para los graficos de ruido y co2 solo existe la serie indoor por lo que solo se creara esa serie.
+
+
+
+
+los valores outdoor deben de representarse con el mismo color pero mas suaves y con un valor de transparencia al 50%, las lineas indoor seran mas gruesas para diferenciarlas,.
+
+
+cuando se active la serie B, esta sumara 24 horas a los valores de fecha/hora para que se posicionen bien y tendran los mismos colores y grosores que la serie D (INDOOR y OUTDOOR), pero las lineas seran discontinuas para diferenciarlas. 
+
+en la serie indoor temperature se añadiran en cada punto una etiqueta con su valor (ejempolo 27.5º) solo en la serie D , si la B estuviera activa no deben aparecer etiquetas.  Se mostrara en cada punto en donde este el punto.
+
+
+
+
+
+
+
+
+recuerdame que debo pedirte ,una vez todo listo ,media temp enrtre limites para el cuadro resumen y utc frente hora local
+
+
+ESte es el codigo que genera el json que reicibira el grafico:
+    WITH denorm AS (
+      SELECT MEASURE_UTC,
+          MAX(CASE WHEN ALIAS_ID = 'INDOOR' THEN TEMPERATURE END) INDOOR_TEMPERATURE,
+          MAX(CASE WHEN ALIAS_ID = 'INDOOR' THEN HUMIDITY END) INDOOR_HUMIDITY,
+          MAX(CASE WHEN ALIAS_ID = 'INDOOR' THEN CO2 END) INDOOR_CO2,
+          MAX(CASE WHEN ALIAS_ID = 'INDOOR' THEN NOISE END) INDOOR_NOISE,
+          MAX(CASE WHEN ALIAS_ID = 'INDOOR' THEN PRESSURE END) INDOOR_PRESSURE,
+          MAX(CASE WHEN ALIAS_ID = 'OUTDOOR_1' THEN PRESSURE END) OUTDOOR_PRESSURE,
+          MAX(CASE WHEN ALIAS_ID = 'OUTDOOR_2' THEN TEMPERATURE END) OUTDOOR_TEMPERATURE,
+          MAX(CASE WHEN ALIAS_ID = 'OUTDOOR_2' THEN HUMIDITY END) OUTDOOR_HUMIDITY,
+          CASE WHEN MEASURE_UTC >= l_end_date - 1 THEN 'D' ELSE 'B' END AS period
+      FROM PULSI.NETAMO_MEASURES
+      WHERE MEASURE_UTC BETWEEN l_end_date - 2 AND l_end_date
+      GROUP BY MEASURE_UTC
+    )
+    SELECT JSON_OBJECT(
+        'D' VALUE (SELECT JSON_ARRAYAGG(JSON_ARRAY(MEASURE_UTC, INDOOR_TEMPERATURE, INDOOR_HUMIDITY, INDOOR_CO2, INDOOR_NOISE, INDOOR_PRESSURE, OUTDOOR_PRESSURE, OUTDOOR_TEMPERATURE, OUTDOOR_HUMIDITY) ORDER BY MEASURE_UTC ASC RETURNING CLOB) FROM denorm WHERE period = 'D'),
+        'B' VALUE (SELECT JSON_ARRAYAGG(JSON_ARRAY(MEASURE_UTC, INDOOR_TEMPERATURE, INDOOR_HUMIDITY, INDOOR_CO2, INDOOR_NOISE, INDOOR_PRESSURE, OUTDOOR_PRESSURE, OUTDOOR_TEMPERATURE, OUTDOOR_HUMIDITY) ORDER BY MEASURE_UTC ASC RETURNING CLOB) FROM denorm WHERE period = 'B')
+        RETURNING CLOB
+    ) INTO l_json_clob
+    FROM dual;
+
+y esto es un curl de ejemplo para llamarlo:
+curl -H "Content-Type: application/json" -X GET "https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/PULSI/pulsi/v6/netamodata?end_date_utc=2025-11-22%2021:04:56"
+
+NOta:Resulta que la nueva API de Oracle en la base de datos está devolviendo un trozo de texto literal Content-type: application/json justo antes del JSON verdadero (seguramente por algún HTP.P que se quedó en el script de la base de datos), lo que hace que el navegador falle al intentar leerlo directamente como un JSON.
+
+En lugar de tener que tocar y reprogramar el servidor Oracle ahora mismo, tenlo en cuenta en el codigo de dash2.html para que sea inteligente: ahora lee el texto crudo, limpia cualquier cabecera extraña de este tipo que se cuele, y luego procesa el JSON real.   
