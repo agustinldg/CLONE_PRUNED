@@ -289,3 +289,12 @@ how many points you have
 and your target (real-time vs static)
 
 I can tell you whether this will actually be a problem in your case 👍
+
+
+
+Highcharts.chart('container', {
+    caption: {
+        text: '<b>The caption renders in the bottom, and is part of the exported chart.</b>'
+    },
+    // ...
+});

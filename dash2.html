@@ -283,7 +283,7 @@ Dashboards.PluginHandler.addPlugin(Dashboards.HighchartsPlugin);
    App State
    ─────────────────────────────────────────────────────────── */
 var globalChart = null;
-var appState = { currentDate: null, currentData: { spo2: [], bpm: [] }, pulsiTimeRange: null };
+var appState = { currentDate: null, currentData: { spo2: [], bpm: [] }, pulsiTimeRange: null, netatmoTempD: [] };
 var _resizeTimer = null;
 var meteoCharts = {};
 
@@ -571,6 +571,7 @@ function load_day() {
 
     // Reset Pulsi time range so stale plotLines are not applied to new meteo charts
     appState.pulsiTimeRange = null;
+    appState.netatmoTempD = [];
 
     var d = appState.currentDate;
     var year    = d.getFullYear();
@@ -765,6 +766,38 @@ function updateSummary(minVal, maxVal) {
         bpmDev = bDiffSum / visibleBPM.length;
     }
 
+    var tempMean = 0, tempDev = 0;
+    var visibleTemp = [];
+    if (appState.netatmoTempD && appState.netatmoTempD.length > 0) {
+        visibleTemp = appState.netatmoTempD.filter(function(p) { return p[0] >= minVal && p[0] <= maxVal; });
+        if (visibleTemp.length === 0) {
+            // Manejo de intervalos estrechos: buscar el último valor disponible justo antes o en minVal
+            var lastPoint = null;
+            for (var k = appState.netatmoTempD.length - 1; k >= 0; k--) {
+                if (appState.netatmoTempD[k][0] <= minVal) {
+                    lastPoint = appState.netatmoTempD[k];
+                    break;
+                }
+            }
+            if (lastPoint) {
+                visibleTemp.push(lastPoint);
+            }
+        }
+        
+        if (visibleTemp.length > 0) {
+            var tempSum = 0;
+            for (var k = 0; k < visibleTemp.length; k++) {
+                tempSum += visibleTemp[k][1];
+            }
+            tempMean = tempSum / visibleTemp.length;
+            var tempDiffSum = 0;
+            for (var k = 0; k < visibleTemp.length; k++) {
+                tempDiffSum += Math.abs(visibleTemp[k][1] - tempMean);
+            }
+            tempDev = tempDiffSum / visibleTemp.length;
+        }
+    }
+
     var durDiv = (durationSecs > 0) ? durationSecs : 1;
     var pct = function(val) {
         return ((val / durDiv) * 100).toFixed(2) + '%';
@@ -778,6 +811,15 @@ function updateSummary(minVal, maxVal) {
     html += '<div class="s-row"><strong>Inicio:</strong> ' + formatDate(startDate) + ' ' + formatTime(startDate) + ' &nbsp; <strong>Fin:</strong> ' + formatTime(endDate) + '</div>';
     html += '<div class="s-sub">Puntos no registrados: ' + missingSecs + ' seg (Diff: ' + durationSecs + 's - ' + numPoints + ' pts)</div>';
 
+    if (visibleTemp.length > 0) {
+        var tempColor = '#f45b5b'; // Color de Temp Interior en el gráfico
+        html += '<div class="s-group" style="color: ' + tempColor + '; border-left-color: ' + tempColor + ';">';
+        html += '<div class="s-row"><strong>Temperatura habitación:</strong> ' + tempMean.toFixed(1) + 'º ± ' + tempDev.toFixed(1) + 'º</div>';
+        html += '</div>';
+    }
+
+
+
     html += '<div class="s-group" style="color: ' + spo2Color + '; border-left-color: ' + spo2Color + ';">';
     html += '<div class="s-row" style="margin-bottom: 8px;"><strong>SpO2 = </strong><span style="font-size: 1.2rem; font-weight: bold;">' + spo2Mean.toFixed(2) + ' ± ' + spo2Dev.toFixed(2) + '</span></div>';
     html += '<div class="s-row">Tiempo SpO2 &lt; 90: ' + formatDuration(spo2_lt_90 * 1000) + ' (' + pct(spo2_lt_90) + ')</div>';
@@ -790,6 +832,8 @@ function updateSummary(minVal, maxVal) {
     html += '<div class="s-row">Tiempo BPM &gt; 90: ' + formatDuration(bpm_gt_90 * 1000) + ' (' + pct(bpm_gt_90) + ')</div>';
     html += '<div class="s-row">Tiempo BPM &gt; 100: ' + formatDuration(bpm_gt_100 * 1000) + ' (' + pct(bpm_gt_100) + ')</div>';
     html += '</div>';
+
+
 
     var sumContent = document.getElementById('summary-content');
     if (sumContent) sumContent.innerHTML = html;
@@ -1095,6 +1139,10 @@ function renderMeteoCharts(data) {
             }
         });
 
+        if (def.id === 'temperature') {
+            appState.netatmoTempD = dIndoor;
+        }
+
         // Parse series B — shift +24h so it overlays on the same X axis
         seriesB.forEach(function (row) {
             var ts = parseNetatmoTimestamp(row[0]);
@@ -1236,6 +1284,9 @@ function renderMeteoCharts(data) {
     }
     // (if Pulsi hasn't finished yet, applyPulsiPlotLines() will be called
     //  from the Pulsi fetch .then() once it completes)
+
+    // Trigger a summary update to show the temperature data now that it is available
+    updateSummary();
 }
 
 /* ───────────────────────────────────────────────────────────
