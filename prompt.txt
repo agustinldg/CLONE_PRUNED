@@ -88,3 +88,33 @@ curl -H "Content-Type: application/json" -X GET "https://dxj025rr2cyvhje-db20200
 NOta:Resulta que la nueva API de Oracle en la base de datos está devolviendo un trozo de texto literal Content-type: application/json justo antes del JSON verdadero (seguramente por algún HTP.P que se quedó en el script de la base de datos), lo que hace que el navegador falle al intentar leerlo directamente como un JSON.
 
 En lugar de tener que tocar y reprogramar el servidor Oracle ahora mismo, tenlo en cuenta en el codigo de dash2.html para que sea inteligente: ahora lee el texto crudo, limpia cualquier cabecera extraña de este tipo que se cuele, y luego procesa el JSON real.   
+
+
+
+
+new prompt;
+You only need to read dash2.html,no any other file.
+for the moment just give me a plan , no modifications till my approval 
+
+
+add two new charts to the dashboard, after the RESUMEN in a new row.
+
+fist new chart is an histogram of th SpO2
+second one is an histogram of the bpm
+
+In both cases thes graph will represent dinamically the values in the navigator limits.
+Maintin the asynchronousity of the data loading. threre are no new GET rest to do, so it wil be no difficult.
+
+SPO2 bins will be "<85","85-89" (85 to 89 both values inclusive ),"90-95","96-100"
+
+BPM bins will be "<60","60-69" (60 to 69 both values inclusive ),"70-79","80-89","90-99","100-109","110-119",">=120"
+
+each bin will count the points (that are seconds) in the navegator limits for each spo2 and bpm data
+the label of each bar (bin) will show the time ,the number of point in that bin, represented as hh:mm:ss and the percentage of that bin  in the total number of points within the limits.
+
+the function updateSummary already calculs spo2_lt_90, spo2_lt_85 etc.You can reuse this logic to calulate the histogram bins to be ploted.Try to reuse it , not no redo the same calculations.Give me options on how to do this, when can slighty modify the RESUMEN section , if that helps.
+
+
+
+
+

@@ -341,7 +341,13 @@ Dashboards.board('dashboard-container', {
                 cells: [{ id: 'cell-summary' }]
             }, {
                 cells: [
+                    { id: 'cell-hist-spo2' },
+                    { id: 'cell-hist-bpm' }
+                ]
+            }, {
+                cells: [
                     { id: 'cell-meteo-temp' },
+
                     { id: 'cell-meteo-hum' }
                 ]
             }, {
@@ -524,6 +530,16 @@ Dashboards.board('dashboard-container', {
             renderTo: 'cell-summary',
             type: 'HTML',
             html: '<div id="summary-content">Cargando resumen...</div>'
+        },
+        {
+            renderTo: 'cell-hist-spo2',
+            type: 'HTML',
+            html: '<div id="chart-hist-spo2" class="meteo-cell" style="min-height: 280px;"></div>'
+        },
+        {
+            renderTo: 'cell-hist-bpm',
+            type: 'HTML',
+            html: '<div id="chart-hist-bpm" class="meteo-cell" style="min-height: 280px;"></div>'
         },
         {
             renderTo: 'cell-meteo-temp',
@@ -742,14 +758,18 @@ function updateSummary(minVal, maxVal) {
     var missingSecs = durationSecs - numPoints;
     if (missingSecs < 0) missingSecs = 0;
 
-    var spo2_lt_90 = 0, spo2_lt_85 = 0;
+    var spo2_bins = [0, 0, 0, 0]; // <85, 85-89, 90-95, 96-100
     var spo2Sum = 0;
     for (var i = 0; i < visibleSpO2.length; i++) {
         var v = visibleSpO2[i][1];
         spo2Sum += v;
-        if (v < 90) spo2_lt_90++;
-        if (v < 85) spo2_lt_85++;
+        if (v < 85) spo2_bins[0]++;
+        else if (v <= 89) spo2_bins[1]++;
+        else if (v <= 95) spo2_bins[2]++;
+        else spo2_bins[3]++;
     }
+    var spo2_lt_85 = spo2_bins[0];
+    var spo2_lt_90 = spo2_bins[0] + spo2_bins[1];
     var spo2Mean = 0, spo2Dev = 0;
     if (visibleSpO2.length > 0) {
         spo2Mean = spo2Sum / visibleSpO2.length;
@@ -760,15 +780,23 @@ function updateSummary(minVal, maxVal) {
         spo2Dev = diffSum / visibleSpO2.length;
     }
 
-    var bpm_gt_80 = 0, bpm_gt_90 = 0, bpm_gt_100 = 0;
+    var bpm_bins = [0, 0, 0, 0, 0, 0, 0, 0]; // <60, 60-69, 70-79, 80-89, 90-99, 100-109, 110-119, >=120
     var bpmSum = 0;
     for (var j = 0; j < visibleBPM.length; j++) {
         var b = visibleBPM[j][1];
         bpmSum += b;
-        if (b > 80) bpm_gt_80++;
-        if (b > 90) bpm_gt_90++;
-        if (b > 100) bpm_gt_100++;
+        if (b < 60) bpm_bins[0]++;
+        else if (b <= 69) bpm_bins[1]++;
+        else if (b <= 79) bpm_bins[2]++;
+        else if (b <= 89) bpm_bins[3]++;
+        else if (b <= 99) bpm_bins[4]++;
+        else if (b <= 109) bpm_bins[5]++;
+        else if (b <= 119) bpm_bins[6]++;
+        else bpm_bins[7]++;
     }
+    var bpm_gt_80 = bpm_bins[3] + bpm_bins[4] + bpm_bins[5] + bpm_bins[6] + bpm_bins[7];
+    var bpm_gt_90 = bpm_bins[4] + bpm_bins[5] + bpm_bins[6] + bpm_bins[7];
+    var bpm_gt_100 = bpm_bins[5] + bpm_bins[6] + bpm_bins[7];
     var bpmMean = 0, bpmDev = 0;
     if (visibleBPM.length > 0) {
         bpmMean = bpmSum / visibleBPM.length;
@@ -850,6 +878,86 @@ function updateSummary(minVal, maxVal) {
 
     var sumContent = document.getElementById('summary-content');
     if (sumContent) sumContent.innerHTML = html;
+
+    // --- Update Histograms ---
+    if (!window.histSpO2 && document.getElementById('chart-hist-spo2')) {
+        window.histSpO2 = Highcharts.chart('chart-hist-spo2', {
+            chart: { type: 'bar', backgroundColor: '#16213e', height: 280 },
+            title: { text: 'Distribución SpO2', style: { color: '#ccc', fontSize: '13px' } },
+            xAxis: { categories: ['<85', '85-89', '90-95', '96-100'], labels: { style: { color: '#aaa', fontSize: '11px' } }, lineColor: '#1e3a5f', tickColor: '#1e3a5f' },
+            yAxis: { title: { text: null }, labels: { enabled: false }, gridLineWidth: 0 },
+            legend: { enabled: false },
+            credits: { enabled: false },
+            plotOptions: {
+                bar: {
+                    borderWidth: 0,
+                    dataLabels: {
+                        enabled: true,
+                        color: '#fff',
+                        style: { textOutline: 'none', fontSize: '11px', fontWeight: 'normal' },
+                        align: 'left',
+                        inside: true,
+                        formatter: function() {
+                            if (this.y === 0) return null;
+                            var total = this.series.options.totalPoints || 1;
+                            var pct = ((this.y / total) * 100).toFixed(1) + '%';
+                            var h = String(Math.floor(this.y / 3600)).padStart(2, '0');
+                            var m = String(Math.floor((this.y % 3600) / 60)).padStart(2, '0');
+                            var s = String(this.y % 60).padStart(2, '0');
+                            return h + ':' + m + ':' + s + ' | ' + pct;
+                        }
+                    }
+                }
+            },
+            series: [{ name: 'SpO2', data: [], color: spo2Color }]
+        });
+    }
+
+    if (!window.histBPM && document.getElementById('chart-hist-bpm')) {
+        window.histBPM = Highcharts.chart('chart-hist-bpm', {
+            chart: { type: 'bar', backgroundColor: '#16213e', height: 280 },
+            title: { text: 'Distribución BPM', style: { color: '#ccc', fontSize: '13px' } },
+            xAxis: { categories: ['<60', '60-69', '70-79', '80-89', '90-99', '100-109', '110-119', '>=120'], labels: { style: { color: '#aaa', fontSize: '11px' } }, lineColor: '#1e3a5f', tickColor: '#1e3a5f' },
+            yAxis: { title: { text: null }, labels: { enabled: false }, gridLineWidth: 0 },
+            legend: { enabled: false },
+            credits: { enabled: false },
+            plotOptions: {
+                bar: {
+                    borderWidth: 0,
+                    dataLabels: {
+                        enabled: true,
+                        color: '#fff',
+                        style: { textOutline: 'none', fontSize: '11px', fontWeight: 'normal' },
+                        align: 'left',
+                        inside: true,
+                        formatter: function() {
+                            if (this.y === 0) return null;
+                            var total = this.series.options.totalPoints || 1;
+                            var pct = ((this.y / total) * 100).toFixed(1) + '%';
+                            var h = String(Math.floor(this.y / 3600)).padStart(2, '0');
+                            var m = String(Math.floor((this.y % 3600) / 60)).padStart(2, '0');
+                            var s = String(this.y % 60).padStart(2, '0');
+                            return h + ':' + m + ':' + s + ' | ' + pct;
+                        }
+                    }
+                }
+            },
+            series: [{ name: 'BPM', data: [], color: bpmColor }]
+        });
+    }
+
+    if (window.histSpO2) {
+        window.histSpO2.series[0].update({ totalPoints: visibleSpO2.length }, false);
+        window.histSpO2.series[0].setData(spo2_bins, false);
+        window.histSpO2.series[0].update({ color: spo2Color }, false);
+        window.histSpO2.redraw();
+    }
+    if (window.histBPM) {
+        window.histBPM.series[0].update({ totalPoints: visibleBPM.length }, false);
+        window.histBPM.series[0].setData(bpm_bins, false);
+        window.histBPM.series[0].update({ color: bpmColor }, false);
+        window.histBPM.redraw();
+    }
 }
 
 /* ───────────────────────────────────────────────────────────
