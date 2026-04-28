@@ -190,28 +190,11 @@
             }
         }
 
-        /* ── Meteo Charts Grid ──────────────────────── */
-        .meteo-charts-grid {
-            max-width: 1400px;
-            margin: 20px auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            padding: 0 16px;
-        }
-        .meteo-charts-grid .meteo-chart-card {
-            background: #16213e;
-            border: 1px solid #0f3460;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            padding: 8px;
-            min-height: 350px;
-        }
-        /* CO2 (5th chart, odd last child) → centered */
-        .meteo-charts-grid .meteo-chart-card:last-child:nth-child(odd) {
-            grid-column: 1 / -1;
-            max-width: 50%;
-            justify-self: center;
+        /* ── Meteo Charts Dashboard Integration ───────────────── */
+        /* Ensure cells for meteo charts have consistent height */
+        .meteo-cell {
+            min-height: 360px;
+            margin: 8px 0;
         }
         @media (max-width: 768px) {
             .meteo-charts-grid {
@@ -232,15 +215,6 @@
 
 <!-- Dashboard container (Highcharts Dashboards renders the chart here) -->
 <div id="dashboard-container"></div>
-
-<!-- Meteo Charts (Netatmo) -->
-<div class="meteo-charts-grid">
-    <div class="meteo-chart-card"><div id="chart-temperature" style="height:340px"></div></div>
-    <div class="meteo-chart-card"><div id="chart-humidity" style="height:340px"></div></div>
-    <div class="meteo-chart-card"><div id="chart-pressure" style="height:340px"></div></div>
-    <div class="meteo-chart-card"><div id="chart-noise" style="height:340px"></div></div>
-    <div class="meteo-chart-card"><div id="chart-co2" style="height:340px"></div></div>
-</div>
 
 <!-- Navigation buttons (plain HTML, outside dashboard to avoid onclick issues) -->
 <div class="nav-controls">
@@ -365,6 +339,20 @@ Dashboards.board('dashboard-container', {
                 cells: [{ id: 'cell-chart' }]
             }, {
                 cells: [{ id: 'cell-summary' }]
+            }, {
+                cells: [
+                    { id: 'cell-meteo-temp' },
+                    { id: 'cell-meteo-hum' }
+                ]
+            }, {
+                cells: [
+                    { id: 'cell-meteo-pres' },
+                    { id: 'cell-meteo-noise' }
+                ]
+            }, {
+                cells: [
+                    { id: 'cell-meteo-co2' }
+                ]
             }]
         }]
     },
@@ -536,6 +524,31 @@ Dashboards.board('dashboard-container', {
             renderTo: 'cell-summary',
             type: 'HTML',
             html: '<div id="summary-content">Cargando resumen...</div>'
+        },
+        {
+            renderTo: 'cell-meteo-temp',
+            type: 'HTML',
+            html: '<div id="chart-temperature" class="meteo-cell"></div>'
+        },
+        {
+            renderTo: 'cell-meteo-hum',
+            type: 'HTML',
+            html: '<div id="chart-humidity" class="meteo-cell"></div>'
+        },
+        {
+            renderTo: 'cell-meteo-pres',
+            type: 'HTML',
+            html: '<div id="chart-pressure" class="meteo-cell"></div>'
+        },
+        {
+            renderTo: 'cell-meteo-noise',
+            type: 'HTML',
+            html: '<div id="chart-noise" class="meteo-cell"></div>'
+        },
+        {
+            renderTo: 'cell-meteo-co2',
+            type: 'HTML',
+            html: '<div id="chart-co2" class="meteo-cell"></div>'
         }
     ]
 });
