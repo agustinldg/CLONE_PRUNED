@@ -576,7 +576,7 @@ function load_last_avail_day() {
     var now = new Date();
     var targetDate = new Date(now);
     targetDate.setHours(18, 0, 0, 0);
-    if (now.getHours() < 23) {
+    if (now.getHours() < 22) {
         targetDate.setDate(targetDate.getDate() - 1);
     }
     appState.currentDate = targetDate;
