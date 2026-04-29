@@ -260,7 +260,7 @@ Dashboards.PluginHandler.addPlugin(Dashboards.HighchartsPlugin);
    App State
    ─────────────────────────────────────────────────────────── */
 var globalChart = null;
-var appState = { currentDate: null, currentData: { spo2: [], bpm: [] }, pulsiTimeRange: null, netatmoTempD: [] };
+var appState = { currentDate: null, currentData: { spo2: [], bpm: [] }, pulsiTimeRange: null, netatmoTempD: [], netatmoTempB: [] };
 var _resizeTimer = null;
 var meteoCharts = {};
 
@@ -646,6 +646,7 @@ function load_day() {
     // Reset Pulsi time range so stale plotLines are not applied to new meteo charts
     appState.pulsiTimeRange = null;
     appState.netatmoTempD = [];
+    appState.netatmoTempB = [];
 
     var d = appState.currentDate;
     var year    = d.getFullYear();
@@ -853,7 +854,9 @@ function updateSummary(minVal, maxVal) {
     }
 
     var tempMean = 0, tempDev = 0;
+    var tempBMean = 0, tempBDev = 0;
     var visibleTemp = [];
+    var visibleTempB = [];
     if (appState.netatmoTempD && appState.netatmoTempD.length > 0) {
         visibleTemp = appState.netatmoTempD.filter(function(p) { return p[0] >= minVal && p[0] <= maxVal; });
         if (visibleTemp.length === 0) {
@@ -884,6 +887,35 @@ function updateSummary(minVal, maxVal) {
         }
     }
 
+    if (appState.netatmoTempB && appState.netatmoTempB.length > 0) {
+        visibleTempB = appState.netatmoTempB.filter(function(p) { return p[0] >= minVal && p[0] <= maxVal; });
+        if (visibleTempB.length === 0) {
+            var lastPointB = null;
+            for (var k = appState.netatmoTempB.length - 1; k >= 0; k--) {
+                if (appState.netatmoTempB[k][0] <= minVal) {
+                    lastPointB = appState.netatmoTempB[k];
+                    break;
+                }
+            }
+            if (lastPointB) {
+                visibleTempB.push(lastPointB);
+            }
+        }
+        
+        if (visibleTempB.length > 0) {
+            var tempBSum = 0;
+            for (var k = 0; k < visibleTempB.length; k++) {
+                tempBSum += visibleTempB[k][1];
+            }
+            tempBMean = tempBSum / visibleTempB.length;
+            var tempBDiffSum = 0;
+            for (var k = 0; k < visibleTempB.length; k++) {
+                tempBDiffSum += Math.abs(visibleTempB[k][1] - tempBMean);
+            }
+            tempBDev = tempBDiffSum / visibleTempB.length;
+        }
+    }
+
     var durDiv = (durationSecs > 0) ? durationSecs : 1;
     var pct = function(val) {
         return ((val / durDiv) * 100).toFixed(2) + '%';
@@ -901,6 +933,10 @@ function updateSummary(minVal, maxVal) {
         var tempColor = '#f45b5b'; // Color de Temp Interior en el gráfico
         html += '<div class="s-group" style="color: ' + tempColor + '; border-left-color: ' + tempColor + ';">';
         html += '<div class="s-row"><strong>Temperatura habitación:</strong> ' + tempMean.toFixed(1) + 'º ± ' + tempDev.toFixed(1) + 'º</div>';
+        if (visibleTempB.length > 0) {
+            html += '<div class="s-row"><strong>Temperatura habitación ayer (*):</strong> ' + tempBMean.toFixed(1) + 'º ± ' + tempBDev.toFixed(1) + 'º</div>';
+            html += '<div class="s-row" style="font-size: 0.75rem; font-style: italic; color: #aaa;">(*) Media calculada en el horario de sueño de hoy</div>';
+        }
         html += '</div>';
     }
 
@@ -1321,10 +1357,6 @@ function renderMeteoCharts(data) {
             }
         });
 
-        if (def.id === 'temperature') {
-            appState.netatmoTempD = dIndoor;
-        }
-
         // Parse series B — shift +24h so it overlays on the same X axis
         seriesB.forEach(function (row) {
             var ts = parseNetatmoTimestamp(row[0]);
@@ -1341,6 +1373,11 @@ function renderMeteoCharts(data) {
                 }
             }
         });
+
+        if (def.id === 'temperature') {
+            appState.netatmoTempD = dIndoor;
+            appState.netatmoTempB = bIndoor;
+        }
 
         // Build series array
         var chartSeries = [];
