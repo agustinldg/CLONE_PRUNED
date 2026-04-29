@@ -933,13 +933,21 @@ function updateSummary(minVal, maxVal) {
             yAxis: { title: { text: null }, labels: { enabled: false }, gridLineWidth: 0 },
             legend: { enabled: false },
             credits: { enabled: false },
+            tooltip: {
+                formatter: function() {
+                    var h = String(Math.floor(this.y / 3600)).padStart(2, '0');
+                    var m = String(Math.floor((this.y % 3600) / 60)).padStart(2, '0');
+                    var s = String(this.y % 60).padStart(2, '0');
+                    return '<b>' + this.x + '</b><br/>' + this.series.name + ': ' + h + 'h' + m + 'm' + s + 's';
+                }
+            },
             plotOptions: {
                 bar: {
                     borderWidth: 0,
                     dataLabels: {
                         enabled: true,
                         color: '#fff',
-                        style: { textOutline: 'none', fontSize: '11px', fontWeight: 'normal' },
+                        style: { textOutline: '2px #000', fontSize: '11px', fontWeight: 'bold' },
                         align: 'left',
                         inside: true,
                         formatter: function() {
@@ -949,7 +957,7 @@ function updateSummary(minVal, maxVal) {
                             var h = String(Math.floor(this.y / 3600)).padStart(2, '0');
                             var m = String(Math.floor((this.y % 3600) / 60)).padStart(2, '0');
                             var s = String(this.y % 60).padStart(2, '0');
-                            return h + ':' + m + ':' + s + ' | ' + pct;
+                            return h + 'h' + m + 'm' + s + 's | ' + pct;
                         }
                     }
                 }
@@ -966,13 +974,21 @@ function updateSummary(minVal, maxVal) {
             yAxis: { title: { text: null }, labels: { enabled: false }, gridLineWidth: 0 },
             legend: { enabled: false },
             credits: { enabled: false },
+            tooltip: {
+                formatter: function() {
+                    var h = String(Math.floor(this.y / 3600)).padStart(2, '0');
+                    var m = String(Math.floor((this.y % 3600) / 60)).padStart(2, '0');
+                    var s = String(this.y % 60).padStart(2, '0');
+                    return '<b>' + this.x + '</b><br/>' + this.series.name + ': ' + h + 'h' + m + 'm' + s + 's';
+                }
+            },
             plotOptions: {
                 bar: {
                     borderWidth: 0,
                     dataLabels: {
                         enabled: true,
                         color: '#fff',
-                        style: { textOutline: 'none', fontSize: '11px', fontWeight: 'normal' },
+                        style: { textOutline: '2px #000', fontSize: '11px', fontWeight: 'bold' },
                         align: 'left',
                         inside: true,
                         formatter: function() {
@@ -982,7 +998,7 @@ function updateSummary(minVal, maxVal) {
                             var h = String(Math.floor(this.y / 3600)).padStart(2, '0');
                             var m = String(Math.floor((this.y % 3600) / 60)).padStart(2, '0');
                             var s = String(this.y % 60).padStart(2, '0');
-                            return h + ':' + m + ':' + s + ' | ' + pct;
+                            return h + 'h' + m + 'm' + s + 's | ' + pct;
                         }
                     }
                 }
