@@ -241,6 +241,9 @@
 <script src="https://unpkg.com/highcharts@11.4.0/highstock.js"></script>
 <script src="https://unpkg.com/highcharts@11.4.0/highcharts-more.js"></script>
 <script src="https://unpkg.com/highcharts@11.4.0/modules/accessibility.js"></script>
+<script src="https://unpkg.com/highcharts@11.4.0/modules/exporting.js"></script>
+<script src="https://unpkg.com/highcharts@11.4.0/modules/export-data.js"></script>
+<script src="https://unpkg.com/highcharts@11.4.0/modules/offline-exporting.js"></script>
 
 <!-- 2. Highcharts Dashboards + layout module -->
 <script src="https://unpkg.com/@highcharts/dashboards@3.1.0/dashboards.js"></script>
@@ -265,10 +268,52 @@ var meteoCharts = {};
    Dark theme (applied globally before board creation)
    ─────────────────────────────────────────────────────────── */
 Highcharts.setOptions({
+    exporting: {
+        enabled: true,
+        menuItemDefinitions: {
+            refreshData: {
+                onclick: function () {
+                    if (typeof load_day === 'function') {
+                        load_day();
+                    }
+                },
+                text: '⟳ Refresh Data'
+            }
+        },
+        buttons: {
+            contextButton: {
+                menuItems: [
+                    'refreshData',
+                    'separator',
+                    'viewFullscreen',
+                    'printChart',
+                    'separator',
+                    'downloadPNG',
+                    'downloadJPEG',
+                    'downloadPDF',
+                    'downloadSVG',
+                    'separator',
+                    'downloadCSV',
+                    'downloadXLS',
+                    'viewData'
+                ]
+            }
+        },
+        buttonOptions: {
+            theme: {
+                fill: 'transparent',
+                states: { hover: { fill: '#0f3460' }, select: { fill: '#0f3460' } }
+            }
+        },
+        menuItemHoverStyle: { background: '#7b2ff7', color: '#ffffff' },
+        menuStyle: { background: '#16213e', border: '1px solid #0f3460' },
+        menuItemStyle: { color: '#ccc' }
+    },
     chart: {
         backgroundColor: '#16213e',
         style: { fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
     },
+
     title:    { style: { color: '#e0e0e0' } },
     subtitle: { style: { color: '#999' } },
     xAxis: {
