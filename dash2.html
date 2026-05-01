@@ -247,11 +247,6 @@
     <a class="nav-btn accent" onclick="today()">● Today</a>
     <a class="nav-btn" onclick="next_day()">Next Day ▶</a>
     <a class="nav-btn" onclick="next_week()">Next Week ⏩</a>
-    <div class="separator"></div>
-    <a class="nav-btn" onclick="day_1()">31/1/2017</a>
-    <a class="nav-btn" onclick="day_2()">4/2/2017</a>
-    <a class="nav-btn accent" onclick="day_3()">13/11/2025 (API Data)</a>
-    <p class="nav-info">Click on legend names (O2%, BPM, PI, bpm stats) below the chart to toggle series</p>
 </div>
 
 <!-- Footer -->
@@ -669,9 +664,6 @@ function next_day()  { appState.currentDate.setDate(appState.currentDate.getDate
 function prev_week() { appState.currentDate.setDate(appState.currentDate.getDate() - 7); load_day(); }
 function next_week() { appState.currentDate.setDate(appState.currentDate.getDate() + 7); load_day(); }
 
-function day_1() { appState.currentDate = new Date(2017, 0, 31, 18, 0, 0, 0); load_day(); }
-function day_2() { appState.currentDate = new Date(2017, 1, 4,  18, 0, 0, 0); load_day(); }
-function day_3() { appState.currentDate = new Date(2026, 2, 20, 18, 0, 0, 0); load_day(); }
 
 function load_day() {
     var chart = globalChart;
