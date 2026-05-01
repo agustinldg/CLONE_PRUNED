@@ -107,63 +107,129 @@
             border-left: 2px solid #1e3a5f;
         }
 
-        /* ── Navigation buttons ──────────────────────────── */
-        .nav-controls {
-            max-width: 1800px;
-            margin: 16px auto 0;
+        /* ── FAB Speed-dial Navigation ────────────────────── */
+
+        /* Backdrop (tap outside to close) */
+        #fab-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 900;
+        }
+        #fab-backdrop.open { display: block; }
+
+        /* FAB container */
+        #fab-nav {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column-reverse;
+            align-items: flex-end;
             gap: 10px;
-            padding: 16px;
-            background: #16213e;
-            border: 1px solid #0f3460;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
-        .nav-controls .separator {
-            width: 100%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #0f3460, transparent);
-            margin: 4px 0;
-        }
-        .nav-btn {
-            display: inline-block;
-            padding: 8px 18px;
-            font-size: 13px;
-            font-weight: 600;
+
+        /* Main trigger button */
+        #fab-main {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
             cursor: pointer;
-            border: 1px solid #0f3460;
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            color: #a5b4fc;
-            border-radius: 6px;
-            transition: all 0.25s ease;
-            text-decoration: none;
+            background: linear-gradient(135deg, #7b2ff7, #f107a3);
+            color: #fff;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 24px rgba(123,47,247,0.55);
+            transition: transform 0.3s cubic-bezier(.34,1.56,.64,1),
+                        box-shadow 0.25s ease;
             user-select: none;
+            flex-shrink: 0;
         }
-        .nav-btn:hover {
+        #fab-main:hover {
+            box-shadow: 0 8px 28px rgba(241,7,163,0.6);
+        }
+        #fab-nav.open #fab-main {
+            transform: rotate(45deg);
+            background: linear-gradient(135deg, #f107a3, #7b2ff7);
+        }
+
+        /* Speed-dial action items */
+        .fab-actions {
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        .fab-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+            transition: opacity 0.22s ease, transform 0.28s cubic-bezier(.34,1.56,.64,1);
+            pointer-events: none;
+        }
+        #fab-nav.open .fab-item {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+        /* Stagger delays */
+        #fab-nav.open .fab-item:nth-child(1) { transition-delay: 0.00s; }
+        #fab-nav.open .fab-item:nth-child(2) { transition-delay: 0.05s; }
+        #fab-nav.open .fab-item:nth-child(3) { transition-delay: 0.10s; }
+        #fab-nav.open .fab-item:nth-child(4) { transition-delay: 0.15s; }
+
+        /* Label chip */
+        .fab-label {
+            background: rgba(22,33,62,0.95);
+            border: 1px solid #0f3460;
+            color: #a5b4fc;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 5px 11px;
+            border-radius: 20px;
+            white-space: nowrap;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+            backdrop-filter: blur(6px);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s, color 0.2s;
+        }
+        .fab-label:hover {
             background: linear-gradient(135deg, #7b2ff7, #f107a3);
             color: #fff;
             border-color: #7b2ff7;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 14px rgba(123,47,247,0.35);
         }
-        .nav-btn:active { transform: translateY(0); }
-        .nav-btn.accent {
-            background: linear-gradient(135deg, #0f3460, #533483);
-            border-color: #533483;
-            color: #c4b5fd;
+
+        /* Mini action button (circle) */
+        .fab-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid #0f3460;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #a5b4fc;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+            transition: all 0.22s ease;
+            user-select: none;
+            flex-shrink: 0;
         }
-        .nav-btn.accent:hover {
+        .fab-btn:hover {
             background: linear-gradient(135deg, #7b2ff7, #f107a3);
             color: #fff;
-        }
-        .nav-info {
-            width: 100%;
-            text-align: center;
-            font-size: 0.75rem;
-            color: #666;
-            padding: 4px 0 0;
+            border-color: #7b2ff7;
+            box-shadow: 0 5px 18px rgba(123,47,247,0.45);
+            transform: scale(1.1);
         }
 
         /* ── Footer ─────────────────────────────────────────── */
@@ -184,9 +250,9 @@
                 padding: 12px 6px;
                 gap: 6px;
             }
-            .nav-btn {
-                padding: 6px 12px;
-                font-size: 12px;
+            #fab-nav {
+                bottom: 16px;
+                right: 16px;
             }
             
             /* Stack dashboard cells on mobile */
@@ -240,14 +306,60 @@
 <!-- Dashboard container (Highcharts Dashboards renders the chart here) -->
 <div id="dashboard-container"></div>
 
-<!-- Navigation buttons (plain HTML, outside dashboard to avoid onclick issues) -->
-<div class="nav-controls">
-    <a class="nav-btn" onclick="prev_week()">⏪ Prev. Week</a>
-    <a class="nav-btn" onclick="prev_day()">◀ Prev. Day</a>
-    <a class="nav-btn accent" onclick="today()">● Today</a>
-    <a class="nav-btn" onclick="next_day()">Next Day ▶</a>
-    <a class="nav-btn" onclick="next_week()">Next Week ⏩</a>
+<!-- FAB backdrop (tap outside to close) -->
+<div id="fab-backdrop" onclick="closeFab()"></div>
+
+<!-- FAB Speed-dial Navigation -->
+<div id="fab-nav">
+    <!-- Action items (rendered bottom-to-top visually) -->
+    <div class="fab-actions">
+        <!-- Item 1: Prev Week (appears topmost) -->
+        <div class="fab-item" onclick="prev_week(); closeFab();">
+            <span class="fab-label">⏪ Prev. Week</span>
+            <button class="fab-btn" aria-label="Previous Week">⏪</button>
+        </div>
+        <!-- Item 2: Prev Day -->
+        <div class="fab-item" onclick="prev_day(); closeFab();">
+            <span class="fab-label">◀ Prev. Day</span>
+            <button class="fab-btn" aria-label="Previous Day">◀</button>
+        </div>
+        <!-- Item 3: Next Day -->
+        <div class="fab-item" onclick="next_day(); closeFab();">
+            <span class="fab-label">Next Day ▶</span>
+            <button class="fab-btn" aria-label="Next Day">▶</button>
+        </div>
+        <!-- Item 4: Next Week (appears bottommost, closest to FAB) -->
+        <div class="fab-item" onclick="next_week(); closeFab();">
+            <span class="fab-label">Next Week ⏩</span>
+            <button class="fab-btn" aria-label="Next Week">⏩</button>
+        </div>
+    </div>
+
+    <!-- Main FAB trigger = Today -->
+    <button id="fab-main" onclick="toggleFab()" aria-label="Navigation menu – Today">
+        ●
+    </button>
 </div>
+
+<script>
+    function toggleFab() {
+        var fab = document.getElementById('fab-nav');
+        var backdrop = document.getElementById('fab-backdrop');
+        var wasOpen = fab.classList.contains('open');
+        fab.classList.toggle('open');
+        backdrop.classList.toggle('open', !wasOpen);
+        // If it was already open, treat as "Today" tap
+        if (wasOpen) { today(); }
+    }
+    function closeFab() {
+        document.getElementById('fab-nav').classList.remove('open');
+        document.getElementById('fab-backdrop').classList.remove('open');
+    }
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeFab();
+    });
+</script>
 
 <!-- Footer -->
 <div class="dash-footer">© 2015-2026 Baby Monitor — Masimo Pulse Oximeter</div>
