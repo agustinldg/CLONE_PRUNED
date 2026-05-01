@@ -109,7 +109,7 @@
 
         /* ── FAB Speed-dial Navigation ────────────────────── */
 
-        /* Backdrop (tap outside to close) */
+        /* Backdrop – transparent, tap outside to close */
         #fab-backdrop {
             display: none;
             position: fixed;
@@ -118,118 +118,108 @@
         }
         #fab-backdrop.open { display: block; }
 
-        /* FAB container */
+        /* FAB container: column layout, main button at bottom, items fan UP above it */
         #fab-nav {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
+            bottom: 8px;
+            right: 16px;
             z-index: 1000;
             display: flex;
-            flex-direction: column-reverse;
+            flex-direction: column;   /* normal: .fab-actions above, #fab-main below */
             align-items: flex-end;
-            gap: 10px;
+            gap: 8px;
         }
 
-        /* Main trigger button */
+        /* Main trigger – subtle gray, unobtrusive */
         #fab-main {
-            width: 56px;
-            height: 56px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            border: none;
+            border: 1px solid rgba(255,255,255,0.08);
             cursor: pointer;
-            background: linear-gradient(135deg, #7b2ff7, #f107a3);
-            color: #fff;
-            font-size: 22px;
+            background: rgba(38, 40, 58, 0.82);
+            color: #6b7280;
+            font-size: 17px;
+            line-height: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 6px 24px rgba(123,47,247,0.55);
-            transition: transform 0.3s cubic-bezier(.34,1.56,.64,1),
-                        box-shadow 0.25s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.45);
+            backdrop-filter: blur(10px);
+            transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
             user-select: none;
             flex-shrink: 0;
         }
         #fab-main:hover {
-            box-shadow: 0 8px 28px rgba(241,7,163,0.6);
+            background: rgba(55, 58, 82, 0.95);
+            color: #9ca3af;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.55);
         }
         #fab-nav.open #fab-main {
-            transform: rotate(45deg);
-            background: linear-gradient(135deg, #f107a3, #7b2ff7);
+            background: rgba(50, 52, 78, 0.95);
+            color: #c4b5fd;
         }
 
-        /* Speed-dial action items */
+        /* Action chips container – items flow top→bottom (Prev Week topmost) */
         .fab-actions {
             display: flex;
-            flex-direction: column-reverse;
+            flex-direction: column;
             align-items: flex-end;
-            gap: 10px;
+            gap: 7px;
+            padding-bottom: 2px;
         }
+
+        /* Each action row: just the chip, no duplicate icon button */
         .fab-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
             opacity: 0;
-            transform: translateY(20px) scale(0.8);
-            transition: opacity 0.22s ease, transform 0.28s cubic-bezier(.34,1.56,.64,1);
+            /* Start below their final position (toward the main button) */
+            transform: translateY(18px);
+            transition: opacity 0.18s ease, transform 0.24s cubic-bezier(0.34,1.4,0.64,1);
             pointer-events: none;
+            cursor: pointer;
+            user-select: none;
         }
         #fab-nav.open .fab-item {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: translateY(0);
             pointer-events: auto;
         }
-        /* Stagger delays */
-        #fab-nav.open .fab-item:nth-child(1) { transition-delay: 0.00s; }
-        #fab-nav.open .fab-item:nth-child(2) { transition-delay: 0.05s; }
+        /* Stagger: bottom item (Next Week, 5th) first, top item (Prev Week, 1st) last */
+        #fab-nav.open .fab-item:nth-child(5) { transition-delay: 0.00s; }
+        #fab-nav.open .fab-item:nth-child(4) { transition-delay: 0.05s; }
         #fab-nav.open .fab-item:nth-child(3) { transition-delay: 0.10s; }
-        #fab-nav.open .fab-item:nth-child(4) { transition-delay: 0.15s; }
+        #fab-nav.open .fab-item:nth-child(2) { transition-delay: 0.15s; }
+        #fab-nav.open .fab-item:nth-child(1) { transition-delay: 0.20s; }
 
-        /* Label chip */
-        .fab-label {
-            background: rgba(22,33,62,0.95);
-            border: 1px solid #0f3460;
-            color: #a5b4fc;
+        /* Chip style: muted dark, no electric colors */
+        .fab-chip {
+            display: inline-block;
+            background: rgba(18, 24, 44, 0.90);
+            border: 1px solid rgba(60, 80, 120, 0.45);
+            color: #8b95b0;
             font-size: 12px;
             font-weight: 600;
-            padding: 5px 11px;
+            padding: 6px 14px;
             border-radius: 20px;
             white-space: nowrap;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
-            backdrop-filter: blur(6px);
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.2s, color 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            backdrop-filter: blur(10px);
+            transition: background 0.18s, color 0.18s, border-color 0.18s;
         }
-        .fab-label:hover {
-            background: linear-gradient(135deg, #7b2ff7, #f107a3);
-            color: #fff;
-            border-color: #7b2ff7;
+        .fab-item:hover .fab-chip {
+            background: rgba(35, 44, 75, 0.95);
+            color: #c4cde8;
+            border-color: rgba(100, 130, 200, 0.6);
         }
-
-        /* Mini action button (circle) */
-        .fab-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: 1px solid #0f3460;
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
+        /* Today chip – slightly distinguished but still subtle */
+        .fab-chip.today {
             color: #a5b4fc;
-            font-size: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.4);
-            transition: all 0.22s ease;
-            user-select: none;
-            flex-shrink: 0;
+            border-color: rgba(83, 52, 131, 0.6);
         }
-        .fab-btn:hover {
-            background: linear-gradient(135deg, #7b2ff7, #f107a3);
-            color: #fff;
-            border-color: #7b2ff7;
-            box-shadow: 0 5px 18px rgba(123,47,247,0.45);
-            transform: scale(1.1);
+        .fab-item:hover .fab-chip.today {
+            background: rgba(40, 35, 80, 0.95);
+            color: #c4b5fd;
+            border-color: rgba(120, 80, 200, 0.7);
         }
 
         /* ── Footer ─────────────────────────────────────────── */
@@ -251,8 +241,8 @@
                 gap: 6px;
             }
             #fab-nav {
-                bottom: 16px;
-                right: 16px;
+                bottom: 6px;
+                right: 10px;
             }
             
             /* Stack dashboard cells on mobile */
@@ -311,51 +301,43 @@
 
 <!-- FAB Speed-dial Navigation -->
 <div id="fab-nav">
-    <!-- Action items (rendered bottom-to-top visually) -->
+    <!-- Actions fan UPWARD above the main button (flex-direction:column, these are first) -->
     <div class="fab-actions">
-        <!-- Item 1: Prev Week (appears topmost) -->
-        <div class="fab-item" onclick="prev_week(); closeFab();">
-            <span class="fab-label">⏪ Prev. Week</span>
-            <button class="fab-btn" aria-label="Previous Week">⏪</button>
+        <div class="fab-item" onclick="prev_week(); closeFab();" title="Previous Week">
+            <span class="fab-chip">◀◀ Prev. Week</span>
         </div>
-        <!-- Item 2: Prev Day -->
-        <div class="fab-item" onclick="prev_day(); closeFab();">
-            <span class="fab-label">◀ Prev. Day</span>
-            <button class="fab-btn" aria-label="Previous Day">◀</button>
+        <div class="fab-item" onclick="prev_day(); closeFab();" title="Previous Day">
+            <span class="fab-chip">◀ Prev. Day</span>
         </div>
-        <!-- Item 3: Next Day -->
-        <div class="fab-item" onclick="next_day(); closeFab();">
-            <span class="fab-label">Next Day ▶</span>
-            <button class="fab-btn" aria-label="Next Day">▶</button>
+        <div class="fab-item" onclick="today(); closeFab();" title="Today">
+            <span class="fab-chip today">● Today</span>
         </div>
-        <!-- Item 4: Next Week (appears bottommost, closest to FAB) -->
-        <div class="fab-item" onclick="next_week(); closeFab();">
-            <span class="fab-label">Next Week ⏩</span>
-            <button class="fab-btn" aria-label="Next Week">⏩</button>
+        <div class="fab-item" onclick="next_day(); closeFab();" title="Next Day">
+            <span class="fab-chip">Next Day ▶</span>
+        </div>
+        <div class="fab-item" onclick="next_week(); closeFab();" title="Next Week">
+            <span class="fab-chip">Next Week ▶▶</span>
         </div>
     </div>
 
-    <!-- Main FAB trigger = Today -->
-    <button id="fab-main" onclick="toggleFab()" aria-label="Navigation menu – Today">
-        ●
-    </button>
+    <!-- Main toggle button (always visible at the bottom) -->
+    <button id="fab-main" onclick="toggleFab()" aria-label="Navigation menu">☰</button>
 </div>
 
 <script>
     function toggleFab() {
         var fab = document.getElementById('fab-nav');
         var backdrop = document.getElementById('fab-backdrop');
-        var wasOpen = fab.classList.contains('open');
-        fab.classList.toggle('open');
-        backdrop.classList.toggle('open', !wasOpen);
-        // If it was already open, treat as "Today" tap
-        if (wasOpen) { today(); }
+        var btn = document.getElementById('fab-main');
+        var isOpen = fab.classList.toggle('open');
+        backdrop.classList.toggle('open', isOpen);
+        btn.textContent = isOpen ? '✕' : '☰';
     }
     function closeFab() {
         document.getElementById('fab-nav').classList.remove('open');
         document.getElementById('fab-backdrop').classList.remove('open');
+        document.getElementById('fab-main').textContent = '☰';
     }
-    // Close on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeFab();
     });
