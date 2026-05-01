@@ -564,7 +564,6 @@ Dashboards.board('dashboard-container', {
                 title: { text: 'Oxygen Levels' },
                 xAxis: { 
                     type: 'datetime',
-                    tickPixelInterval: 200,   /* ~9 ticks on 1800px, fewer on mobile */
                     events: {
                         afterSetExtremes: function (e) {
                             updateSummary(e.min, e.max);
@@ -590,12 +589,14 @@ Dashboards.board('dashboard-container', {
                 ],
                 legend: { enabled: true },
                 plotOptions: {
-                    series: { gapSize: 60 },
+                    series: { 
+                        gapSize: 60,
+                        dataGrouping: { groupPixelWidth: 50 }
+                    },
                     line: { connectNulls: false },
                     columnrange: {
                         pointPadding: -0.25,
-                        minPointLength: 5,
-                        dataGrouping: { groupPixelWidth: 50 }
+                        minPointLength: 5
                     }
                 },
                 tooltip: {
