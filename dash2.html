@@ -21,7 +21,7 @@
 
         /* ── Dashboard wrapper ──────────────────────────────── */
         #dashboard-container {
-            max-width: 1400px;
+            max-width: 1800px;
             margin: 0 auto;
             padding: 20px 16px;
         }
@@ -109,7 +109,7 @@
 
         /* ── Navigation buttons ──────────────────────────── */
         .nav-controls {
-            max-width: 1400px;
+            max-width: 1800px;
             margin: 16px auto 0;
             display: flex;
             flex-wrap: wrap;
@@ -177,7 +177,7 @@
         /* ── Mobile Responsive Adjustments ──────────────────── */
         @media (max-width: 768px) {
             #dashboard-container {
-                padding: 10px 2px;
+                padding: 10px 8px; /* Slightly increased horizontal padding */
             }
             .nav-controls {
                 margin: 12px 4px 0;
@@ -187,6 +187,30 @@
             .nav-btn {
                 padding: 6px 12px;
                 font-size: 12px;
+            }
+            
+            /* Stack dashboard cells on mobile */
+            .highcharts-dashboards-row {
+                flex-direction: column !important;
+                display: flex;
+                gap: 16px; /* Added gap between vertically stacked cells */
+            }
+            .highcharts-dashboards-cell {
+                flex: 1 1 100% !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            #cell-chart {
+                min-height: 450px !important;
+            }
+            #cell-summary {
+                max-width: 100% !important;
+                min-width: unset !important;
+            }
+            /* Make meteo charts scale naturally and reduce height */
+            .meteo-cell {
+                min-height: 250px !important;
+                margin: 4px 0;
             }
         }
 
@@ -497,6 +521,17 @@ Dashboards.board('dashboard-container', {
                     ],
                     selected: 3,
                     inputEnabled: true
+                },
+                responsive: {
+                    rules: [{
+                        condition: { maxWidth: 500 },
+                        chartOptions: {
+                            yAxis: [
+                                { title: { text: '' } },
+                                { title: { text: '' } }
+                            ]
+                        }
+                    }]
                 },
                 series: [
                     {
