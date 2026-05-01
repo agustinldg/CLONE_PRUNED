@@ -273,8 +273,8 @@ Highcharts.setOptions({
         menuItemDefinitions: {
             refreshData: {
                 onclick: function () {
-                    if (typeof load_day === 'function') {
-                        load_day();
+                    if (typeof load_last_avail_day === 'function') {
+                        load_last_avail_day();
                     }
                 },
                 text: '⟳ Refresh Data'
