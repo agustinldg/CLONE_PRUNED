@@ -73,6 +73,25 @@
             user-select: none;
         }
 
+        /* ── Estilos para el botón hamburguesa (Exporting menu) de Highcharts ── */
+        .highcharts-contextbutton,
+        .highcharts-contextbutton .highcharts-button-box {
+            fill: #1a264a !important; /* Tono un poco diferente al fondo #16213e */
+            stroke: #1e3a5f !important;
+            transition: fill 0.2s;
+        }
+        .highcharts-contextbutton:hover,
+        .highcharts-contextbutton:hover .highcharts-button-box,
+        .highcharts-contextbutton.highcharts-button-hover,
+        .highcharts-contextbutton.highcharts-button-hover .highcharts-button-box {
+            fill: #2b3e75 !important; /* Color más claro para que el hover se note */
+            stroke: #4a6fa5 !important;
+            cursor: pointer;
+        }
+        .highcharts-contextbutton .highcharts-button-symbol {
+            stroke: #9ca3af !important; /* Suavizar el color de las líneas del menú */
+        }
+
         /* Summary cell limits */
         #cell-summary {
             margin: 20px auto;
@@ -128,6 +147,7 @@
             flex-direction: column;   /* normal: .fab-actions above, #fab-main below */
             align-items: flex-end;
             gap: 8px;
+            pointer-events: none; /* Permitir hacer clic a través de la caja transparente */
         }
 
         /* Main trigger – subtle gray, unobtrusive */
@@ -149,6 +169,7 @@
             transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
             user-select: none;
             flex-shrink: 0;
+            pointer-events: auto; /* El botón en sí sí es clickable */
         }
         #fab-main:hover {
             background: rgba(55, 58, 82, 0.95);
