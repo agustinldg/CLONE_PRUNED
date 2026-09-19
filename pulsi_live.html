@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="referrer" content="no-referrer">
+<title>PULSI · Live</title>
+<script>
+/* CONFIGURACIÓN · intervalos en milisegundos. Sin contraseñas ni secretos. */
+const PULSI_REFRESH_MS = 2_000;
+const NETAMO_REFRESH_MS = 300_000;
+const API_BASE_URL = 'https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/PULSI/pulsi/live/v1/';
+const INITIAL_WINDOW_MINUTES = 30;
+const RETAIN_MINUTES = 60;
+const RECONCILE_MS = 300_000;
+const REQUEST_TIMEOUT_MS = 15_000;
+const MAX_BACKOFF_MS = 60_000;
+const PAGE_SIZE = 2_000;
+const MAX_PAGES_PER_TICK = 8;
+const MAX_POINTS = 60_000;
+const PULSI_STALE_MS = 30_000;
+const NETAMO_STALE_MS = 1_200_000;
+const GAP_SECONDS = 10;
+const DISPLAY_TIMEZONE = 'Europe/Madrid'; // Solo NETAMO. Pulsi: reloj del dispositivo.
+const NETAMO_MODULES = { indoor: 'INDOOR', outdoor: 'OUTDOOR_2', outdoorPressure: 'OUTDOOR_1' };
+</script>
+<style>
+:root{--bg:#090f1b;--panel:#101929;--panel2:#131f31;--line:#243047;--text:#eaf0fa;--muted:#90a1ba;--cyan:#58d6e9;--pink:#ff89aa;--violet:#b4a1ff;--gold:#efc977;--green:#a9e79a;--radius:18px}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 60% -30%,#182940 0,transparent 58%),var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+button,input,select{font:inherit}button{cursor:pointer;color:inherit}button:disabled{opacity:.5;cursor:wait}button,input,select{outline-offset:4px}button:focus-visible,input:focus-visible{outline:2px solid var(--cyan)}a{color:var(--cyan)}
+.app{max-width:1560px;margin:auto;padding:30px 36px 22px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:30px}.brand{display:flex;gap:12px;align-items:center}.brand-icon{width:43px;height:43px;border:1px solid #3e626a;border-radius:13px;background:#132b34;color:var(--cyan);display:grid;place-items:center}.brand-name{font-size:24px;font-weight:750;letter-spacing:3px;line-height:1.1}.brand-name span{font-weight:400;font-size:13px;letter-spacing:1px;color:var(--muted);margin-left:9px}.eyebrow{font-size:10px;letter-spacing:1.9px;text-transform:uppercase;color:var(--muted);margin-top:6px}.top-actions{display:flex;gap:10px;align-items:center}.btn{border:1px solid var(--line);background:#152135;border-radius:9px;padding:9px 14px;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}.btn:hover{background:#213148}.btn.primary{background:var(--cyan);border-color:var(--cyan);color:#081720;font-weight:650}.btn.ghost{background:transparent;color:var(--muted)}.btn.small{font-size:12px;padding:7px 11px}.status{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}.dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}.status[data-state="live"]{color:var(--green)}.status[data-state="error"]{color:var(--pink)}.status[data-state="stale"],.status[data-state="demo"]{color:var(--gold)}
+.section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:18px}.section-heading h1{font-size:26px;letter-spacing:-.6px;font-weight:620;margin:0}.section-heading p{margin:5px 0 0;color:var(--muted);font-size:13px}.session-meta{text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted)}.session-meta strong{display:block;color:var(--text);font-size:13px;font-weight:500}.demo-banner{border:1px solid #6b5838;background:#29251c;border-radius:10px;padding:10px 15px;color:var(--gold);margin-bottom:20px;font-size:12px}.demo-banner strong{letter-spacing:1px;margin-right:8px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}.metric{position:relative;overflow:hidden;border:1px solid var(--line);background:linear-gradient(120deg,var(--panel2),var(--panel));border-radius:var(--radius);padding:19px 22px 16px;min-height:141px}.metric::after{content:"";position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);opacity:.65}.metric-head{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:12px}.metric-head b{color:var(--accent);font-size:13px;font-weight:600}.metric-value{margin-top:8px;font-size:43px;line-height:1.15;font-weight:560;letter-spacing:-1.5px;font-variant-numeric:tabular-nums}.metric-value small{color:var(--muted);font-size:14px;margin-left:8px;letter-spacing:0;font-weight:400}.metric-note{font-size:11px;color:var(--muted);margin-top:7px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}.chart-head{padding:20px 22px 0;display:flex;justify-content:space-between;align-items:center;gap:16px}.chart-title{font-weight:600;font-size:15px}.chart-title small{font-weight:400;color:var(--muted);display:block;font-size:11px;margin-top:4px}.chart-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.segmented{display:flex;padding:3px;border:1px solid var(--line);border-radius:9px;background:#0c1422}.segmented button{border:0;background:transparent;color:var(--muted);border-radius:6px;padding:5px 10px;font-size:12px}.segmented button[aria-pressed="true"]{background:#293a51;color:var(--text)}.chart-wrap{position:relative;margin:6px 8px 0}#chart{height:505px;width:100%}.chart-empty{position:absolute;inset:100px 70px 160px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}.chart-empty strong{font-size:17px;font-weight:550}.chart-empty p{max-width:420px;color:var(--muted);font-size:12px;margin-top:8px}.chart-foot{padding:12px 22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}.legend-key{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}.environment{margin-top:28px}.environment .section-heading{margin-bottom:14px}.environment h2{font-size:18px;margin:0;font-weight:580;letter-spacing:-.3px}.environment .section-heading p{font-size:12px}.env-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.env-card{padding:17px 18px}.env-name{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.env-icon{color:var(--cyan);font-size:16px}.env-row+.env-row{margin-top:13px;border-top:1px solid var(--line);padding-top:12px}.env-row-head{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--muted);gap:8px}.env-row-head .old{color:var(--gold)}.env-value{font-size:25px;line-height:1.4;letter-spacing:-.6px;font-variant-numeric:tabular-nums}.env-value small{font-size:11px;color:var(--muted);letter-spacing:0;margin-left:5px}.env-value .missing{font-size:13px;letter-spacing:0;color:var(--muted)}.footer{display:flex;justify-content:space-between;gap:18px;margin-top:24px;font-size:10px;color:#7387a4}.notice{margin-top:10px;font-size:12px;color:var(--gold);min-height:18px}.hidden,[hidden]{display:none!important}svg{display:block}dialog{color:var(--text);background:var(--panel);border:1px solid #3b4c68;border-radius:18px;padding:26px;width:min(520px,calc(100vw - 32px));box-shadow:0 30px 100px #0008}dialog::backdrop{background:#020713bb;backdrop-filter:blur(5px)}dialog h2{margin:0 0 8px;font-size:22px}dialog p{color:var(--muted);font-size:13px}dialog label{display:block;font-size:12px;margin:20px 0 7px}dialog input{width:100%;background:#0a1220;border:1px solid var(--line);border-radius:8px;padding:11px;color:var(--text)}dialog .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}.form-hint{font-size:11px;color:var(--muted);margin-top:7px}.form-error{color:var(--pink);font-size:12px;margin-top:10px}.sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}.highcharts-contextmenu hr{border-color:var(--line)}
+@media(min-width:1700px){.app{padding-top:40px}#chart{height:570px}}
+@media(max-width:1100px){.app{padding:24px}.env-grid{grid-template-columns:repeat(3,1fr)}.chart-head{align-items:flex-start}.chart-controls{justify-content:flex-end}.metric{padding:17px}.metric-value{font-size:36px}.metric-head{font-size:11px}}
+@media(max-width:720px){.app{padding:18px 14px}.topbar{align-items:flex-start;margin-bottom:24px;gap:10px}.brand-name{font-size:20px}.brand-icon{width:36px;height:36px}.top-actions{flex-wrap:wrap;justify-content:flex-end;gap:6px}.top-actions>.status{flex-basis:100%;justify-content:flex-end}.top-actions .btn{padding:7px 10px;font-size:11px}.eyebrow{font-size:8px}.section-heading h1{font-size:22px}.section-heading{align-items:flex-start}.session-meta{font-size:10px;max-width:140px}.session-meta strong{font-size:11px}.metrics{grid-template-columns:repeat(2,1fr);gap:10px}.metric{min-height:130px}.metric-value{font-size:38px}.chart-head{display:block;padding:16px 14px 0}.chart-controls{justify-content:space-between;gap:8px;margin-top:15px}.segmented button{padding:5px 8px}.chart-title small{font-size:10px}#chart{height:475px}.chart-wrap{margin:0}.chart-empty{inset:110px 45px 140px}.chart-foot{padding:10px 14px;flex-wrap:wrap;font-size:10px}.env-grid{grid-template-columns:repeat(2,1fr)}.env-card{padding:15px}.environment .section-heading{gap:10px}.environment .section-heading p{font-size:10px}.environment h2{font-size:17px}.footer{flex-direction:column;gap:4px}.brand-name span{display:none}.notice{font-size:11px}.status{font-size:11px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-icon" aria-hidden="true"><svg width="29" height="22" viewBox="0 0 29 22" fill="none"><path d="M1 12h6l3-8 5 15 4-11 3 4h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="brand-name">PULSI<span>LIVE</span></div><div class="eyebrow">Tu pulso, en perspectiva</div></div></div>
+    <div class="top-actions"><span id="connection-status" class="status" data-state="idle" role="status"><i class="dot"></i><span>Preparando conexión</span></span><button class="btn ghost" id="demo-button">Ver demo</button><button class="btn" id="settings-button">Conexión <span aria-hidden="true">↗</span></button></div>
+  </header>
+  <div id="demo-banner" class="demo-banner" hidden><strong>DEMOSTRACIÓN</strong> Datos simulados. No representan mediciones reales ni consultan Oracle.</div>
+  <section aria-labelledby="page-title">
+    <div class="section-heading"><div><h1 id="page-title">Una mirada al presente.</h1><p>Saturación, pulso y perfusión en tiempo real.</p></div><div class="session-meta">Última medición<strong id="last-reading">Esperando lecturas</strong></div></div>
+    <div class="metrics">
+      <article class="metric" style="--accent:var(--cyan)"><div class="metric-head"><span>Saturación de oxígeno</span><b>SpO₂</b></div><div class="metric-value"><span id="value-spo2">—</span><small>%</small></div><div class="metric-note">Oxígeno en sangre</div></article>
+      <article class="metric" style="--accent:var(--pink)"><div class="metric-head"><span>Frecuencia cardíaca</span><b>BPM</b></div><div class="metric-value"><span id="value-bpm">—</span><small>lpm</small></div><div class="metric-note">Latidos por minuto</div></article>
+      <article class="metric" style="--accent:var(--violet)"><div class="metric-head"><span>Índice de perfusión</span><b>PI</b></div><div class="metric-value"><span id="value-pi">—</span><small>%</small></div><div class="metric-note">Perfusión periférica</div></article>
+      <article class="metric" style="--accent:var(--gold)"><div class="metric-head"><span>Variabilidad pletismográfica</span><b>PVI</b></div><div class="metric-value"><span id="value-pvi">—</span><small>%</small></div><div class="metric-note">Variación de la perfusión</div></article>
+    </div>
+    <section class="panel" aria-label="Gráfico de lecturas del pulsioxímetro">
+      <div class="chart-head"><div class="chart-title">Evolución de las lecturas<small>Hora del dispositivo · sin conversión de zona horaria</small></div><div class="chart-controls"><div class="segmented" aria-label="Intervalo visible"><button data-range="5" aria-pressed="false">5 min</button><button data-range="15" aria-pressed="false">15 min</button><button data-range="30" aria-pressed="true">30 min</button><button data-range="60" aria-pressed="false">1 h</button></div><button id="pause-button" class="btn small">Ⅱ Pausar</button><button id="live-button" class="btn small primary" aria-pressed="true">● LIVE</button></div></div>
+      <div class="chart-wrap"><div id="chart"></div><div id="chart-empty" class="chart-empty"><strong id="empty-title">Esperando la primera lectura</strong><p id="empty-description">Las nuevas mediciones aparecerán aquí al conectar con Oracle.</p></div></div>
+      <div class="chart-foot"><span id="chart-mode"><i class="legend-key" style="background:var(--green)"></i>Seguimiento automático</span><span id="sample-count">0 lecturas</span><span id="pulsi-cadence"></span></div>
+    </section>
+    <div id="pulsi-notice" class="notice" role="status"></div>
+  </section>
+  <section class="environment" aria-labelledby="environment-title">
+    <div class="section-heading"><div><h2 id="environment-title">El ambiente que te rodea</h2><p>NETAMO · últimos valores disponibles de interior y exterior</p></div><div class="session-meta"><span id="netamo-status">Esperando conexión</span><strong id="netamo-cadence"></strong></div></div>
+    <div class="env-grid" id="environment-grid"></div>
+    <div id="netamo-notice" class="notice" role="status"></div>
+  </section>
+  <footer class="footer"><span>PULSI LIVE · Visualización de mediciones, sin interpretación clínica</span><span id="footer-mode">Oracle REST · Lectura incremental</span></footer>
+</div>
+<dialog id="connection-dialog" aria-labelledby="dialog-title">
+  <form id="connection-form"><h2 id="dialog-title">Conectar con Oracle</h2><p>Indica el servicio de lecturas. Esta instalación permite conectar sin token.</p>
+    <label for="api-url">URL base del servicio</label><input id="api-url" type="url" required spellcheck="false" autocomplete="off">
+    <div class="form-hint">Debe terminar en /ords/PULSI/pulsi/live/v1/</div>
+    <label for="api-token">Token de acceso ORDS (opcional)</label><input id="api-token" type="password" autocomplete="off" spellcheck="false" placeholder="Token temporal, sin el prefijo Bearer">
+    <div class="form-hint">Déjalo vacío para el acceso público. Si se usa, solo permanece en memoria durante esta sesión.</div>
+    <div class="form-error" id="connection-error" role="alert"></div>
+    <div class="form-actions"><button type="button" class="btn ghost" id="close-dialog">Cancelar</button><button type="submit" class="btn primary">Conectar</button></div>
+  </form>
+</dialog>
+<noscript>Activa JavaScript para visualizar las lecturas.</noscript>
+<script src="https://unpkg.com/highcharts@12.6.0/highstock.js"></script>
+<script src="https://unpkg.com/highcharts@12.6.0/modules/accessibility.js"></script>
+<script>
+'use strict';
+const PulsiCore = (() => {
+  const KEYS = ['spo2','bpm','pi','pvi'];
+  const wallTime = value => {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(value)) return NaN;
+    const t = Date.parse(value + 'Z');
+    return Number.isFinite(t) && new Date(t).toISOString().slice(0,19) === value ? t : NaN;
+  };
+  function normalize(row, receivedAt = Date.now()) {
+    if (!row || typeof row.id !== 'string' || !row.id || typeof row.created_at !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}$/.test(row.created_at)) throw Error('Lectura con identificador o fecha de llegada inválidos.');
+    const x = wallTime(row.date_pulsi);
+    if (!Number.isFinite(x)) throw Error('Fecha del pulsioxímetro inválida.');
+    const out = { ...row, x, receivedAt };
+    for (const k of KEYS) {
+      if (row[k] !== null && (typeof row[k] !== 'number' || !Number.isFinite(row[k]))) throw Error('Valor inválido: '+k);
+      out[k] = row[k];
+    }
+    if (typeof row.arrival_age_seconds !== 'number' || !Number.isFinite(row.arrival_age_seconds)) throw Error('Antigüedad inválida.');
+    return out;
+  }
+  function merge(map, raw, now = Date.now()) {
+    const rows = raw.map(r => normalize(r, now)); // Validate whole page before mutation.
+    let changed = false;
+    for (const row of rows) {
+      const old = map.get(row.id);
+      if (!old || old.x !== row.x || KEYS.some(k => row[k] !== old[k])) changed = true;
+      map.set(row.id, row);
+    }
+    return changed;
+  }
+  const sorted = map => [...map.values()].sort((a,b) => a.x-b.x || a.created_at.localeCompare(b.created_at));
+  function prune(map, minutes, maxPoints) {
+    const rows = sorted(map);
+    if (!rows.length) return false;
+    const cutoff = rows[rows.length-1].x-minutes*60000;
+    let capped = false;
+    rows.forEach((r,i) => { if (r.x<cutoff || i<rows.length-maxPoints) {map.delete(r.id); if (i<rows.length-maxPoints) capped=true;} });
+    return capped;
+  }
+  function series(rows, key, gapMs) {
+    const points=[]; let prev=null;
+    for (const row of rows) {
+      if (prev!==null && row.x-prev>gapMs) points.push([prev+1,null]);
+      points.push([row.x,row[key]]); prev=row.x;
+    }
+    return points;
+  }
+  function validatePage(p) {
+    if (!p || p.status!=='OK') throw Error(p?.message || 'Oracle no devolvió una respuesta válida.');
+    if (!Array.isArray(p.data) || typeof p.has_more!=='boolean' ||
+        typeof p.watermark!=='string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}$/.test(p.watermark) ||
+        (p.has_more && (typeof p.next_cursor!=='string' || !p.next_cursor || !p.data.length))) throw Error('Respuesta de paginación incompleta.');
+    return p;
+  }
+  function latestArrival(rows) {
+    return rows.reduce((a,b) => !a || b.created_at>a.created_at || (b.created_at===a.created_at && b.x>a.x) ? b:a,null);
+  }
+  function netamoRows(data, now = Date.now()) {
+    if (!Array.isArray(data)) throw Error('Respuesta de NETAMO inválida.');
+    return data.map(r => {
+      if (typeof r.module!=='string' || typeof r.metric!=='string' || typeof r.value!=='number' || !Number.isFinite(r.value) ||
+          typeof r.age_seconds!=='number' || !Number.isFinite(r.age_seconds) || typeof r.measured_at!=='string' || !Number.isFinite(Date.parse(r.measured_at))) throw Error('Lectura de NETAMO inválida.');
+      return {...r,receivedAt:now};
+    });
+  }
+  function selectNetamo(rows, metric, outside, modules) {
+    const module = outside ? (metric==='pressure'? modules.outdoorPressure:modules.outdoor) : modules.indoor;
+    return rows.find(r => r.metric===metric && r.module===module) || null;
+  }
+  return {KEYS,wallTime,normalize,merge,sorted,prune,series,validatePage,latestArrival,netamoRows,selectNetamo};
+})();
+
+(() => {
+  const $ = id => document.getElementById(id);
+  const metrics = [
+    {key:'spo2',name:'SpO₂',color:'#58d6e9',axis:0,unit:'%',digits:0},
+    {key:'bpm',name:'BPM',color:'#ff89aa',axis:1,unit:' lpm',digits:0},
+    {key:'pi',name:'PI',color:'#b4a1ff',axis:2,unit:'%',digits:2},
+    {key:'pvi',name:'PVI',color:'#efc977',axis:3,unit:'%',digits:0}
+  ];
+  const env = [
+    {key:'temperature',name:'Temperatura',unit:'°C',digits:1,icon:'◌'},
+    {key:'pressure',name:'Presión',unit:'hPa',digits:1,icon:'↧'},
+    {key:'humidity',name:'Humedad',unit:'%',digits:0,icon:'◈'},
+    {key:'noise',name:'Ruido',unit:'dB',digits:0,icon:'≋'},
+    {key:'co2',name:'CO₂',unit:'ppm',digits:0,icon:'○'}
+  ];
+  const state={base:API_BASE_URL,token:'',demo:new URLSearchParams(location.search).get('demo')==='1',paused:false,following:true,
+    range:INITIAL_WINDOW_MINUTES,rows:new Map(),netamo:[],watermark:null,cursor:null,initialMinutes:INITIAL_WINDOW_MINUTES,
+    lastReconcile:0,lastPulsi:0,lastNetamo:0,pulsiError:'',netamoError:'',failures:{pulsi:0,netamo:0},
+    timers:{},controllers:new Set(),generation:0,chart:null,capped:false,catchingUp:false,cycleReconcile:false,demoStep:0};
+  const fmt=(n,d=0)=>n===null||n===undefined?'—':new Intl.NumberFormat('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
+  const duration = ms => ms<60000?`${fmt(ms/1000)} s`:`${fmt(ms/60000)} min`;
+  const ageLabel = seconds => {
+    if (seconds< -60) return 'Hora futura';
+    seconds=Math.max(0,seconds);
+    return seconds<60?'Ahora':seconds<3600?`Hace ${Math.floor(seconds/60)} min`:seconds<86400?`Hace ${Math.floor(seconds/3600)} h`:`Hace ${Math.floor(seconds/86400)} d`;
+  };
+  const wallLabel=x=>new Intl.DateTimeFormat('es-ES',{timeZone:'UTC',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(x);
+  const netTime=value=>new Intl.DateTimeFormat('es-ES',{timeZone:DISPLAY_TIMEZONE,dateStyle:'short',timeStyle:'medium'}).format(new Date(value));
+  function makeEnv() {
+    $('environment-grid').innerHTML=env.map(m=>`<article class="panel env-card"><div class="env-name">${m.name}<span class="env-icon" aria-hidden="true">${m.icon}</span></div>${['indoor','outdoor'].map(side=>`<div class="env-row"><div class="env-row-head"><span>${side==='indoor'?'INTERIOR':'EXTERIOR'}</span><span id="${m.key}-${side}-age">—</span></div><div class="env-value" id="${m.key}-${side}-value"><span class="missing">Sin datos</span></div></div>`).join('')}</article>`).join('');
+    $('pulsi-cadence').textContent=`Pulsioxímetro · cada ${duration(PULSI_REFRESH_MS)}`;
+    $('netamo-cadence').textContent=`Cada ${duration(NETAMO_REFRESH_MS)}`;
+  }
+  function createChart() {
+    if (!window.Highcharts) {
+      $('empty-title').textContent='No se pudo cargar Highcharts';
+      $('empty-description').textContent='Comprueba el acceso a Internet y vuelve a abrir el HTML.';
+      $('pulsi-notice').textContent='La biblioteca del gráfico se carga desde unpkg.com.';
+      return false;
+    }
+    Highcharts.setOptions({lang:{thousandsSep:'.',decimalPoint:',',resetZoom:'Restablecer zoom'},time:{timezone:'UTC'}});
+    const axis=(title,color,top,height,opposite=false)=>({title:{text:title,style:{color,fontSize:'10px'}},labels:{style:{color:'#90a1ba',fontSize:'10px'}},top,height,opposite,offset:0,gridLineColor:'#233046',gridLineWidth:opposite?0:1,lineWidth:0,showLastLabel:true,startOnTick:false,endOnTick:false});
+    state.chart=Highcharts.stockChart('chart',{
+      chart:{backgroundColor:'transparent',animation:false,spacing:[22,12,12,12],style:{fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif'},zooming:{type:'x'},panning:{enabled:true,type:'x'},panKey:'shift'},
+      title:{text:null},credits:{enabled:false},rangeSelector:{enabled:false},scrollbar:{enabled:false},
+      accessibility:{enabled:true,description:'Evolución de SpO2 y pulso arriba; índices PI y PVI abajo. Las cuatro series comparten la hora del dispositivo.'},
+      legend:{enabled:true,align:'left',verticalAlign:'top',itemStyle:{color:'#b8c7da',fontSize:'11px',fontWeight:'500'},itemHiddenStyle:{color:'#4d5f77'},itemHoverStyle:{color:'#ffffff'},symbolWidth:18,itemDistance:22},
+      navigator:{height:30,margin:18,maskFill:'rgba(88,214,233,.08)',outlineColor:'#344760',handles:{backgroundColor:'#253750',borderColor:'#6b829f'},xAxis:{labels:{style:{color:'#8297b3'}}}},
+      xAxis:{type:'datetime',lineColor:'#31405a',tickColor:'#31405a',ordinal:false,crosshair:{color:'#7d93b0',dashStyle:'Dash'},labels:{style:{color:'#90a1ba',fontSize:'10px'}},events:{afterSetExtremes(e){if(e.trigger && e.trigger!=='live' && e.trigger!=='range'){state.following=false;renderFollow();}}}},
+      yAxis:[{...axis('SpO₂ %','#58d6e9','0%','62%'),softMin:90,softMax:100},
+        {...axis('BPM','#ff89aa','0%','62%',true),softMin:45,softMax:110},
+        {...axis('PI %','#b4a1ff','74%','26%'),softMin:0,softMax:5},
+        {...axis('PVI %','#efc977','74%','26%',true),softMin:0,softMax:30}],
+      tooltip:{shared:true,split:false,backgroundColor:'#0c1524',borderColor:'#3e536f',borderRadius:10,style:{color:'#eaf0fa'},xDateFormat:'%d/%m/%Y · %H:%M:%S',valueDecimals:1},
+      plotOptions:{series:{animation:false,lineWidth:1.8,marker:{enabled:false},connectNulls:false,dataGrouping:{enabled:false},states:{inactive:{opacity:1}},turboThreshold:0}},
+      series:metrics.map(m=>({id:m.key,name:m.name,type:'line',color:m.color,yAxis:m.axis,data:[],showInNavigator:m.key==='spo2',tooltip:{valueSuffix:m.unit,valueDecimals:m.digits}}))
+    });
+    return true;
+  }
+  function renderFollow() {
+    $('live-button').setAttribute('aria-pressed',String(state.following));
+    $('live-button').classList.toggle('primary',state.following);
+    $('chart-mode').textContent=state.paused?'Pausado · se conserva la vista':state.following?'● Seguimiento automático':'Explorando · siguen entrando lecturas';
+  }
+  function renderChart() {
+    const rows=PulsiCore.sorted(state.rows), chart=state.chart;
+    if (!chart) return;
+    const extremes=chart.xAxis[0].getExtremes();
+    metrics.forEach(m=>chart.get(m.key).setData(PulsiCore.series(rows,m.key,GAP_SECONDS*1000),false,false,false));
+    if (rows.length && state.following) {
+      const max=rows.at(-1).x;
+      chart.xAxis[0].setExtremes(max-state.range*60000,max+1000,false,false,{trigger:'live'});
+    } else if (rows.length && Number.isFinite(extremes.min) && Number.isFinite(extremes.max)) {
+      chart.xAxis[0].setExtremes(extremes.min,extremes.max,false,false,{trigger:'live'});
+    }
+    chart.redraw(false);
+    $('chart-empty').hidden=rows.length>0;
+    $('sample-count').textContent=`${fmt(rows.length)} lecturas${state.capped?' · límite de memoria alcanzado':''}`;
+    const last=rows.at(-1);
+    for (const m of metrics) $('value-'+m.key).textContent=last?fmt(last[m.key],m.digits):'—';
+    $('last-reading').textContent=last?wallLabel(last.x):'Esperando lecturas';
+    renderStatus();
+  }
+  function renderNetamo() {
+    for(const m of env) for(const side of ['indoor','outdoor']) {
+      const r=PulsiCore.selectNetamo(state.netamo,m.key,side==='outdoor',NETAMO_MODULES);
+      const value=$(`${m.key}-${side}-value`), age=$(`${m.key}-${side}-age`);
+      if (!r) {value.innerHTML='<span class="missing">Sin datos</span>';age.textContent='—';age.removeAttribute('title');age.classList.remove('old');continue;}
+      const seconds=r.age_seconds+(Date.now()-r.receivedAt)/1000;
+      value.replaceChildren(document.createTextNode(fmt(r.value,m.digits)));
+      const unit=document.createElement('small');unit.textContent=m.unit;value.append(unit);
+      age.textContent=ageLabel(seconds);age.classList.toggle('old',seconds*1000>NETAMO_STALE_MS||seconds< -60);
+      age.title=`${netTime(r.measured_at)} · ${r.module}`;
+    }
+  }
+  function renderStatus() {
+    const badge=$('connection-status'), text=badge.querySelector('span');
+    const arrival=PulsiCore.latestArrival([...state.rows.values()]);
+    const age=arrival?arrival.arrival_age_seconds*1000+Date.now()-arrival.receivedAt:Infinity;
+    let mode='idle',label='Conectando con Oracle';
+    if(state.demo){mode='demo';label=state.paused?'Demo pausada':'Datos simulados';}
+    else if(state.paused){mode='idle';label='Actualización pausada';}
+    else if(state.pulsiError){mode='error';label='Sin conexión';}
+    else if(state.lastPulsi){mode=age<PULSI_STALE_MS?'live':'stale';label=state.catchingUp?'Recuperando lecturas':age<PULSI_STALE_MS?'Recibiendo datos':'Conectado · sin datos recientes';}
+    badge.dataset.state=mode;text.textContent=label;
+    $('pulsi-notice').textContent=state.pulsiError || (state.catchingUp?'Recuperando páginas pendientes…':(!state.demo&&arrival&&age>=PULSI_STALE_MS?`Última llegada a Oracle: ${ageLabel(age/1000).toLowerCase()}. Se conservan las mediciones anteriores.`:''));
+    if(!state.rows.size && state.chart){$('empty-title').textContent=state.pulsiError?'No hay conexión con las lecturas':'Esperando la primera lectura';$('empty-description').textContent=state.pulsiError?'Revisa Conexión y comprueba que el nuevo script SQL esté instalado.':`No hay lecturas llegadas a Oracle en los últimos ${state.initialMinutes} minutos.`;}
+    $('netamo-status').textContent=state.netamoError?'No se pudo actualizar':state.paused?'Actualización pausada':state.lastNetamo?`Consulta ${ageLabel((Date.now()-state.lastNetamo)/1000).toLowerCase()}`:'Esperando conexión';
+    $('netamo-notice').textContent=state.netamoError;
+    renderFollow();
+  }
+  async function request(path,params,generation) {
+    const url=new URL(path,state.base);for(const [k,v] of Object.entries(params)) if(v!==null&&v!==undefined) url.searchParams.set(k,String(v));
+    const controller=new AbortController();state.controllers.add(controller);
+    const timeout=setTimeout(()=>controller.abort(),REQUEST_TIMEOUT_MS);
+    try {
+      const headers={Accept:'application/json'};if(state.token)headers.Authorization='Bearer '+state.token;
+      const response=await fetch(url,{headers,signal:controller.signal,cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer'});
+      if (generation!==state.generation) throw Error('cancelled');
+      if(response.status===401||response.status===403) throw Error('Acceso bloqueado por Oracle/ORDS. Revisa los privilegios del servicio; esta instalación está configurada sin token.');
+      if(response.status===404) throw Error('Endpoint no encontrado. Instala pulsi_live.sql y revisa la URL en Conexión.');
+      if(!response.ok)throw Error(`Oracle respondió HTTP ${response.status}. Se reintentará automáticamente.`);
+      const body=await response.json();if(body.status!=='OK')throw Error(body.message||'Oracle devolvió un error.');
+      return body;
+    } catch(error) {
+      if(generation!==state.generation)throw Error('cancelled');
+      if(error.name==='AbortError')throw Error('Oracle no respondió a tiempo. Se reintentará automáticamente.');
+      if(error instanceof TypeError)throw Error('No se pudo acceder a Oracle. Revisa la red, la URL y el origen permitido (CORS).');
+      if(error instanceof SyntaxError)throw Error('El servicio no devolvió JSON válido. Comprueba el endpoint y la autenticación.');
+      throw error;
+    } finally {clearTimeout(timeout);state.controllers.delete(controller);}
+  }
+  const watermarkAge=stamp=>Date.parse(stamp.slice(0,23)+'Z'); // diferencia relativa entre marcas del mismo servidor, no hora local.
+  async function pollPulsi(generation) {
+    if(state.demo){demoPulsi();return;}
+    if(!state.cursor)state.cycleReconcile=Boolean(state.watermark && Date.now()-state.lastReconcile>=RECONCILE_MS);
+    let params=state.cursor?{cursor:state.cursor}:state.cycleReconcile?{minutes:RETAIN_MINUTES}:state.watermark?{since:state.watermark}:{minutes:state.initialMinutes};
+    let changed=false;
+    try {
+    for(let page=0;page<MAX_PAGES_PER_TICK;page++) {
+      const body=PulsiCore.validatePage(await request('lecturas',{...params,limit:PAGE_SIZE},generation));
+      if(generation!==state.generation)return;
+      if(state.watermark && watermarkAge(body.watermark)<watermarkAge(state.watermark)-60000)throw Error('El reloj de Oracle retrocedió. Reconecta para iniciar una nueva ventana.');
+      if(body.has_more && body.next_cursor===params.cursor)throw Error('Oracle repitió el cursor de paginación.');
+      changed=PulsiCore.merge(state.rows,body.data)||changed;
+      state.cursor=body.has_more?body.next_cursor:null;state.catchingUp=body.has_more;state.lastPulsi=Date.now();
+      state.capped=PulsiCore.prune(state.rows,RETAIN_MINUTES,MAX_POINTS)||state.capped;
+      if(!body.has_more){state.watermark=body.watermark;if(state.cycleReconcile||!state.lastReconcile)state.lastReconcile=Date.now();state.cycleReconcile=false;break;}
+      params={cursor:state.cursor};
+    }
+    } finally {if(changed)renderChart();}
+  }
+  async function pollNetamo(generation) {
+    if(state.demo){demoNetamo();return;}
+    const body=await request('netamo/last',{},generation);
+    if(generation!==state.generation)return;
+    state.netamo=PulsiCore.netamoRows(body.data);state.lastNetamo=Date.now();renderNetamo();
+  }
+  async function run(kind,generation) {
+    if(generation!==state.generation||state.paused)return;
+    const interval=kind==='pulsi'?PULSI_REFRESH_MS:NETAMO_REFRESH_MS;
+    const started=Date.now();
+    try {
+      await (kind==='pulsi'?pollPulsi(generation):pollNetamo(generation));
+      if(generation!==state.generation)return;
+      state[kind+'Error']='';state.failures[kind]=0;
+    } catch(error) {
+      if(generation!==state.generation)return;
+      state[kind+'Error']=error.message;state.failures[kind]++;
+    }
+    renderStatus();
+    const delay=state.failures[kind]?Math.min(MAX_BACKOFF_MS,2000*2**Math.min(state.failures[kind]-1,5)):Math.max(250,interval-(Date.now()-started));
+    state.timers[kind]=setTimeout(()=>run(kind,generation),delay);
+  }
+  function cancel() {
+    state.generation++;Object.values(state.timers).forEach(clearTimeout);state.timers={};
+    for(const controller of state.controllers)controller.abort();state.controllers.clear();
+  }
+  function start(clear=true) {
+    cancel();state.paused=false;state.pulsiError='';state.netamoError='';state.failures={pulsi:0,netamo:0};
+    if(!clear && state.lastPulsi && Date.now()-state.lastPulsi>RETAIN_MINUTES*60000){state.watermark=null;state.cursor=null;state.cycleReconcile=false;}
+    if(clear){state.rows.clear();state.netamo=[];state.watermark=null;state.cursor=null;state.lastReconcile=0;state.lastPulsi=0;state.lastNetamo=0;state.capped=false;state.catchingUp=false;state.following=true;renderChart();renderNetamo();}
+    $('pause-button').textContent='Ⅱ Pausar';$('demo-banner').hidden=!state.demo;$('demo-button').textContent=state.demo?'Conectar Oracle':'Ver demo';
+    $('footer-mode').textContent=state.demo?'Modo demostración · datos simulados':'Oracle REST · Lectura incremental';
+    if(state.demo&&clear)seedDemo();
+    renderStatus();run('pulsi',state.generation);run('netamo',state.generation);
+  }
+  // Demo explícita: totalmente local, aislada de Oracle, sin fallback automático.
+  function demoRow(t,index) {
+    const wall=new Date(t).toISOString().slice(0,19), created=wall+'.000000';
+    return {id:wall+'|'+created,date_pulsi:wall,created_at:created,arrival_age_seconds:Math.max(0,(Date.now()-t)/1000),
+      spo2:Math.round(97+1.1*Math.sin(index/35)),bpm:Math.round(69+6*Math.sin(index/32)+2*Math.sin(index/4)),
+      pi:Math.round((2.4+.5*Math.sin(index/46)+.15*Math.sin(index/5))*100)/100,pvi:Math.round(13+3*Math.sin(index/49))};
+  }
+  function seedDemo(){const now=Math.floor(Date.now()/2000)*2000;const rows=[];for(let i=0;i<900;i++)rows.push(demoRow(now-(899-i)*2000,i));PulsiCore.merge(state.rows,rows);state.demoStep=900;renderChart();}
+  function demoPulsi(){const row=demoRow(Math.floor(Date.now()/1000)*1000,state.demoStep++);PulsiCore.merge(state.rows,[row]);PulsiCore.prune(state.rows,RETAIN_MINUTES,MAX_POINTS);state.lastPulsi=Date.now();renderChart();}
+  function demoNetamo(){const now=Date.now();const rows=[];const values={temperature:[22.4,18.7],pressure:[1017.2,1016.8],humidity:[48,62],noise:[34,null],co2:[612,null]};for(const m of env)for(let side=0;side<2;side++){const value=values[m.key][side];if(value===null)continue;const age=side?190:70;rows.push({module:side?(m.key==='pressure'?NETAMO_MODULES.outdoorPressure:NETAMO_MODULES.outdoor):NETAMO_MODULES.indoor,metric:m.key,value,age_seconds:age,measured_at:new Date(now-age*1000).toISOString()});}state.netamo=PulsiCore.netamoRows(rows);state.lastNetamo=now;renderNetamo();}
+
+  $('settings-button').addEventListener('click',()=>{$('api-url').value=state.base;$('api-token').value=state.token;$('connection-error').textContent='';$('connection-dialog').showModal();});
+  $('close-dialog').addEventListener('click',()=>{$('api-token').value='';$('connection-dialog').close();});
+  $('connection-dialog').addEventListener('close',()=>{$('api-token').value='';});
+  $('connection-form').addEventListener('submit',event=>{
+    event.preventDefault();
+    try {
+      const url=new URL($('api-url').value.trim());
+      if(url.username||url.password||url.search||url.hash||!['https:','http:'].includes(url.protocol))throw Error('Utiliza una URL base sin credenciales, parámetros ni fragmentos.');
+      if(url.protocol!=='https:'&&!['localhost','127.0.0.1','[::1]'].includes(url.hostname))throw Error('Utiliza HTTPS para conectar con Oracle.');
+      if(!url.pathname.endsWith('/'))url.pathname+='/';
+      const token=$('api-token').value.trim().replace(/^Bearer\s+/i,'');
+      if(/\s/.test(token))throw Error('El token no puede contener espacios ni saltos de línea.');
+      state.base=url.href;state.token=token;state.demo=false;$('connection-dialog').close();start();
+    } catch(error){$('connection-error').textContent=error.message;}
+  });
+  $('demo-button').addEventListener('click',()=>{state.demo=!state.demo;start();});
+  $('pause-button').addEventListener('click',()=>{
+    if(state.paused){if(state.lastPulsi&&Date.now()-state.lastPulsi>RETAIN_MINUTES*60000){state.watermark=null;state.cursor=null;}start(false);}
+    else{cancel();state.paused=true;$('pause-button').textContent='▶ Reanudar';renderStatus();}
+  });
+  $('live-button').addEventListener('click',()=>{state.following=true;if(state.paused)start(false);renderChart();});
+  document.querySelectorAll('[data-range]').forEach(button=>button.addEventListener('click',()=>{
+    state.range=Number(button.dataset.range);state.following=true;
+    document.querySelectorAll('[data-range]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+    if(state.range>state.initialMinutes&&!state.demo){state.initialMinutes=state.range;state.watermark=null;state.cursor=null;state.lastReconcile=0;start(false);}
+    renderChart();
+  }));
+  window.addEventListener('online',()=>{if(!state.paused&&!state.demo)start(false);});
+  window.addEventListener('pagehide',cancel);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!state.paused)start(false);});
+  makeEnv();
+  if(createChart()){start();setInterval(()=>{renderStatus();renderNetamo();},1000);}
+})();
+</script>
+</body>
+</html>
