@@ -9,18 +9,18 @@
 <script>
 /* CONFIGURACIÓN · intervalos en milisegundos. Sin contraseñas ni secretos. */
 const PULSI_REFRESH_MS = 2_000;
-const NETAMO_REFRESH_MS = 300_000;
+const NETAMO_REFRESH_MS = 900_000;
 const API_BASE_URL = 'https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/PULSI/pulsi/live/v1/';
 const INITIAL_WINDOW_MINUTES = 30;
 const RETAIN_MINUTES = 60;
-const RECONCILE_MS = 300_000;
+const PULSI_LATE_WINDOW_SECONDS = 10;
+const PULSI_RECHECK_ROWS = 2;
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_BACKOFF_MS = 60_000;
 const PAGE_SIZE = 2_000;
-const MAX_PAGES_PER_TICK = 8;
 const MAX_POINTS = 60_000;
 const PULSI_STALE_MS = 30_000;
-const NETAMO_STALE_MS = 1_200_000;
+const NETAMO_STALE_MS = Math.max(1_800_000, NETAMO_REFRESH_MS * 2);
 const GAP_SECONDS = 10;
 const DISPLAY_TIMEZONE = 'Europe/Madrid'; // Solo NETAMO. Pulsi: reloj del dispositivo.
 const NETAMO_MODULES = { indoor: 'INDOOR', outdoor: 'OUTDOOR_2', outdoorPressure: 'OUTDOOR_1' };
@@ -36,6 +36,7 @@ button,input,select{font:inherit}button{cursor:pointer;color:inherit}button:disa
 @media(max-width:720px){.app{padding:18px 14px}.topbar{align-items:flex-start;margin-bottom:24px;gap:10px}.brand-name{font-size:20px}.brand-icon{width:36px;height:36px}.top-actions{flex-wrap:wrap;justify-content:flex-end;gap:6px}.top-actions>.status{flex-basis:100%;justify-content:flex-end}.top-actions .btn{padding:7px 10px;font-size:11px}.eyebrow{font-size:8px}.section-heading h1{font-size:22px}.section-heading{align-items:flex-start}.session-meta{font-size:10px;max-width:140px}.session-meta strong{font-size:11px}.metrics{grid-template-columns:repeat(2,1fr);gap:10px}.metric{min-height:130px}.metric-value{font-size:38px}.chart-head{display:block;padding:16px 14px 0}.chart-controls{justify-content:space-between;gap:8px;margin-top:15px}.segmented button{padding:5px 8px}.chart-title small{font-size:10px}#chart{height:475px}.chart-wrap{margin:0}.chart-empty{inset:110px 45px 140px}.chart-foot{padding:10px 14px;flex-wrap:wrap;font-size:10px}.env-grid{grid-template-columns:repeat(2,1fr)}.env-card{padding:15px}.environment .section-heading{gap:10px}.environment .section-heading p{font-size:10px}.environment h2{font-size:17px}.footer{flex-direction:column;gap:4px}.brand-name span{display:none}.notice{font-size:11px}.status{font-size:11px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 </style>
+<style>.traffic-log{margin-top:8px;color:var(--muted);font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.traffic-log small{font:inherit;display:block;opacity:.8}</style>
 </head>
 <body>
 <div class="app">
@@ -65,6 +66,7 @@ button,input,select{font:inherit}button{cursor:pointer;color:inherit}button:disa
     <div id="netamo-notice" class="notice" role="status"></div>
   </section>
   <footer class="footer"><span>PULSI LIVE · Visualización de mediciones, sin interpretación clínica</span><span id="footer-mode">Oracle REST · Lectura incremental</span></footer>
+  <div class="traffic-log" aria-label="Consumo de Oracle durante esta sesión"><span id="oracle-traffic">Oracle · 0 llamadas · 0,000 MB recibidos</span><small>Esta sesión · Incluye inicialización, PULSI, NETAMO y errores. MB de cuerpos recibidos tras descompresión, sin cabeceras.</small></div>
 </div>
 <dialog id="connection-dialog" aria-labelledby="dialog-title">
   <form id="connection-form"><h2 id="dialog-title">Conectar con Oracle</h2><p>Indica el servicio de lecturas. Esta instalación permite conectar sin token.</p>
@@ -130,10 +132,23 @@ const PulsiCore = (() => {
   }
   function validatePage(p) {
     if (!p || p.status!=='OK') throw Error(p?.message || 'Oracle no devolvió una respuesta válida.');
+    if (p.protocol!==2) throw Error('Actualiza pulsi_live.sql para habilitar la lectura de bajo consumo.');
     if (!Array.isArray(p.data) || typeof p.has_more!=='boolean' ||
-        typeof p.watermark!=='string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}$/.test(p.watermark) ||
+        (p.window_from!==null && !Number.isFinite(wallTime(p.window_from))) ||
+        (p.window_until!==null && !Number.isFinite(wallTime(p.window_until))) ||
         (p.has_more && (typeof p.next_cursor!=='string' || !p.next_cursor || !p.data.length))) throw Error('Respuesta de paginación incompleta.');
     return p;
+  }
+  const wallStamp = x => new Date(x).toISOString().slice(0,19);
+  function liveParams(map, seconds, recheck) {
+    const rows=sorted(map);
+    if (!rows.length) return null;
+    const from=rows.at(-1).x-seconds*1000;
+    const recent=rows.filter(r=>r.x>=from);
+    const known=recent.slice(0,Math.max(0,recent.length-recheck)).map(r=>r.id);
+    // A 1 Hz, esta lista contiene unas diez claves. Nunca truncarla: causaría duplicados.
+    if (known.length>100) throw Error('Demasiadas lecturas en la ventana de revisión; revisa su duración y la cadencia del dispositivo.');
+    return {from_date:wallStamp(from),known:JSON.stringify(known)};
   }
   function latestArrival(rows) {
     return rows.reduce((a,b) => !a || b.created_at>a.created_at || (b.created_at===a.created_at && b.x>a.x) ? b:a,null);
@@ -150,7 +165,7 @@ const PulsiCore = (() => {
     const module = outside ? (metric==='pressure'? modules.outdoorPressure:modules.outdoor) : modules.indoor;
     return rows.find(r => r.metric===metric && r.module===module) || null;
   }
-  return {KEYS,wallTime,normalize,merge,sorted,prune,series,validatePage,latestArrival,netamoRows,selectNetamo};
+  return {KEYS,wallTime,wallStamp,normalize,merge,sorted,prune,series,validatePage,liveParams,latestArrival,netamoRows,selectNetamo};
 })();
 
 (() => {
@@ -169,9 +184,11 @@ const PulsiCore = (() => {
     {key:'co2',name:'CO₂',unit:'ppm',digits:0,icon:'○'}
   ];
   const state={base:API_BASE_URL,token:'',demo:new URLSearchParams(location.search).get('demo')==='1',paused:false,following:true,
-    range:INITIAL_WINDOW_MINUTES,rows:new Map(),netamo:[],watermark:null,cursor:null,initialMinutes:INITIAL_WINDOW_MINUTES,
-    lastReconcile:0,lastPulsi:0,lastNetamo:0,pulsiError:'',netamoError:'',failures:{pulsi:0,netamo:0},
-    timers:{},controllers:new Set(),generation:0,chart:null,capped:false,catchingUp:false,cycleReconcile:false,demoStep:0};
+    range:INITIAL_WINDOW_MINUTES,rows:new Map(),netamo:[],initialMinutes:INITIAL_WINDOW_MINUTES,
+    initializing:true,initialCursor:null,coverageFrom:null,history:null,historyNext:false,
+    lastPulsi:0,lastNetamo:0,pulsiError:'',netamoError:'',failures:{pulsi:0,netamo:0},
+    due:{pulsi:0,netamo:0},busy:{pulsi:false,netamo:false},traffic:{pulsi:0,netamo:0,bytes:0},
+    timers:{},controllers:new Set(),generation:0,chart:null,capped:false,catchingUp:false,demoStep:0};
   const fmt=(n,d=0)=>n===null||n===undefined?'—':new Intl.NumberFormat('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
   const duration = ms => ms<60000?`${fmt(ms/1000)} s`:`${fmt(ms/60000)} min`;
   const ageLabel = seconds => {
@@ -259,10 +276,30 @@ const PulsiCore = (() => {
     else if(state.lastPulsi){mode=age<PULSI_STALE_MS?'live':'stale';label=state.catchingUp?'Recuperando lecturas':age<PULSI_STALE_MS?'Recibiendo datos':'Conectado · sin datos recientes';}
     badge.dataset.state=mode;text.textContent=label;
     $('pulsi-notice').textContent=state.pulsiError || (state.catchingUp?'Recuperando páginas pendientes…':(!state.demo&&arrival&&age>=PULSI_STALE_MS?`Última llegada a Oracle: ${ageLabel(age/1000).toLowerCase()}. Se conservan las mediciones anteriores.`:''));
-    if(!state.rows.size && state.chart){$('empty-title').textContent=state.pulsiError?'No hay conexión con las lecturas':'Esperando la primera lectura';$('empty-description').textContent=state.pulsiError?'Revisa Conexión y comprueba que el nuevo script SQL esté instalado.':`No hay lecturas llegadas a Oracle en los últimos ${state.initialMinutes} minutos.`;}
+    if(!state.rows.size && state.chart){$('empty-title').textContent=state.pulsiError?'No hay conexión con las lecturas':'Esperando la primera lectura';$('empty-description').textContent=state.pulsiError?'Revisa Conexión y comprueba que el nuevo script SQL esté instalado.':'Las mediciones aparecerán cuando estén disponibles en Oracle.';}
     $('netamo-status').textContent=state.netamoError?'No se pudo actualizar':state.paused?'Actualización pausada':state.lastNetamo?`Consulta ${ageLabel((Date.now()-state.lastNetamo)/1000).toLowerCase()}`:'Esperando conexión';
     $('netamo-notice').textContent=state.netamoError;
     renderFollow();
+  }
+  function renderTraffic() {
+    const t=state.traffic;
+    $('oracle-traffic').textContent=`Oracle · ${fmt(t.pulsi+t.netamo)} llamadas (PULSI ${fmt(t.pulsi)} · NETAMO ${fmt(t.netamo)}) · ${fmt(t.bytes/1_000_000,3)} MB recibidos`;
+  }
+  async function readBody(response) {
+    if (!response.body) return '';
+    const reader=response.body.getReader(), decoder=new TextDecoder();
+    const parts=[];
+    try {
+      while (true) {
+        const {done,value}=await reader.read();
+        if (done) break;
+        state.traffic.bytes+=value.byteLength;
+        renderTraffic(); // También cuenta los fragmentos recibidos antes de un error o una cancelación.
+        parts.push(decoder.decode(value,{stream:true}));
+      }
+      parts.push(decoder.decode());
+      return parts.join('');
+    } finally {reader.releaseLock();}
   }
   async function request(path,params,generation) {
     const url=new URL(path,state.base);for(const [k,v] of Object.entries(params)) if(v!==null&&v!==undefined) url.searchParams.set(k,String(v));
@@ -270,12 +307,19 @@ const PulsiCore = (() => {
     const timeout=setTimeout(()=>controller.abort(),REQUEST_TIMEOUT_MS);
     try {
       const headers={Accept:'application/json'};if(state.token)headers.Authorization='Bearer '+state.token;
-      const response=await fetch(url,{headers,signal:controller.signal,cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer'});
+      const kind=path==='netamo/last'?'netamo':'pulsi';
+      state.traffic[kind]++;
+      renderTraffic();
+      const pending=fetch(url,{headers,signal:controller.signal,cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer'});
+      // Medir desde el envío, no desde el inicio del procesamiento del ciclo.
+      state.due[kind]=performance.now()+(kind==='pulsi'?PULSI_REFRESH_MS:NETAMO_REFRESH_MS);
+      const response=await pending;
+      const raw=await readBody(response);
       if (generation!==state.generation) throw Error('cancelled');
       if(response.status===401||response.status===403) throw Error('Acceso bloqueado por Oracle/ORDS. Revisa los privilegios del servicio; esta instalación está configurada sin token.');
       if(response.status===404) throw Error('Endpoint no encontrado. Instala pulsi_live.sql y revisa la URL en Conexión.');
       if(!response.ok)throw Error(`Oracle respondió HTTP ${response.status}. Se reintentará automáticamente.`);
-      const body=await response.json();if(body.status!=='OK')throw Error(body.message||'Oracle devolvió un error.');
+      const body=JSON.parse(raw);if(body.status!=='OK')throw Error(body.message||'Oracle devolvió un error.');
       return body;
     } catch(error) {
       if(generation!==state.generation)throw Error('cancelled');
@@ -285,25 +329,46 @@ const PulsiCore = (() => {
       throw error;
     } finally {clearTimeout(timeout);state.controllers.delete(controller);}
   }
-  const watermarkAge=stamp=>Date.parse(stamp.slice(0,23)+'Z'); // diferencia relativa entre marcas del mismo servidor, no hora local.
-  async function pollPulsi(generation) {
-    if(state.demo){demoPulsi();return;}
-    if(!state.cursor)state.cycleReconcile=Boolean(state.watermark && Date.now()-state.lastReconcile>=RECONCILE_MS);
-    let params=state.cursor?{cursor:state.cursor}:state.cycleReconcile?{minutes:RETAIN_MINUTES}:state.watermark?{since:state.watermark}:{minutes:state.initialMinutes};
-    let changed=false;
-    try {
-    for(let page=0;page<MAX_PAGES_PER_TICK;page++) {
-      const body=PulsiCore.validatePage(await request('lecturas',{...params,limit:PAGE_SIZE},generation));
-      if(generation!==state.generation)return;
-      if(state.watermark && watermarkAge(body.watermark)<watermarkAge(state.watermark)-60000)throw Error('El reloj de Oracle retrocedió. Reconecta para iniciar una nueva ventana.');
-      if(body.has_more && body.next_cursor===params.cursor)throw Error('Oracle repitió el cursor de paginación.');
-      changed=PulsiCore.merge(state.rows,body.data)||changed;
-      state.cursor=body.has_more?body.next_cursor:null;state.catchingUp=body.has_more;state.lastPulsi=Date.now();
-      state.capped=PulsiCore.prune(state.rows,RETAIN_MINUTES,MAX_POINTS)||state.capped;
-      if(!body.has_more){state.watermark=body.watermark;if(state.cycleReconcile||!state.lastReconcile)state.lastReconcile=Date.now();state.cycleReconcile=false;break;}
-      params={cursor:state.cursor};
+  function queueHistory() {
+    if (state.demo || state.initializing || state.history || state.coverageFrom===null || !state.rows.size) return;
+    const latest=PulsiCore.sorted(state.rows).at(-1).x;
+    const from=latest-state.range*60000;
+    if (from<state.coverageFrom) {
+      state.history={from:PulsiCore.wallStamp(from),until:PulsiCore.wallStamp(state.coverageFrom),cursor:null};
+      state.historyNext=true;
     }
-    } finally {if(changed)renderChart();}
+  }
+  async function pollPulsi(generation) {
+    if(state.demo){demoPulsi();state.initializing=false;return;}
+    const initial=state.initializing;
+    const history=!initial && state.historyNext ? state.history : null;
+    let params;
+    if(initial) params=state.initialCursor?{cursor:state.initialCursor}:{minutes:state.initialMinutes};
+    else if(history) params=history.cursor?{cursor:history.cursor}:{from_date:history.from,until_date:history.until};
+    else params=PulsiCore.liveParams(state.rows,PULSI_LATE_WINDOW_SECONDS,PULSI_RECHECK_ROWS)||{minutes:state.initialMinutes};
+    const body=PulsiCore.validatePage(await request('lecturas/live',{...params,limit:PAGE_SIZE},generation));
+    if(generation!==state.generation)return;
+    if(body.has_more && body.next_cursor===params.cursor)throw Error('Oracle repitió el cursor de paginación.');
+    const changed=PulsiCore.merge(state.rows,body.data);
+    state.lastPulsi=Date.now();
+    state.capped=PulsiCore.prune(state.rows,RETAIN_MINUTES,MAX_POINTS)||state.capped;
+    if(initial) {
+      state.initialCursor=body.has_more?body.next_cursor:null;
+      if(!body.has_more) {
+        state.initializing=false;
+        state.coverageFrom=body.window_from===null?null:PulsiCore.wallTime(body.window_from);
+        queueHistory();
+      }
+    } else if(history) {
+      history.cursor=body.has_more?body.next_cursor:null;
+      state.historyNext=false; // Una consulta LIVE entre páginas históricas.
+      if(!body.has_more){state.coverageFrom=PulsiCore.wallTime(history.from);state.history=null;queueHistory();}
+    } else {
+      if(state.coverageFrom===null && body.window_from!==null)state.coverageFrom=PulsiCore.wallTime(body.window_from);
+      state.historyNext=Boolean(state.history);
+    }
+    state.catchingUp=body.has_more || Boolean(state.history);
+    if(changed)renderChart();
   }
   async function pollNetamo(generation) {
     if(state.demo){demoNetamo();return;}
@@ -311,21 +376,37 @@ const PulsiCore = (() => {
     if(generation!==state.generation)return;
     state.netamo=PulsiCore.netamoRows(body.data);state.lastNetamo=Date.now();renderNetamo();
   }
+  const active=()=>!state.paused&&!document.hidden;
+  function schedule(kind) {
+    clearTimeout(state.timers[kind]);
+    if(!active())return;
+    const generation=state.generation;
+    const delay=Math.max(state.busy[kind]?100:0,state.due[kind]-performance.now());
+    state.timers[kind]=setTimeout(()=>run(kind,generation),delay);
+  }
+  function wake(){schedule('pulsi');schedule('netamo');}
   async function run(kind,generation) {
-    if(generation!==state.generation||state.paused)return;
+    if(generation!==state.generation||!active())return;
+    if(state.busy[kind] || performance.now()<state.due[kind]){schedule(kind);return;}
+    state.busy[kind]=true;
     const interval=kind==='pulsi'?PULSI_REFRESH_MS:NETAMO_REFRESH_MS;
-    const started=Date.now();
+    state.due[kind]=performance.now()+interval;
     try {
       await (kind==='pulsi'?pollPulsi(generation):pollNetamo(generation));
       if(generation!==state.generation)return;
       state[kind+'Error']='';state.failures[kind]=0;
+      // Única excepción al intervalo: páginas consecutivas de la carga inicial.
+      if(kind==='pulsi'&&state.initializing)state.due.pulsi=performance.now();
     } catch(error) {
       if(generation!==state.generation)return;
       state[kind+'Error']=error.message;state.failures[kind]++;
+      if(kind==='pulsi')state.due.pulsi=performance.now()+Math.max(PULSI_REFRESH_MS,Math.min(MAX_BACKOFF_MS,PULSI_REFRESH_MS*2**Math.min(state.failures.pulsi-1,5)));
+      // NETAMO conserva su próxima cita de 15 minutos, incluso cuando falla.
+    } finally {
+      state.busy[kind]=false;
+      if(generation===state.generation)renderStatus();
+      schedule(kind);
     }
-    renderStatus();
-    const delay=state.failures[kind]?Math.min(MAX_BACKOFF_MS,2000*2**Math.min(state.failures[kind]-1,5)):Math.max(250,interval-(Date.now()-started));
-    state.timers[kind]=setTimeout(()=>run(kind,generation),delay);
   }
   function cancel() {
     state.generation++;Object.values(state.timers).forEach(clearTimeout);state.timers={};
@@ -333,12 +414,11 @@ const PulsiCore = (() => {
   }
   function start(clear=true) {
     cancel();state.paused=false;state.pulsiError='';state.netamoError='';state.failures={pulsi:0,netamo:0};
-    if(!clear && state.lastPulsi && Date.now()-state.lastPulsi>RETAIN_MINUTES*60000){state.watermark=null;state.cursor=null;state.cycleReconcile=false;}
-    if(clear){state.rows.clear();state.netamo=[];state.watermark=null;state.cursor=null;state.lastReconcile=0;state.lastPulsi=0;state.lastNetamo=0;state.capped=false;state.catchingUp=false;state.following=true;renderChart();renderNetamo();}
+    if(clear){state.rows.clear();state.netamo=[];state.initializing=true;state.initialCursor=null;state.coverageFrom=null;state.history=null;state.historyNext=false;state.due={pulsi:0,netamo:0};state.lastPulsi=0;state.lastNetamo=0;state.capped=false;state.catchingUp=false;state.following=true;renderChart();renderNetamo();}
     $('pause-button').textContent='Ⅱ Pausar';$('demo-banner').hidden=!state.demo;$('demo-button').textContent=state.demo?'Conectar Oracle':'Ver demo';
     $('footer-mode').textContent=state.demo?'Modo demostración · datos simulados':'Oracle REST · Lectura incremental';
     if(state.demo&&clear)seedDemo();
-    renderStatus();run('pulsi',state.generation);run('netamo',state.generation);
+    renderStatus();renderTraffic();wake();
   }
   // Demo explícita: totalmente local, aislada de Oracle, sin fallback automático.
   function demoRow(t,index) {
@@ -368,19 +448,20 @@ const PulsiCore = (() => {
   });
   $('demo-button').addEventListener('click',()=>{state.demo=!state.demo;start();});
   $('pause-button').addEventListener('click',()=>{
-    if(state.paused){if(state.lastPulsi&&Date.now()-state.lastPulsi>RETAIN_MINUTES*60000){state.watermark=null;state.cursor=null;}start(false);}
+    if(state.paused){start(false);}
     else{cancel();state.paused=true;$('pause-button').textContent='▶ Reanudar';renderStatus();}
   });
   $('live-button').addEventListener('click',()=>{state.following=true;if(state.paused)start(false);renderChart();});
   document.querySelectorAll('[data-range]').forEach(button=>button.addEventListener('click',()=>{
     state.range=Number(button.dataset.range);state.following=true;
     document.querySelectorAll('[data-range]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
-    if(state.range>state.initialMinutes&&!state.demo){state.initialMinutes=state.range;state.watermark=null;state.cursor=null;state.lastReconcile=0;start(false);}
+    queueHistory();
     renderChart();
   }));
-  window.addEventListener('online',()=>{if(!state.paused&&!state.demo)start(false);});
+  window.addEventListener('online',wake);
   window.addEventListener('pagehide',cancel);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!state.paused)start(false);});
+  window.addEventListener('pageshow',wake);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancel();else wake();});
   makeEnv();
   if(createChart()){start();setInterval(()=>{renderStatus();renderNetamo();},1000);}
 })();
