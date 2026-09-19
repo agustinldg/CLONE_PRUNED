@@ -1,0 +1,77 @@
+# Instalar en CLONE_PRUNED/.github/workflows/copiar-pulsi-live.yml
+name: Copiar PULSI LIVE
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: copiar-pulsi-live
+  cancel-in-progress: false
+
+jobs:
+  copiar:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Copiar el HTML entre repositorios y crear el commit
+        shell: python
+        env:
+          READ_TOKEN: ${{ secrets.PULSI_LIVE_READ_TOKEN }}
+          WRITE_TOKEN: ${{ github.token }}
+        run: |
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          read_token = os.environ.get("READ_TOKEN", "")
+          if not read_token:
+              raise SystemExit("Falta el secreto PULSI_LIVE_READ_TOKEN con acceso de lectura a PULSI_LIVE.")
+
+          def api(path, token, data=None):
+              request = urllib.request.Request(
+                  "https://api.github.com/repos/" + path,
+                  data=json.dumps(data).encode() if data is not None else None,
+                  method="PUT" if data is not None else "GET",
+                  headers={
+                      "Authorization": "Bearer " + token,
+                      "Accept": "application/vnd.github+json",
+                      "Content-Type": "application/json",
+                      "X-GitHub-Api-Version": "2026-03-10",
+                  },
+              )
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  return json.load(response)
+
+          try:
+              source = api("agustinldg/PULSI_LIVE/contents/outputs/pulsi_live.html?ref=main", read_token)
+              if source.get("type") != "file" or source.get("encoding") != "base64":
+                  raise SystemExit("El origen debe ser un archivo con contenido base64 (hasta 1 MB).")
+
+              target_path = "agustinldg/CLONE_PRUNED/contents/pulsi_live.html"
+              write_token = os.environ["WRITE_TOKEN"]
+              try:
+                  target = api(target_path + "?ref=main", write_token)
+              except urllib.error.HTTPError as error:
+                  if error.code != 404:
+                      raise
+                  target = None
+
+              if target is not None and target.get("sha") == source["sha"]:
+                  print("CLONE_PRUNED ya contiene la misma versión; no hace falta otro commit.")
+              else:
+                  payload = {
+                      "branch": "main",
+                      "message": "Actualizar pulsi_live.html desde PULSI_LIVE\n\nOrigen: blob " + source["sha"],
+                      "content": "".join(source["content"].split()),
+                  }
+                  if target is not None:
+                      payload["sha"] = target["sha"]
+                  result = api(target_path, write_token, payload)
+                  print("Commit creado: " + result["commit"]["html_url"])
+          except urllib.error.HTTPError as error:
+              raise SystemExit(f"GitHub devolvió HTTP {error.code}. Revisa los permisos y las ramas; si hay un conflicto, vuelve a ejecutar la acción.")
