@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pruned Stats – Dashboard</title>
+
+    <!-- Highcharts Dashboards CSS from unpkg -->
+    <link rel="stylesheet" href="https://unpkg.com/@highcharts/dashboards@4.1.0/css/dashboards.css">
+
+    <style>
+        /* ── Reset & Base ───────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* ── Dashboard wrapper ──────────────────────────────── */
+        #dashboard-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
+        /* ── Dashboard header ───────────────────────────────── */
+        .dash-header {
+            text-align: center;
+            padding: 24px 0 12px;
+        }
+        .dash-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #7b2ff7, #f107a3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+        .dash-header p {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        /* ── Override Dashboards cells for dark look ─────── */
+        :root, .highcharts-dashboards {
+            --highcharts-dashboards-color-surface: #16213e;
+            --highcharts-dashboards-color-background: transparent;
+        }
+        
+        .highcharts-dashboards, 
+        .highcharts-dashboards-wrapper, 
+        .highcharts-dashboards-board, 
+        .highcharts-dashboards-cell {
+            background: transparent !important;
+        }
+
+        .highcharts-dashboards-component {
+            background: #16213e !important;
+            border: 1px solid #0f3460 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+        }
+
+        /* Force chart cell to have enough height and disable default browser touch actions */
+        #cell-chart {
+            min-height: 650px;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* ── Estilos para el botón hamburguesa (Exporting menu) de Highcharts ── */
+        .highcharts-contextbutton,
+        .highcharts-contextbutton .highcharts-button-box {
+            fill: #1a264a !important; /* Tono un poco diferente al fondo #16213e */
+            stroke: #1e3a5f !important;
+            transition: fill 0.2s;
+        }
+        .highcharts-contextbutton:hover,
+        .highcharts-contextbutton:hover .highcharts-button-box,
+        .highcharts-contextbutton.highcharts-button-hover,
+        .highcharts-contextbutton.highcharts-button-hover .highcharts-button-box {
+            fill: #2b3e75 !important; /* Color más claro para que el hover se note */
+            stroke: #4a6fa5 !important;
+            cursor: pointer;
+        }
+        .highcharts-contextbutton .highcharts-button-symbol {
+            stroke: #9ca3af !important; /* Suavizar el color de las líneas del menú */
+        }
+
+        /* Summary cell limits */
+        #cell-summary {
+            margin: 20px auto;
+            max-width: 50%;
+            min-width: 320px;
+        }
+        
+        #summary-content {
+            padding: 16px;
+            font-size: 14px;
+            color: #d1d5db;
+        }
+        #summary-content h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: #a5b4fc;
+            border-bottom: 1px solid #1e3a5f;
+            padding-bottom: 6px;
+        }
+        #summary-content .s-row {
+            margin-bottom: 6px;
+        }
+        #summary-content .s-sub {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: -2px;
+            margin-bottom: 12px;
+        }
+        #summary-content .s-group {
+            margin-top: 12px;
+            padding-left: 10px;
+            border-left: 2px solid #1e3a5f;
+        }
+
+        /* ── FAB Speed-dial Navigation ────────────────────── */
+
+        /* Backdrop – transparent, tap outside to close */
+        #fab-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 900;
+        }
+        #fab-backdrop.open { display: block; }
+
+        /* FAB container: column layout, main button at bottom, items fan UP above it */
+        #fab-nav {
+            position: fixed;
+            bottom: 8px;
+            right: 16px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;   /* normal: .fab-actions above, #fab-main below */
+            align-items: flex-end;
+            gap: 8px;
+            pointer-events: none; /* Permitir hacer clic a través de la caja transparente */
+        }
+
+        /* Main trigger – subtle gray, unobtrusive */
+        #fab-main {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.08);
+            cursor: pointer;
+            background: rgba(38, 40, 58, 0.82);
+            color: #6b7280;
+            font-size: 17px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.45);
+            backdrop-filter: blur(10px);
+            transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+            user-select: none;
+            flex-shrink: 0;
+            pointer-events: auto; /* El botón en sí sí es clickable */
+        }
+        #fab-main:hover {
+            background: rgba(55, 58, 82, 0.95);
+            color: #9ca3af;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.55);
+        }
+        #fab-nav.open #fab-main {
+            background: rgba(50, 52, 78, 0.95);
+            color: #c4b5fd;
+        }
+
+        /* Action chips container – items flow top→bottom (Prev Week topmost) */
+        .fab-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 7px;
+            padding-bottom: 2px;
+        }
+
+        /* Each action row: just the chip, no duplicate icon button */
+        .fab-item {
+            opacity: 0;
+            /* Start below their final position (toward the main button) */
+            transform: translateY(18px);
+            transition: opacity 0.18s ease, transform 0.24s cubic-bezier(0.34,1.4,0.64,1);
+            pointer-events: none;
+            cursor: pointer;
+            user-select: none;
+        }
+        #fab-nav.open .fab-item {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        /* Stagger: bottom item (Next Week, 5th) first, top item (Prev Week, 1st) last */
+        #fab-nav.open .fab-item:nth-child(5) { transition-delay: 0.00s; }
+        #fab-nav.open .fab-item:nth-child(4) { transition-delay: 0.05s; }
+        #fab-nav.open .fab-item:nth-child(3) { transition-delay: 0.10s; }
+        #fab-nav.open .fab-item:nth-child(2) { transition-delay: 0.15s; }
+        #fab-nav.open .fab-item:nth-child(1) { transition-delay: 0.20s; }
+
+        /* Chip style: muted dark, no electric colors */
+        .fab-chip {
+            display: inline-block;
+            background: rgba(18, 24, 44, 0.90);
+            border: 1px solid rgba(60, 80, 120, 0.45);
+            color: #8b95b0;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            backdrop-filter: blur(10px);
+            transition: background 0.18s, color 0.18s, border-color 0.18s;
+        }
+        .fab-item:hover .fab-chip {
+            background: rgba(35, 44, 75, 0.95);
+            color: #c4cde8;
+            border-color: rgba(100, 130, 200, 0.6);
+        }
+        /* Today chip – slightly distinguished but still subtle */
+        .fab-chip.today {
+            color: #a5b4fc;
+            border-color: rgba(83, 52, 131, 0.6);
+        }
+        .fab-item:hover .fab-chip.today {
+            background: rgba(40, 35, 80, 0.95);
+            color: #c4b5fd;
+            border-color: rgba(120, 80, 200, 0.7);
+        }
+
+        /* ── Footer ─────────────────────────────────────────── */
+        .dash-footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #555;
+            padding: 18px 0 10px;
+        }
+
+        /* ── Mobile Responsive Adjustments ──────────────────── */
+        @media (max-width: 768px) {
+            #dashboard-container {
+                padding: 10px 8px; /* Slightly increased horizontal padding */
+            }
+            .nav-controls {
+                margin: 12px 4px 0;
+                padding: 12px 6px;
+                gap: 6px;
+            }
+            #fab-nav {
+                bottom: 6px;
+                right: 10px;
+            }
+            
+            /* Stack dashboard cells on mobile */
+            .highcharts-dashboards-row {
+                flex-direction: column !important;
+                display: flex;
+                gap: 16px; /* Added gap between vertically stacked cells */
+            }
+            .highcharts-dashboards-cell {
+                flex: 1 1 100% !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            #cell-chart {
+                min-height: 450px !important;
+            }
+            #cell-summary {
+                max-width: 100% !important;
+                min-width: unset !important;
+            }
+            /* Make meteo charts scale naturally and reduce height */
+            .meteo-cell {
+                min-height: 250px !important;
+                margin: 4px 0;
+            }
+        }
+
+        /* ── Meteo Charts Dashboard Integration ───────────────── */
+        /* Ensure cells for meteo charts have consistent height */
+        .meteo-cell {
+            min-height: 360px;
+            margin: 8px 0;
+        }
+        @media (max-width: 768px) {
+            .meteo-charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .meteo-charts-grid .meteo-chart-card:last-child:nth-child(odd) {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="dash-header">
+    <h1>♡ Oxygen Levels Dashboard</h1>
+</div>
+
+<!-- Dashboard container (Highcharts Dashboards renders the chart here) -->
+<div id="dashboard-container"></div>
+
+<!-- FAB backdrop (tap outside to close) -->
+<div id="fab-backdrop" onclick="closeFab()"></div>
+
+<!-- FAB Speed-dial Navigation -->
+<div id="fab-nav">
+    <!-- Actions fan UPWARD above the main button (flex-direction:column, these are first) -->
+    <div class="fab-actions">
+        <div class="fab-item" onclick="prev_week(); closeFab();" title="Previous Week">
+            <span class="fab-chip">◀◀ Prev. Week</span>
+        </div>
+        <div class="fab-item" onclick="prev_day(); closeFab();" title="Previous Day">
+            <span class="fab-chip">◀ Prev. Day</span>
+        </div>
+        <div class="fab-item" onclick="today(); closeFab();" title="Today">
+            <span class="fab-chip today">● Today</span>
+        </div>
+        <div class="fab-item" onclick="next_day(); closeFab();" title="Next Day">
+            <span class="fab-chip">Next Day ▶</span>
+        </div>
+        <div class="fab-item" onclick="next_week(); closeFab();" title="Next Week">
+            <span class="fab-chip">Next Week ▶▶</span>
+        </div>
+    </div>
+
+    <!-- Main toggle button (always visible at the bottom) -->
+    <button id="fab-main" onclick="toggleFab()" aria-label="Navigation menu">☰</button>
+</div>
+
+<script>
+    function toggleFab() {
+        var fab = document.getElementById('fab-nav');
+        var backdrop = document.getElementById('fab-backdrop');
+        var btn = document.getElementById('fab-main');
+        var isOpen = fab.classList.toggle('open');
+        backdrop.classList.toggle('open', isOpen);
+        btn.textContent = isOpen ? '✕' : '☰';
+    }
+    function closeFab() {
+        document.getElementById('fab-nav').classList.remove('open');
+        document.getElementById('fab-backdrop').classList.remove('open');
+        document.getElementById('fab-main').textContent = '☰';
+    }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeFab();
+    });
+</script>
+
+<!-- Footer -->
+<div class="dash-footer">© 2015-2026 Baby Monitor — Masimo Pulse Oximeter</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- Scripts (order matters)                                   -->
+<!-- ════════════════════════════════════════════════════════ -->
+
+<!-- 1. Highcharts Stock — Latest version -->
+<script src="https://unpkg.com/highcharts@12.6.0/highstock.js"></script>
+<script src="https://unpkg.com/highcharts@12.6.0/highcharts-more.js"></script>
+<script src="https://unpkg.com/highcharts@12.6.0/modules/accessibility.js"></script>
+<script src="https://unpkg.com/highcharts@12.6.0/modules/exporting.js"></script>
+<script src="https://unpkg.com/highcharts@12.6.0/modules/export-data.js"></script>
+<script src="https://unpkg.com/highcharts@12.6.0/modules/offline-exporting.js"></script>
+
+<!-- 2. Highcharts Dashboards + layout module — Latest version -->
+<script src="https://unpkg.com/@highcharts/dashboards@4.1.0/dashboards.js"></script>
+<script src="https://unpkg.com/@highcharts/dashboards@4.1.0/modules/layout.js"></script>
+
+<script>
+/* ───────────────────────────────────────────────────────────
+   Connect Highcharts to Dashboards plugin system
+   ─────────────────────────────────────────────────────────── */
+Dashboards.HighchartsPlugin.custom.connectHighcharts(Highcharts);
+Dashboards.PluginHandler.addPlugin(Dashboards.HighchartsPlugin);
+
+/* ───────────────────────────────────────────────────────────
+   App State
+   ─────────────────────────────────────────────────────────── */
+var globalChart = null;
+var appState = { currentDate: null, currentData: { spo2: [], bpm: [] }, pulsiTimeRange: null, netatmoTempD: [], netatmoTempB: [] };
+var _resizeTimer = null;
+var meteoCharts = {};
+
+/* ───────────────────────────────────────────────────────────
+   Dark theme (applied globally before board creation)
+   ─────────────────────────────────────────────────────────── */
+Highcharts.setOptions({
+    exporting: {
+        enabled: true,
+        menuItemDefinitions: {
+            refreshData: {
+                onclick: function () {
+                    if (typeof load_last_avail_day === 'function') {
+                        load_last_avail_day();
+                    }
+                },
+                text: '⟳ Refresh Data'
+            }
+        },
+        buttons: {
+            contextButton: {
+                menuItems: [
+                    'refreshData',
+                    'separator',
+                    'viewFullscreen',
+                    'printChart',
+                    'separator',
+                    'downloadPNG',
+                    'downloadJPEG',
+                    'downloadPDF',
+                    'downloadSVG',
+                    'separator',
+                    'downloadCSV',
+                    'downloadXLS',
+                    'viewData'
+                ]
+            }
+        },
+        buttonOptions: {
+            theme: {
+                fill: 'transparent',
+                states: { hover: { fill: '#0f3460' }, select: { fill: '#0f3460' } }
+            }
+        },
+        menuItemHoverStyle: { background: '#7b2ff7', color: '#ffffff' },
+        menuStyle: { background: '#16213e', border: '1px solid #0f3460' },
+        menuItemStyle: { color: '#ccc' }
+    },
+    chart: {
+        backgroundColor: '#16213e',
+        style: { fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
+    },
+
+    title:    { style: { color: '#e0e0e0' } },
+    subtitle: { style: { color: '#999' } },
+    xAxis: {
+        gridLineColor: '#1e3a5f',
+        labels: { style: { color: '#aaa' } },
+        lineColor: '#1e3a5f',
+        tickColor: '#1e3a5f',
+        title: { style: { color: '#ccc' } }
+    },
+    yAxis: {
+        gridLineColor: '#1e3a5f',
+        labels: { style: { color: '#aaa' } },
+        lineColor: '#1e3a5f',
+        tickColor: '#1e3a5f',
+        title: { style: { color: '#ccc' } }
+    },
+    legend: {
+        backgroundColor: 'transparent',
+        itemStyle: { color: '#ccc' },
+        itemHoverStyle: { color: '#fff' },
+        itemHiddenStyle: { color: '#555' }
+    },
+    tooltip: {
+        backgroundColor: 'rgba(22,33,62,0.92)',
+        borderColor: '#0f3460',
+        style: { color: '#e0e0e0', fontSize: '14px' }
+    },
+    navigator: {
+        handles: { backgroundColor: '#666', borderColor: '#AAA' },
+        outlineColor: '#CCC',
+        maskFill: 'rgba(255,255,255,0.1)',
+        series: { color: '#7798BF', lineColor: '#A6C7ED' },
+        xAxis: { gridLineColor: '#1e3a5f' }
+    },
+    scrollbar: {
+        barBackgroundColor: '#333',
+        barBorderColor: '#444',
+        buttonBackgroundColor: '#333',
+        buttonBorderColor: '#444',
+        trackBackgroundColor: '#1a1a2e',
+        trackBorderColor: '#1a1a2e'
+    },
+    rangeSelector: {
+        buttonTheme: {
+            fill: '#1a1a2e',
+            stroke: '#0f3460',
+            style: { color: '#a5b4fc' },
+            states: {
+                hover:  { fill: '#7b2ff7', stroke: '#7b2ff7', style: { color: '#fff' } },
+                select: { fill: '#533483', stroke: '#533483', style: { color: '#fff' } }
+            }
+        },
+        inputStyle: { backgroundColor: '#1a1a2e', color: '#e0e0e0' },
+        labelStyle: { color: '#aaa' }
+    },
+    colors: ["#2b908f", "#90ee7e", "#f45b5b", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee",
+             "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"]
+});
+
+/* ───────────────────────────────────────────────────────────
+   Build the Dashboard
+   ─────────────────────────────────────────────────────────── */
+Dashboards.board('dashboard-container', {
+    gui: {
+        layouts: [{
+            id: 'layout-1',
+            rows: [{
+                cells: [{ id: 'cell-chart' }]
+            }, {
+                cells: [{ id: 'cell-summary' }]
+            }, {
+                cells: [
+                    { id: 'cell-hist-spo2' },
+                    { id: 'cell-hist-bpm' }
+                ]
+            }, {
+                cells: [
+                    { id: 'cell-meteo-temp' },
+
+                    { id: 'cell-meteo-hum' }
+                ]
+            }, {
+                cells: [
+                    { id: 'cell-meteo-pres' },
+                    { id: 'cell-meteo-noise' }
+                ]
+            }, {
+                cells: [
+                    { id: 'cell-meteo-co2' }
+                ]
+            }]
+        }]
+    },
+    components: [
+        {
+            renderTo: 'cell-chart',
+            type: 'Highcharts',
+            chartConstructor: 'stockChart',
+            chartOptions: {
+                chart: {
+                    zoomType: 'x',
+                    panning: {
+                        enabled: true,
+                        type: 'x'
+                    },
+                    zoomBySingleTouch: true,
+                    followTouchMove: false,
+                    height: 620,
+                    events: {
+                        load: function () {
+                            globalChart = this;
+                            addGroupingButtons(this);
+                            load_last_avail_day();
+                            applyYAxisRanges(this);
+                        },
+                        redraw: function () {
+                            var self = this;
+                            clearTimeout(_resizeTimer);
+                            _resizeTimer = setTimeout(function () {
+                                addGroupingButtons(self);
+                            }, 150);
+                        }
+                    }
+                },
+                loading: {
+                    style: { backgroundColor: 'rgba(22,33,62,0.85)' },
+                    labelStyle: { color: '#e0e0e0', fontSize: '16px' }
+                },
+                navigator: {
+                    adaptToUpdatedData: true,
+                    baseSeries: 2,
+                    series: { pointPlacement: 'between' }
+                },
+                scrollbar: { liveRedraw: false },
+                title: { text: 'Oxygen Levels' },
+                xAxis: { 
+                    type: 'datetime',
+                    events: {
+                        afterSetExtremes: function (e) {
+                            updateSummary(e.min, e.max);
+                        }
+                    }
+                },
+                yAxis: [
+                    {
+                        labels: { align: 'right', x: -4 },
+                        title: { text: 'SpO2 & bpm' },
+                        endOnTick: false,
+                        showLastLabel: true,
+                        showEmpty: false
+                    },
+                    {
+                        labels: { align: 'left', x: 8 },
+                        title: { text: 'P.I.' },
+                        top: '75%',
+                        height: '25%',
+                        offset: 0,
+                        showEmpty: false
+                    },
+                    {
+                        // Hidden auto-scaled axis for PVI (not in Y_FIXED, so the Y toggle ignores it)
+                        labels: { enabled: false },
+                        title: { text: null },
+                        gridLineWidth: 0,
+                        lineWidth: 0,
+                        tickLength: 0,
+                        offset: 0,
+                        showEmpty: false
+                    }
+                ],
+                legend: { enabled: true },
+                plotOptions: {
+                    series: { 
+                        gapSize: 60,
+                        dataGrouping: { groupPixelWidth: 50 }
+                    },
+                    line: { connectNulls: false },
+                    columnrange: {
+                        pointPadding: -0.25,
+                        minPointLength: 5
+                    }
+                },
+                tooltip: {
+                    valueDecimals: 2,
+                    style: { fontSize: '14px' }
+                },
+                rangeSelector: {
+                    buttons: [
+                        { type: 'minute', count: 1,  text: '1M'  },
+                        { type: 'minute', count: 10, text: '10M' },
+                        { type: 'hour',   count: 1,  text: '1H'  },
+                        { type: 'all',                text: 'All' }
+                    ],
+                    selected: 3,
+                    inputEnabled: true
+                },
+                responsive: {
+                    rules: [{
+                        condition: { maxWidth: 500 },
+                        chartOptions: {
+                            yAxis: [
+                                { title: { text: '' } },
+                                { title: { text: '' } }
+                            ]
+                        }
+                    }]
+                },
+                series: [
+                    {
+                        type: 'columnrange',
+                        name: 'O2%',
+                        zIndex: 1,
+                        opacity: 0.95,
+                        turboThreshold: 0,
+                        pointPlacement: 'between'
+                    },
+                    {
+                        type: 'spline',
+                        name: 'O2%',
+                        id: 'spo2',
+                        zIndex: 2,
+                        turboThreshold: 0,
+                        pointPlacement: 'between'
+                    },
+                    {
+                        type: 'spline',
+                        name: 'BPM',
+                        id: 'bpm',
+                        zIndex: 3,
+                        turboThreshold: 0,
+                        pointPlacement: 'between',
+                        visible: true
+                    },
+                    {
+                        type: 'candlestick',
+                        name: 'bpm stats',
+                        id: 'bpm_stats',
+                        zIndex: 0,
+                        color: 'rgba(244, 91, 91, 0.7)',
+                        upColor: 'rgba(244, 91, 91, 0.7)',
+                        lineColor: '#f45b5b',
+                        upLineColor: '#f45b5b',
+                        turboThreshold: 0,
+                        pointPlacement: 'between',
+                        visible: false,
+                        dataGrouping: {
+                            enabled: true,
+                            approximation: function (values) {
+                                if (!values || !values.length) return null;
+                                var sum = 0, max = -Infinity, min = Infinity;
+                                for (var i = 0; i < values.length; i++) {
+                                    sum += values[i];
+                                    if (values[i] > max) max = values[i];
+                                    if (values[i] < min) min = values[i];
+                                }
+                                var mean = sum / values.length;
+                                var diffSum = 0;
+                                for (var j = 0; j < values.length; j++) {
+                                    diffSum += Math.abs(values[j] - mean);
+                                }
+                                var meanDev = diffSum / values.length;
+                                return [mean + meanDev, max, min, mean - meanDev];
+                            }
+                        }
+                    },
+                    {
+                        type: 'spline',
+                        yAxis: 1,
+                        name: 'PI',
+                        id: 'pi',
+                        zIndex: 4,
+                        turboThreshold: 0,
+                        pointPlacement: 'between',
+                        visible: false,
+                        negativeColor: '#FF0000',
+                        threshold: 1
+                    },
+                    {
+                        type: 'spline',
+                        yAxis: 2,
+                        name: 'PVI',
+                        id: 'pvi',
+                        zIndex: 5,
+                        color: '#f7a35c',
+                        turboThreshold: 0,
+                        pointPlacement: 'between',
+                        visible: true,
+                        tooltip: { valueDecimals: 0 }
+                    }
+                ]
+            }
+        },
+        {
+            renderTo: 'cell-summary',
+            type: 'HTML',
+            html: '<div id="summary-content">Cargando resumen...</div>'
+        },
+        {
+            renderTo: 'cell-hist-spo2',
+            type: 'HTML',
+            html: '<div id="chart-hist-spo2" class="meteo-cell" style="min-height: 280px;"></div>'
+        },
+        {
+            renderTo: 'cell-hist-bpm',
+            type: 'HTML',
+            html: '<div id="chart-hist-bpm" class="meteo-cell" style="min-height: 280px;"></div>'
+        },
+        {
+            renderTo: 'cell-meteo-temp',
+            type: 'HTML',
+            html: '<div id="chart-temperature" class="meteo-cell"></div>'
+        },
+        {
+            renderTo: 'cell-meteo-hum',
+            type: 'HTML',
+            html: '<div id="chart-humidity" class="meteo-cell"></div>'
+        },
+        {
+            renderTo: 'cell-meteo-pres',
+            type: 'HTML',
+            html: '<div id="chart-pressure" class="meteo-cell"></div>'
+        },
+        {
+            renderTo: 'cell-meteo-noise',
+            type: 'HTML',
+            html: '<div id="chart-noise" class="meteo-cell"></div>'
+        },
+        {
+            renderTo: 'cell-meteo-co2',
+            type: 'HTML',
+            html: '<div id="chart-co2" class="meteo-cell"></div>'
+        }
+    ]
+});
+
+/* ───────────────────────────────────────────────────────────
+   Data Loading Functions (same logic as index.html)
+   ─────────────────────────────────────────────────────────── */
+function load_last_avail_day() {
+    var now = new Date();
+    var targetDate = new Date(now);
+    targetDate.setHours(18, 0, 0, 0);
+    if (now.getHours() < 22) {
+        targetDate.setDate(targetDate.getDate() - 1);
+    }
+    appState.currentDate = targetDate;
+    load_day();
+}
+
+function prev_day()  { appState.currentDate.setDate(appState.currentDate.getDate() - 1); load_day(); }
+function today()     { load_last_avail_day(); }
+function next_day()  { appState.currentDate.setDate(appState.currentDate.getDate() + 1); load_day(); }
+function prev_week() { appState.currentDate.setDate(appState.currentDate.getDate() - 7); load_day(); }
+function next_week() { appState.currentDate.setDate(appState.currentDate.getDate() + 7); load_day(); }
+
+
+function load_day() {
+    var chart = globalChart;
+    if (!chart) return;
+    chart.showLoading('Loading data from server...');
+
+    // Reset Pulsi time range so stale plotLines are not applied to new meteo charts
+    appState.pulsiTimeRange = null;
+    appState.netatmoTempD = [];
+    appState.netatmoTempB = [];
+
+    var d = appState.currentDate;
+    var year    = d.getFullYear();
+    var month   = String(d.getMonth() + 1).padStart(2, '0');
+    var day     = String(d.getDate()).padStart(2, '0');
+    var hours   = String(d.getHours()).padStart(2, '0');
+    var minutes = String(d.getMinutes()).padStart(2, '0');
+    var seconds = String(d.getSeconds()).padStart(2, '0');
+
+    var dateString  = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+    var encodedDate = encodeURIComponent(dateString);
+    var url = 'https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/PULSI/pulsi/v6/lecturas7?start_date=' + encodedDate;
+
+    // Launch both fetches in parallel
+    fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (response) {
+            var spo2DataPointLowHigh = [];
+            var spo2DataPoint = [];
+            var bpmDataPoint  = [];
+            var bpmOHLC       = [];
+            var piDataPoint   = [];
+            var pviDataPoint  = [];
+
+            if (response.status === 'OK' && response.data) {
+                response.data.forEach(function (row) {
+                    var timeParts = row[0].split(/[ \-:]/);
+                    if (timeParts.length === 6) {
+                        var msTime = Date.UTC(
+                            timeParts[0], timeParts[1] - 1, timeParts[2],
+                            timeParts[3], timeParts[4], timeParts[5]
+                        );
+                        var spo2 = row[1], bpm = row[2], pi = row[3], pvi = row[4];
+
+                        if (spo2 !== null && spo2 !== undefined) {
+                            spo2DataPointLowHigh.push([msTime, spo2, spo2]);
+                            spo2DataPoint.push([msTime, spo2]);
+                        }
+                        if (bpm !== null && bpm !== undefined) {
+                            bpmDataPoint.push([msTime, bpm]);
+                            bpmOHLC.push([msTime, bpm, bpm, bpm, bpm]);
+                        }
+                        if (pi !== null && pi !== undefined) {
+                            piDataPoint.push([msTime, pi]);
+                        }
+                        if (pvi !== null && pvi !== undefined) {
+                            pviDataPoint.push([msTime, pvi]);
+                        }
+                    }
+                });
+            }
+
+            appState.currentData = {
+                spo2: spo2DataPoint,
+                bpm: bpmDataPoint
+            };
+
+            // Store Pulsi time range for shared plotLines (async coordination)
+            if (spo2DataPoint.length >= 2) {
+                appState.pulsiTimeRange = {
+                    start: spo2DataPoint[0][0],
+                    end:   spo2DataPoint[spo2DataPoint.length - 1][0]
+                };
+            } else if (bpmDataPoint.length >= 2) {
+                appState.pulsiTimeRange = {
+                    start: bpmDataPoint[0][0],
+                    end:   bpmDataPoint[bpmDataPoint.length - 1][0]
+                };
+            }
+
+            chart.series[0].setData(spo2DataPointLowHigh, false);
+            chart.series[1].setData(spo2DataPoint, false);
+            chart.series[2].setData(bpmDataPoint, false);
+            chart.series[3].setData(bpmOHLC, false);
+            chart.series[4].setData(piDataPoint, false);
+            chart.series[5].setData(pviDataPoint, false);
+
+            chart.redraw();
+            chart.hideLoading();
+
+            if (chart.rangeSelector) {
+                chart.rangeSelector.clickButton(3, true);
+            }
+            setTimeout(function() {
+                var ex = chart.xAxis[0].getExtremes();
+                updateSummary(ex.min, ex.max);
+            }, 50);
+
+            // Apply plotLines to meteo charts if they are already rendered
+            applyPulsiPlotLines();
+        })
+        .catch(function () {
+            chart.showLoading('Error fetching data from server');
+        });
+
+    // Netatmo charts — fetch in parallel (independent)
+    fetchNetatmoData(dateString);
+}
+
+// Function to format ms into HHhMMmSSs
+function formatDuration(ms) {
+    if (ms < 0) ms = 0;
+    var totalSeconds = Math.floor(ms / 1000);
+    var h = Math.floor(totalSeconds / 3600);
+    var m = Math.floor((totalSeconds % 3600) / 60);
+    var s = totalSeconds % 60;
+    return String(h).padStart(2, '0') + 'h' + String(m).padStart(2, '0') + 'm' + String(s).padStart(2, '0') + 's';
+}
+
+function updateSummary(minVal, maxVal) {
+    var chart = globalChart;
+    if (!chart || !appState.currentData) return;
+    
+    var xAxis = chart.xAxis && chart.xAxis[0];
+    if (!xAxis) return;
+
+    if (!minVal || !maxVal) {
+        var extremes = xAxis.getExtremes();
+        minVal = extremes.min;
+        maxVal = extremes.max;
+    }
+
+    // Filter points within visible range
+    var visibleSpO2 = appState.currentData.spo2.filter(function(p) { return p[0] >= minVal && p[0] <= maxVal; });
+    var visibleBPM  = appState.currentData.bpm.filter(function(p) { return p[0] >= minVal && p[0] <= maxVal; });
+
+    if (visibleSpO2.length === 0 && visibleBPM.length === 0) {
+        var sumContent = document.getElementById('summary-content');
+        if (sumContent) sumContent.innerHTML = '<h2>Resumen</h2><p>No hay datos en este intervalo.</p>';
+        return;
+    }
+
+    var startMs = minVal;
+    var endMs = maxVal;
+    
+    // Better approximation for start/end based on valid data points if available
+    if (visibleSpO2.length > 0) {
+        startMs = visibleSpO2[0][0];
+        endMs = visibleSpO2[visibleSpO2.length - 1][0];
+    }
+    
+    var startDate = new Date(startMs);
+    var endDate   = new Date(endMs);
+    
+    var formatTime = function(d) {
+        return String(d.getUTCHours()).padStart(2, '0') + ':' + 
+               String(d.getUTCMinutes()).padStart(2, '0') + ':' + 
+               String(d.getUTCSeconds()).padStart(2, '0');
+    };
+    var formatDate = function(d) {
+        return String(d.getUTCDate()).padStart(2, '0') + '/' + 
+               String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + 
+               d.getUTCFullYear();
+    };
+
+    var durationMs = endMs - startMs;
+    var durationSecs = Math.floor(durationMs / 1000); 
+    
+    var numPoints = visibleSpO2.length;
+    var missingSecs = durationSecs - numPoints;
+    if (missingSecs < 0) missingSecs = 0;
+
+    var spo2_bins = [0, 0, 0, 0]; // <85, 85-89, 90-95, 96-100
+    var spo2Sum = 0;
+    for (var i = 0; i < visibleSpO2.length; i++) {
+        var v = visibleSpO2[i][1];
+        spo2Sum += v;
+        if (v < 85) spo2_bins[0]++;
+        else if (v <= 89) spo2_bins[1]++;
+        else if (v <= 95) spo2_bins[2]++;
+        else spo2_bins[3]++;
+    }
+    var spo2_lt_85 = spo2_bins[0];
+    var spo2_lt_90 = spo2_bins[0] + spo2_bins[1];
+    var spo2Mean = 0, spo2Dev = 0;
+    if (visibleSpO2.length > 0) {
+        spo2Mean = spo2Sum / visibleSpO2.length;
+        var diffSum = 0;
+        for (var i = 0; i < visibleSpO2.length; i++) {
+            diffSum += Math.abs(visibleSpO2[i][1] - spo2Mean);
+        }
+        spo2Dev = diffSum / visibleSpO2.length;
+    }
+
+    var bpm_bins = [0, 0, 0, 0, 0, 0, 0, 0]; // <60, 60-69, 70-79, 80-89, 90-99, 100-109, 110-119, >=120
+    var bpmSum = 0;
+    for (var j = 0; j < visibleBPM.length; j++) {
+        var b = visibleBPM[j][1];
+        bpmSum += b;
+        if (b < 60) bpm_bins[0]++;
+        else if (b <= 69) bpm_bins[1]++;
+        else if (b <= 79) bpm_bins[2]++;
+        else if (b <= 89) bpm_bins[3]++;
+        else if (b <= 99) bpm_bins[4]++;
+        else if (b <= 109) bpm_bins[5]++;
+        else if (b <= 119) bpm_bins[6]++;
+        else bpm_bins[7]++;
+    }
+    var bpm_gt_80 = bpm_bins[3] + bpm_bins[4] + bpm_bins[5] + bpm_bins[6] + bpm_bins[7];
+    var bpm_gt_90 = bpm_bins[4] + bpm_bins[5] + bpm_bins[6] + bpm_bins[7];
+    var bpm_gt_100 = bpm_bins[5] + bpm_bins[6] + bpm_bins[7];
+    var bpmMean = 0, bpmDev = 0;
+    if (visibleBPM.length > 0) {
+        bpmMean = bpmSum / visibleBPM.length;
+        var bDiffSum = 0;
+        for (var j = 0; j < visibleBPM.length; j++) {
+            bDiffSum += Math.abs(visibleBPM[j][1] - bpmMean);
+        }
+        bpmDev = bDiffSum / visibleBPM.length;
+    }
+
+    var tempMean = 0, tempDev = 0;
+    var tempBMean = 0, tempBDev = 0;
+    var visibleTemp = [];
+    var visibleTempB = [];
+    if (appState.netatmoTempD && appState.netatmoTempD.length > 0) {
+        visibleTemp = appState.netatmoTempD.filter(function(p) { return p[0] >= minVal && p[0] <= maxVal; });
+        if (visibleTemp.length === 0) {
+            // Manejo de intervalos estrechos: buscar el último valor disponible justo antes o en minVal
+            var lastPoint = null;
+            for (var k = appState.netatmoTempD.length - 1; k >= 0; k--) {
+                if (appState.netatmoTempD[k][0] <= minVal) {
+                    lastPoint = appState.netatmoTempD[k];
+                    break;
+                }
+            }
+            if (lastPoint) {
+                visibleTemp.push(lastPoint);
+            }
+        }
+        
+        if (visibleTemp.length > 0) {
+            var tempSum = 0;
+            for (var k = 0; k < visibleTemp.length; k++) {
+                tempSum += visibleTemp[k][1];
+            }
+            tempMean = tempSum / visibleTemp.length;
+            var tempDiffSum = 0;
+            for (var k = 0; k < visibleTemp.length; k++) {
+                tempDiffSum += Math.abs(visibleTemp[k][1] - tempMean);
+            }
+            tempDev = tempDiffSum / visibleTemp.length;
+        }
+    }
+
+    if (appState.netatmoTempB && appState.netatmoTempB.length > 0) {
+        visibleTempB = appState.netatmoTempB.filter(function(p) { return p[0] >= minVal && p[0] <= maxVal; });
+        if (visibleTempB.length === 0) {
+            var lastPointB = null;
+            for (var k = appState.netatmoTempB.length - 1; k >= 0; k--) {
+                if (appState.netatmoTempB[k][0] <= minVal) {
+                    lastPointB = appState.netatmoTempB[k];
+                    break;
+                }
+            }
+            if (lastPointB) {
+                visibleTempB.push(lastPointB);
+            }
+        }
+        
+        if (visibleTempB.length > 0) {
+            var tempBSum = 0;
+            for (var k = 0; k < visibleTempB.length; k++) {
+                tempBSum += visibleTempB[k][1];
+            }
+            tempBMean = tempBSum / visibleTempB.length;
+            var tempBDiffSum = 0;
+            for (var k = 0; k < visibleTempB.length; k++) {
+                tempBDiffSum += Math.abs(visibleTempB[k][1] - tempBMean);
+            }
+            tempBDev = tempBDiffSum / visibleTempB.length;
+        }
+    }
+
+    var durDiv = (durationSecs > 0) ? durationSecs : 1;
+    var pct = function(val) {
+        return ((val / durDiv) * 100).toFixed(2) + '%';
+    };
+
+    var spo2Color = (chart.series[1] && chart.series[1].color) || '#90ee7e';
+    var bpmColor  = (chart.series[2] && chart.series[2].color) || '#f45b5b';
+
+    var html = '<h2>Resumen</h2>';
+    html += '<div class="s-row" style="margin-bottom: 10px;"><strong>Duración:</strong> <span style="font-size: 1.25rem;">' + formatDuration(durationMs) + '</span></div>';
+    html += '<div class="s-row"><strong>Inicio:</strong> ' + formatDate(startDate) + ' ' + formatTime(startDate) + ' &nbsp; <strong>Fin:</strong> ' + formatTime(endDate) + '</div>';
+    html += '<div class="s-sub">Puntos no registrados: ' + missingSecs + ' seg (Diff: ' + durationSecs + 's - ' + numPoints + ' pts)</div>';
+
+    if (visibleTemp.length > 0) {
+        var tempColor = '#f45b5b'; // Color de Temp Interior en el gráfico
+        html += '<div class="s-group" style="color: ' + tempColor + '; border-left-color: ' + tempColor + ';">';
+        html += '<div class="s-row"><strong>Temperatura habitación:</strong> ' + tempMean.toFixed(1) + 'º ± ' + tempDev.toFixed(1) + 'º</div>';
+        if (visibleTempB.length > 0) {
+            html += '<div class="s-row"><strong>Temperatura habitación ayer (*):</strong> ' + tempBMean.toFixed(1) + 'º ± ' + tempBDev.toFixed(1) + 'º</div>';
+            html += '<div class="s-row" style="font-size: 0.75rem; font-style: italic; color: #aaa;">(*) Media calculada en el horario de sueño de hoy</div>';
+        }
+        html += '</div>';
+    }
+
+
+
+    html += '<div class="s-group" style="color: ' + spo2Color + '; border-left-color: ' + spo2Color + ';">';
+    html += '<div class="s-row" style="margin-bottom: 8px;"><strong>SpO2 = </strong><span style="font-size: 1.2rem; font-weight: bold;">' + spo2Mean.toFixed(2) + ' ± ' + spo2Dev.toFixed(2) + '</span></div>';
+    html += '<div class="s-row">Tiempo SpO2 &lt; 90: ' + formatDuration(spo2_lt_90 * 1000) + ' (' + pct(spo2_lt_90) + ')</div>';
+    html += '<div class="s-row">Tiempo SpO2 &lt; 85: ' + formatDuration(spo2_lt_85 * 1000) + ' (' + pct(spo2_lt_85) + ')</div>';
+    html += '</div>';
+
+    html += '<div class="s-group" style="color: ' + bpmColor + '; border-left-color: ' + bpmColor + ';">';
+    html += '<div class="s-row" style="margin-bottom: 8px;"><strong>BPM = </strong><span style="font-size: 1.2rem; font-weight: bold;">' + bpmMean.toFixed(2) + ' ± ' + bpmDev.toFixed(2) + '</span></div>';
+    html += '<div class="s-row">Tiempo BPM &gt; 80: ' + formatDuration(bpm_gt_80 * 1000) + ' (' + pct(bpm_gt_80) + ')</div>';
+    html += '<div class="s-row">Tiempo BPM &gt; 90: ' + formatDuration(bpm_gt_90 * 1000) + ' (' + pct(bpm_gt_90) + ')</div>';
+    html += '<div class="s-row">Tiempo BPM &gt; 100: ' + formatDuration(bpm_gt_100 * 1000) + ' (' + pct(bpm_gt_100) + ')</div>';
+    html += '</div>';
+
+
+
+    var sumContent = document.getElementById('summary-content');
+    if (sumContent) sumContent.innerHTML = html;
+
+    // --- Update Histograms ---
+    if (!window.histSpO2 && document.getElementById('chart-hist-spo2')) {
+        window.histSpO2 = Highcharts.chart('chart-hist-spo2', {
+            chart: { type: 'bar', backgroundColor: '#16213e', height: 280 },
+            title: { text: 'Distribución SpO2', style: { color: '#ccc', fontSize: '13px' } },
+            xAxis: { categories: ['96-100', '90-95', '85-89', '<85'], labels: { style: { color: '#aaa', fontSize: '11px' } }, lineColor: '#1e3a5f', tickColor: '#1e3a5f' },
+            yAxis: { title: { text: null }, labels: { enabled: false }, gridLineWidth: 0 },
+            legend: { enabled: false },
+            credits: { enabled: false },
+            tooltip: {
+                formatter: function() {
+                    var h = String(Math.floor(this.y / 3600)).padStart(2, '0');
+                    var m = String(Math.floor((this.y % 3600) / 60)).padStart(2, '0');
+                    var s = String(this.y % 60).padStart(2, '0');
+                    return '<b>' + this.x + '</b><br/>' + this.series.name + ': ' + h + 'h' + m + 'm' + s + 's';
+                }
+            },
+            plotOptions: {
+                bar: {
+                    borderWidth: 0,
+                    dataLabels: {
+                        enabled: true,
+                        color: '#fff',
+                        style: { textOutline: '2px #000', fontSize: '11px', fontWeight: 'bold' },
+                        align: 'left',
+                        inside: true,
+                        formatter: function() {
+                            if (this.y === 0) return null;
+                            var total = this.series.options.totalPoints || 1;
+                            var pct = ((this.y / total) * 100).toFixed(1) + '%';
+                            var h = String(Math.floor(this.y / 3600)).padStart(2, '0');
+                            var m = String(Math.floor((this.y % 3600) / 60)).padStart(2, '0');
+                            var s = String(this.y % 60).padStart(2, '0');
+                            return h + 'h' + m + 'm' + s + 's | ' + pct;
+                        }
+                    }
+                }
+            },
+            series: [{ name: 'SpO2', data: [], color: spo2Color }]
+        });
+    }
+
+    if (!window.histBPM && document.getElementById('chart-hist-bpm')) {
+        window.histBPM = Highcharts.chart('chart-hist-bpm', {
+            chart: { type: 'bar', backgroundColor: '#16213e', height: 280 },
+            title: { text: 'Distribución BPM', style: { color: '#ccc', fontSize: '13px' } },
+            xAxis: { categories: ['>=120', '110-119', '100-109', '90-99', '80-89', '70-79', '60-69', '<60'], labels: { style: { color: '#aaa', fontSize: '11px' } }, lineColor: '#1e3a5f', tickColor: '#1e3a5f' },
+            yAxis: { title: { text: null }, labels: { enabled: false }, gridLineWidth: 0 },
+            legend: { enabled: false },
+            credits: { enabled: false },
+            tooltip: {
+                formatter: function() {
+                    var h = String(Math.floor(this.y / 3600)).padStart(2, '0');
+                    var m = String(Math.floor((this.y % 3600) / 60)).padStart(2, '0');
+                    var s = String(this.y % 60).padStart(2, '0');
+                    return '<b>' + this.x + '</b><br/>' + this.series.name + ': ' + h + 'h' + m + 'm' + s + 's';
+                }
+            },
+            plotOptions: {
+                bar: {
+                    borderWidth: 0,
+                    dataLabels: {
+                        enabled: true,
+                        color: '#fff',
+                        style: { textOutline: '2px #000', fontSize: '11px', fontWeight: 'bold' },
+                        align: 'left',
+                        inside: true,
+                        formatter: function() {
+                            if (this.y === 0) return null;
+                            var total = this.series.options.totalPoints || 1;
+                            var pct = ((this.y / total) * 100).toFixed(1) + '%';
+                            var h = String(Math.floor(this.y / 3600)).padStart(2, '0');
+                            var m = String(Math.floor((this.y % 3600) / 60)).padStart(2, '0');
+                            var s = String(this.y % 60).padStart(2, '0');
+                            return h + 'h' + m + 'm' + s + 's | ' + pct;
+                        }
+                    }
+                }
+            },
+            series: [{ name: 'BPM', data: [], color: bpmColor }]
+        });
+    }
+
+    if (window.histSpO2) {
+        window.histSpO2.series[0].update({ totalPoints: visibleSpO2.length }, false);
+        window.histSpO2.series[0].setData([...spo2_bins].reverse(), false);
+        window.histSpO2.series[0].update({ color: spo2Color }, false);
+        window.histSpO2.redraw();
+    }
+    if (window.histBPM) {
+        window.histBPM.series[0].update({ totalPoints: visibleBPM.length }, false);
+        window.histBPM.series[0].setData([...bpm_bins].reverse(), false);
+        window.histBPM.series[0].update({ color: bpmColor }, false);
+        window.histBPM.redraw();
+    }
+}
+
+/* ───────────────────────────────────────────────────────────
+   Data Grouping Buttons (rendered inside chart SVG)
+   ─────────────────────────────────────────────────────────── */
+var gpwGroups = [
+    { label: 'Raw',   value: null },
+    { label: '5px',   value: 5    },
+    { label: '10px',  value: 10   },
+    { label: '25px',  value: 25   },
+    { label: '50px',  value: 50   },
+    { label: '100px', value: 100  },
+    { label: '200px', value: 200  }
+];
+var currentGpw = 50;
+var yAxisFixed = true;
+var Y_FIXED = [
+    { min: 60, max: 105 },  // yAxis[0]: SpO2 & BPM
+    { min: 0,  max: 5   }   // yAxis[1]: P.I.
+];
+
+function addGroupingButtons(chart) {
+    if (chart.gpwBtns) {
+        chart.gpwBtns.forEach(function (b) { b.destroy(); });
+    }
+    chart.gpwBtns = [];
+
+    var rsBtn = chart.rangeSelector.buttons[chart.rangeSelector.buttons.length - 1];
+    var y = rsBtn.translateY;
+
+    var normalStyle = {
+        fill: '#1a1a2e', stroke: '#0f3460', 'stroke-width': 1, r: 4, padding: 4,
+        style: { color: '#a5b4fc', fontFamily: 'inherit', fontSize: '10px' }
+    };
+    var hoverStyle = {
+        fill: '#7b2ff7', stroke: '#7b2ff7',
+        style: { color: '#fff' }
+    };
+    var selectStyle = {
+        fill: '#533483', stroke: '#533483',
+        style: { color: '#fff' }
+    };
+
+    var widths = [], cumX = 0;
+    gpwGroups.forEach(function (g) {
+        var btn = chart.renderer.button(
+            g.label, cumX, y,
+            function () { setGroupPixelWidth(g.value); },
+            normalStyle, hoverStyle, selectStyle
+        ).add(chart.rangeSelector.group);
+
+        var w = btn.getBBox().width;
+        widths.push(w);
+        cumX += w + 3;
+        chart.gpwBtns.push(btn);
+    });
+
+    var totalWidth = cumX - 3;
+    var startX = Math.round((chart.chartWidth - totalWidth) / 2);
+    var x = startX;
+    chart.gpwBtns.forEach(function (btn, i) {
+        btn.attr({ translateX: x });
+        x += widths[i] + 3;
+        if (gpwGroups[i].value === currentGpw) btn.setState(2);
+    });
+
+    // ── Y-Axis toggle button + LED indicator, placed to the left of legend ──
+    if (chart.yAxisToggleBtn) {
+        chart.yAxisToggleBtn.destroy();
+        chart.yAxisToggleBtn = null;
+    }
+    if (chart.yAxisToggleDot) {
+        chart.yAxisToggleDot.destroy();
+        chart.yAxisToggleDot = null;
+    }
+
+    var legendGroup = chart.legend.group;
+    var btnY        = Math.round(legendGroup.translateY);
+    var dotR        = 5;
+    var gap         = 7;
+
+    // Create the button first to measure its width
+    var yToggleBtn = chart.renderer.button(
+        'Auto Y-Axis',
+        0, 0,
+        function () { toggleYAxis(); },
+        normalStyle, hoverStyle, selectStyle
+    ).add();
+
+    var tBBox    = yToggleBtn.getBBox();
+    var blockX   = 15; // Placed at the left
+    var dotCY    = Math.round(btnY + tBBox.height / 2);
+
+    // LED dot: green = auto, gray = fixed
+    var dotFill = yAxisFixed ? '#555' : '#4ade80';
+    var dotGlow = yAxisFixed ? 'none' : '#4ade80';
+    var yToggleDot = chart.renderer.circle(blockX + dotR, dotCY, dotR)
+        .attr({ fill: dotFill, stroke: dotGlow, 'stroke-width': yAxisFixed ? 0 : 2, zIndex: 6 })
+        .add();
+
+    yToggleBtn.attr({
+        translateX: blockX + dotR * 2 + gap,
+        translateY: btnY
+    });
+
+    chart.yAxisToggleBtn = yToggleBtn;
+    chart.yAxisToggleDot = yToggleDot;
+}
+
+function setGroupPixelWidth(value) {
+    var chart = globalChart;
+    if (!chart) return;
+    currentGpw = value;
+
+    chart.gpwBtns.forEach(function (btn, i) {
+        btn.setState(gpwGroups[i].value === value ? 2 : 0);
+    });
+
+    chart.series.forEach(function (s) {
+        if (s.options.id === 'highcharts-navigator-series') return;
+        s.update({
+            dataGrouping: value === null
+                ? { enabled: false }
+                : { enabled: true, groupPixelWidth: value }
+        }, false);
+    });
+    chart.redraw();
+}
+
+function applyYAxisRanges(chart) {
+    chart.yAxis.forEach(function (ax, i) {
+        if (!Y_FIXED[i]) return;
+        ax.update(
+            yAxisFixed
+                ? { min: Y_FIXED[i].min, max: Y_FIXED[i].max, endOnTick: false, showLastLabel: true }
+                : { min: null, max: null, endOnTick: true },
+            false
+        );
+    });
+    chart.redraw();
+}
+
+function toggleYAxis() {
+    var chart = globalChart;
+    if (!chart) return;
+    yAxisFixed = !yAxisFixed;
+    applyYAxisRanges(chart);
+
+    // Update LED dot color only — button label stays 'Auto Y-Axis'
+    if (chart.yAxisToggleDot) {
+        var dotFill = yAxisFixed ? '#555' : '#4ade80';
+        var sw      = yAxisFixed ? 0 : 2;
+        var stroke  = yAxisFixed ? 'none' : '#4ade80';
+        chart.yAxisToggleDot.attr({ fill: dotFill, stroke: stroke, 'stroke-width': sw });
+    }
+}
+
+/* ───────────────────────────────────────────────────────────
+   Netatmo Meteo Charts — Definitions & Rendering
+   ─────────────────────────────────────────────────────────── */
+var METEO_DEFS = [
+    {
+        id: 'temperature',
+        renderTo: 'chart-temperature',
+        titlePrefix: 'Temperaturas',
+        unit: '°C',
+        indoor:  { index: 1, name: 'Temp Interior',  color: '#f45b5b', width: 2.5 },
+        outdoor: { index: 7, name: 'Temp Exterior',  color: '#8085e9' },
+        showDataLabels: true
+    },
+    {
+        id: 'humidity',
+        renderTo: 'chart-humidity',
+        titlePrefix: 'Humedad',
+        unit: '%',
+        indoor:  { index: 2, name: 'Hum. Interior',  color: '#7cb5ec', width: 2.5 },
+        outdoor: { index: 8, name: 'Hum. Exterior',  color: '#e4d354' }
+    },
+    {
+        id: 'pressure',
+        renderTo: 'chart-pressure',
+        titlePrefix: 'Presión',
+        unit: ' mbar',
+        indoor:  { index: 5, name: 'Pres. Interior',  color: '#90ee7e', width: 2.5 },
+        outdoor: { index: 6, name: 'Pres. Exterior',  color: '#ff9f7f' }
+    },
+    {
+        id: 'noise',
+        renderTo: 'chart-noise',
+        titlePrefix: 'Ruido',
+        unit: ' dB',
+        indoor:  { index: 4, name: 'Ruido Interior', color: '#aaeeee', width: 2.5 },
+        outdoor: null
+    },
+    {
+        id: 'co2',
+        renderTo: 'chart-co2',
+        titlePrefix: 'CO2',
+        unit: ' ppm',
+        indoor:  { index: 3, name: 'CO2 Interior',   color: '#f7a35c', width: 2.5 },
+        outdoor: null
+    }
+];
+
+function toRgba(hex, alpha) {
+    var r = parseInt(hex.slice(1, 3), 16);
+    var g = parseInt(hex.slice(3, 5), 16);
+    var b = parseInt(hex.slice(5, 7), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+function parseNetatmoTimestamp(val) {
+    if (typeof val === 'string') {
+        // Handle both 'YYYY-MM-DD HH:MM:SS' and ISO 'YYYY-MM-DDTHH:MM:SS'
+        var p = val.split(/[T \-:]/);
+        if (p.length >= 5) {
+            return Date.UTC(
+                parseInt(p[0], 10),
+                parseInt(p[1], 10) - 1,
+                parseInt(p[2], 10),
+                parseInt(p[3], 10),
+                parseInt(p[4], 10),
+                p[5] ? parseInt(p[5], 10) : 0
+            );
+        }
+    }
+    return null;
+}
+
+var DIAS_SEMANA = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+function buildMeteoTitle(prefix, date) {
+    // FROM  = appState.currentDate (start of D series window)
+    // TO    = appState.currentDate + 24h
+    var fromDate = date;
+    var toDate   = new Date(date.getTime() + 86400000);
+    var fromDay  = DIAS_SEMANA[fromDate.getDay()];
+    var toDay    = DIAS_SEMANA[toDate.getDay()];
+    var fromStr  = fromDay + ' ' + fromDate.getDate() + '/' + (fromDate.getMonth()+1) + '/' + fromDate.getFullYear()
+                 + ' ' + String(fromDate.getHours()).padStart(2,'0') + ':' + String(fromDate.getMinutes()).padStart(2,'0');
+    var toStr    = toDay + ' a las ' + String(toDate.getHours()).padStart(2,'0') + ':' + String(toDate.getMinutes()).padStart(2,'0');
+    return prefix + ' del ' + fromStr + ' a ' + toStr;
+}
+
+function fetchNetatmoData(dateString) {
+    // The API end_date_utc must be the UPPER bound of the window:
+    // appState.currentDate is set to e.g. 2025-11-21 18:00, so +24h = 2025-11-22 18:00
+    var endDate  = new Date(appState.currentDate.getTime() + 86400000);
+    var year     = endDate.getFullYear();
+    var month    = String(endDate.getMonth() + 1).padStart(2, '0');
+    var day      = String(endDate.getDate()).padStart(2, '0');
+    var hours    = String(endDate.getHours()).padStart(2, '0');
+    var minutes  = String(endDate.getMinutes()).padStart(2, '0');
+    var seconds  = String(endDate.getSeconds()).padStart(2, '0');
+    var endDateStr  = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+    var encodedDate = encodeURIComponent(endDateStr);
+    var url = 'https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com'
+            + '/ords/PULSI/pulsi/v6/netamodata?end_date_utc=' + encodedDate;
+
+    fetch(url)
+        .then(function (r) { return r.text(); })   // raw text — not .json()
+        .then(function (rawText) {
+            // Strip spurious "Content-type: application/json" header if present
+            var jsonStart = rawText.indexOf('{');
+            if (jsonStart > 0) {
+                rawText = rawText.substring(jsonStart);
+            }
+            var data = JSON.parse(rawText);
+            renderMeteoCharts(data);
+        })
+        .catch(function (err) {
+            console.error('Error fetching Netatmo data:', err);
+        });
+}
+
+function renderMeteoCharts(data) {
+    var MS_24H = 86400000;
+    var seriesD = data.D || [];
+    var seriesB = data.B || [];
+
+    METEO_DEFS.forEach(function (def) {
+        var dIndoor  = [];
+        var dOutdoor = [];
+        var bIndoor  = [];
+        var bOutdoor = [];
+
+        // Parse series D
+        seriesD.forEach(function (row) {
+            var ts = parseNetatmoTimestamp(row[0]);
+            if (ts === null) return;
+            var indoorVal = row[def.indoor.index];
+            if (indoorVal !== null && indoorVal !== undefined) {
+                dIndoor.push([ts, indoorVal]);
+            }
+            if (def.outdoor) {
+                var outdoorVal = row[def.outdoor.index];
+                if (outdoorVal !== null && outdoorVal !== undefined) {
+                    dOutdoor.push([ts, outdoorVal]);
+                }
+            }
+        });
+
+        // Parse series B — shift +24h so it overlays on the same X axis
+        seriesB.forEach(function (row) {
+            var ts = parseNetatmoTimestamp(row[0]);
+            if (ts === null) return;
+            ts += MS_24H;  // shift to overlay
+            var indoorVal = row[def.indoor.index];
+            if (indoorVal !== null && indoorVal !== undefined) {
+                bIndoor.push([ts, indoorVal]);
+            }
+            if (def.outdoor) {
+                var outdoorVal = row[def.outdoor.index];
+                if (outdoorVal !== null && outdoorVal !== undefined) {
+                    bOutdoor.push([ts, outdoorVal]);
+                }
+            }
+        });
+
+        if (def.id === 'temperature') {
+            appState.netatmoTempD = dIndoor;
+            appState.netatmoTempB = bIndoor;
+        }
+
+        // Build series array
+        var chartSeries = [];
+        var indoorColor  = def.indoor.color;
+        var outdoorColor = def.outdoor ? def.outdoor.color : null;
+
+        // Series 0: D Indoor (Today)
+        var dIndoorSeries = {
+            name: def.indoor.name,
+            data: dIndoor,
+            color: indoorColor,
+            lineWidth: 2.5,
+            marker: { enabled: false },
+            zIndex: 4
+        };
+        // Temperature D Indoor: always show dataLabels, one every 5 points
+        if (def.showDataLabels) {
+            dIndoorSeries.dataLabels = {
+                enabled: true,
+                formatter: function () {
+                    return (this.point.index % 5 === 0)
+                        ? this.y.toFixed(1) + '°'
+                        : null;
+                },
+                style: { fontSize: '9px', color: indoorColor, textOutline: '1px #16213e' }
+            };
+        }
+        chartSeries.push(dIndoorSeries);
+
+        // Series 1: D Outdoor (Today - thinner and slightly transparent)
+        if (def.outdoor) {
+            chartSeries.push({
+                name: def.outdoor.name,
+                data: dOutdoor,
+                color: toRgba(outdoorColor, 0.7),
+                lineWidth: 1.5,
+                marker: { enabled: false },
+                visible: false,
+                zIndex: 3
+            });
+        }
+
+        // Series 2: B Indoor (Yesterday - thinner and more transparent)
+        var bIndoorSeries = {
+            name: def.indoor.name + ' (ayer)',
+            data: bIndoor,
+            color: toRgba(indoorColor, 0.4),
+            lineWidth: 1.5,
+            dashStyle: 'Dash',
+            marker: { enabled: false },
+            visible: true,
+            zIndex: 2
+        };
+        chartSeries.push(bIndoorSeries);
+
+        // Series 3: B Outdoor (Yesterday - thinnest and very transparent)
+        if (def.outdoor) {
+            chartSeries.push({
+                name: def.outdoor.name + ' (ayer)',
+                data: bOutdoor,
+                color: toRgba(outdoorColor, 0.3),
+                lineWidth: 1.0,
+                dashStyle: 'Dash',
+                marker: { enabled: false },
+                visible: false,
+                zIndex: 1
+            });
+        }
+
+        // Build chart title
+        var title = buildMeteoTitle(def.titlePrefix, appState.currentDate);
+
+        // Destroy previous chart if exists
+        if (meteoCharts[def.id]) {
+            meteoCharts[def.id].destroy();
+        }
+
+        // Create Highcharts.chart (not stockChart)
+        meteoCharts[def.id] = Highcharts.chart(def.renderTo, {
+            chart: {
+                type: 'line',
+                zoomType: 'x',
+                backgroundColor: '#16213e'
+            },
+            title: { text: title, style: { fontSize: '13px' } },
+            xAxis: {
+                type: 'datetime',
+                gridLineColor: '#1e3a5f',
+                lineColor: '#1e3a5f',
+                tickColor: '#1e3a5f',
+                labels: { style: { color: '#aaa', fontSize: '10px' } }
+            },
+            yAxis: {
+                title: { text: def.unit, style: { color: '#ccc' } },
+                gridLineColor: '#1e3a5f',
+                labels: { style: { color: '#aaa' } }
+            },
+            legend: {
+                enabled: true,
+                itemStyle: { color: '#ccc', fontSize: '11px' },
+                itemHoverStyle: { color: '#fff' },
+                itemHiddenStyle: { color: '#555' }
+            },
+            tooltip: {
+                shared: true,
+                valueSuffix: def.unit,
+                backgroundColor: 'rgba(22,33,62,0.92)',
+                borderColor: '#0f3460',
+                style: { color: '#e0e0e0', fontSize: '12px' },
+                xDateFormat: '%A %d/%m/%Y %H:%M'
+            },
+            credits: { enabled: false },
+            series: chartSeries
+        });
+    });
+
+    // Add vertical plotLines (start/end of D series) to the temperature chart
+    // only after we have data — this runs inside the Netatmo fetch .then(), so it's async
+    var tempChart = meteoCharts['temperature'];
+    if (tempChart) {
+        // Apply plotLines if Pulsi data is already available
+        applyPulsiPlotLines();
+    }
+    // (if Pulsi hasn't finished yet, applyPulsiPlotLines() will be called
+    //  from the Pulsi fetch .then() once it completes)
+
+    // Trigger a summary update to show the temperature data now that it is available
+    updateSummary();
+}
+
+/* ───────────────────────────────────────────────────────────
+   Shared plotLines: Pulsi session start/end on all 5 meteo charts
+   Called from both Pulsi fetch .then() AND renderMeteoCharts()
+   — whichever finishes LAST applies the lines.
+   ─────────────────────────────────────────────────────────── */
+function applyPulsiPlotLines() {
+    var range = appState.pulsiTimeRange;
+    if (!range) return;  // Pulsi fetch not done yet
+
+    var plotLines = [
+        {
+            value: range.start,
+            color: 'rgba(255,255,255,0.4)',
+            width: 1,
+            dashStyle: 'Solid',
+            zIndex: 5,
+            label: { text: 'inicio', style: { color: '#aaa', fontSize: '9px' }, rotation: 0, y: 14 }
+        },
+        {
+            value: range.end,
+            color: 'rgba(255,255,255,0.4)',
+            width: 1,
+            dashStyle: 'Solid',
+            zIndex: 5,
+            label: { text: 'fin', style: { color: '#aaa', fontSize: '9px' }, rotation: 0, y: 14 }
+        }
+    ];
+
+    // Apply to all 5 meteo charts (skip those not rendered yet)
+    ['temperature', 'humidity', 'pressure', 'noise', 'co2'].forEach(function (id) {
+        var ch = meteoCharts[id];
+        if (ch && ch.xAxis && ch.xAxis[0]) {
+            ch.xAxis[0].update({ plotLines: plotLines }, true);
+        }
+    });
+}
+</script>
+
+</body>
+</html>
