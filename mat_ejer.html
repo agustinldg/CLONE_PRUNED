@@ -1,0 +1,1089 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EJERCICIOS DE MATEMÁTICAS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lista de enunciados a ancho de lectura a la izquierda, banda de filtros fija a la derecha */
+:root{
+  --bg:#f6f7f9; --paper:#ffffff; --ink:#1b1f27; --muted:#5a6272; --rule:#dde1e8; --rule-strong:#c4cad4;
+  --accent:#1f4fa8; --accent-soft:#e6edf9; --hl:#fff4c2; --shade:#eceff4;
+  /* marcas: rojos (negativas) → sin color (pendiente) → verdes de menos a más positivo */
+  --m-error_grave:#f67f79; --m-demasiado_facil:#fcc2bf; --m-pendiente:transparent;
+  --m-ya_hecho:#e5faeb; --m-hecho:#aaeebc; --m-dificil:#8fe5a6; --m-interesante:#76db91; --m-bonito:#5dd07c; --red:#b3261e;
+  --s-alg:#1f4fa8; --s-ana:#a3480f; --s-pro:#1d7461; --s-top:#7a3b92; --s-x:#5a6272;
+  --series-1:#2a78d6; --series-2:#eb6834;
+  --f-text:"STIX Two Text","STIX Two","Times New Roman",serif;
+  --f-ui:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13161c; --shade:#1b1f27;
+  --m-error_grave:#9e201a; --m-demasiado_facil:#591b18;
+  --m-ya_hecho:#0f2e1a; --m-hecho:#1a562e; --m-dificil:#1e6b38; --m-interesante:#228142; --m-bonito:#26974b;
+  --paper:#1a1e26; --ink:#e7e9ee; --muted:#9aa2b1; --rule:#2b313c; --rule-strong:#3a4250;
+  --accent:#8fb2ff; --accent-soft:#1f2a42; --hl:#4a3f12; --red:#ff8a80;
+  --s-alg:#8fb2ff; --s-ana:#f0a46c; --s-pro:#6fd3b6; --s-top:#d39cf0; --s-x:#9aa2b1; color-scheme:dark;
+  --series-1:#3987e5; --series-2:#d95926}}
+:root[data-theme="light"]{color-scheme:light}
+:root[data-theme="dark"]{
+  --bg:#13161c; --shade:#1b1f27;
+  --m-error_grave:#9e201a; --m-demasiado_facil:#591b18;
+  --m-ya_hecho:#0f2e1a; --m-hecho:#1a562e; --m-dificil:#1e6b38; --m-interesante:#228142; --m-bonito:#26974b;
+  --paper:#1a1e26; --ink:#e7e9ee; --muted:#9aa2b1; --rule:#2b313c; --rule-strong:#3a4250;
+  --accent:#8fb2ff; --accent-soft:#1f2a42; --hl:#4a3f12; --red:#ff8a80;
+  --s-alg:#8fb2ff; --s-ana:#f0a46c; --s-pro:#6fd3b6; --s-top:#d39cf0; --s-x:#9aa2b1; color-scheme:dark;
+  --series-1:#3987e5; --series-2:#d95926}
+
+*{box-sizing:border-box}
+/* el atributo hidden debe ganar a los display de .ex, .group-h, etc. (los filtros ocultan con él) */
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:1680px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:32px;padding-block:28px 64px}
+header.top{grid-column:1;grid-row:1;display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--rule-strong);padding-bottom:14px}
+header.top h1{margin:0;font-family:var(--f-text);font-weight:600;font-size:30px;letter-spacing:-.01em;text-wrap:balance}
+header.top .count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px}
+header.top .count b{color:var(--ink);font-weight:600}
+header.top .right{display:flex;align-items:center;gap:14px}
+.tema-btn{display:grid;place-items:center;width:34px;height:34px;padding:0;color:var(--muted);background:transparent;border:1px solid var(--rule-strong);border-radius:8px;cursor:pointer;align-self:center}
+.tema-btn:hover{color:var(--ink);background:var(--paper)}
+.tema-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tema-btn svg{width:18px;height:18px}
+.tema-btn .sol{display:none}
+.tema-oscuro .tema-btn .sol{display:block}
+.tema-oscuro .tema-btn .luna{display:none}
+.hdr-btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;font:600 13px var(--f-ui);color:var(--muted);background:transparent;border:1px solid var(--rule-strong);border-radius:8px;cursor:pointer;text-decoration:none;align-self:center;white-space:nowrap}
+.hdr-btn:hover{color:var(--ink);background:var(--paper)}
+.hdr-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hdr-btn svg{width:17px;height:17px}
+
+/* ---------- Página de estadísticas ---------- */
+.stats{max-width:1180px;margin:0 auto;padding-block:28px 64px;display:flex;flex-direction:column;gap:24px}
+.stats .lbl-s{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.st-ctl{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 28px}
+.st-ctl .campo{display:flex;flex-direction:column;gap:6px;min-width:220px}
+.st-ctl #asig,.st-ctl #examen{height:40px}
+.st-ctl .campo label{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+#examen{font:500 15px var(--f-ui);color:var(--ink);background:var(--bg);border:1px solid var(--rule-strong);border-radius:7px;padding:8px 10px}
+.ritmo{margin:0;padding-bottom:9px;color:var(--muted);font-size:14px}
+.ritmo b{color:var(--ink);font-size:20px;font-weight:600;margin-right:2px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:18px 20px}
+.card h2{margin:0;font-family:var(--f-text);font-size:19px;font-weight:600}
+.card .sub{margin:2px 0 12px;color:var(--muted);font-size:13px}
+.vacio{color:var(--muted);font-size:14px;margin:8px 0}
+.indices{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.ind .nombre{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:15px;font-weight:600}
+.ind .alias{white-space:nowrap}
+.ind .alias{color:var(--muted);font-weight:400}
+.ind .val{font:600 56px/1.05 var(--f-ui);letter-spacing:-.02em;margin:10px 0 6px}
+.ind .det{color:var(--muted);font-size:13.5px}
+.ind .formula{color:var(--muted);font-size:12px;margin-top:8px;border-top:1px solid var(--rule);padding-top:8px}
+.lk{display:inline-block;width:18px;height:2px;border-radius:1px;flex:none}
+.leyenda{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:13px;color:var(--muted);margin-bottom:6px}
+.leyenda span{display:inline-flex;align-items:center;gap:7px}
+.graf{position:relative}
+.graf svg{display:block;width:100%;height:auto;overflow:visible}
+.graf svg:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px}
+.graf .ax{fill:var(--muted);font:11.5px var(--f-ui)}
+.graf .fin{fill:var(--ink);font:600 12.5px var(--f-ui)}
+.tip{position:absolute;top:0;pointer-events:none;background:var(--paper);border:1px solid var(--rule-strong);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 6px 18px rgba(10,14,24,.14);min-width:170px;z-index:3}
+.tip .t{color:var(--muted);margin-bottom:4px}
+.tip .f{display:flex;align-items:center;gap:8px;line-height:1.6}
+.tip .f b{font-variant-numeric:tabular-nums;min-width:4.6em;text-align:right}
+.card details{margin-top:10px;font-size:13px}
+.card summary{cursor:pointer;color:var(--accent)}
+.barra{display:flex;gap:2px;height:10px;border-radius:4px;overflow:hidden;min-width:140px}
+.barra span{display:block;height:100%}
+.barra.grande{height:16px;margin:4px 0 14px}
+.est-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.est-t{border:1px solid var(--rule);border-radius:8px;padding:10px 12px}
+.est-t .nom{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
+.est-t .n{font:600 24px/1.2 var(--f-ui);margin-top:4px}
+.est-t .n small{font-size:13px;font-weight:400;color:var(--muted)}
+.mk{display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid var(--rule-strong);flex:none}
+.tw{overflow-x:auto}
+.tab-st{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.tab-st th{font-weight:600;color:var(--muted);font-size:12px;text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule-strong);white-space:nowrap;vertical-align:bottom}
+.tab-st th .mk{display:block;margin:0 0 4px auto}
+.tab-st td{padding:7px 8px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+.tab-st th:first-child,.tab-st td:first-child{text-align:left;white-space:normal;min-width:180px}
+.tab-st td.cero{color:var(--muted);opacity:.5}
+.tab-st tfoot td{font-weight:600;border-bottom:none}
+.tab-st .pc{font-weight:600}
+
+/* Lista */
+main{min-width:0}
+.group-h{position:sticky;top:env(safe-area-inset-top,0px);z-index:2;background:var(--bg);display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;padding:24px 14px 8px;border-bottom:1px solid var(--rule-strong)}
+.group-h .sw{width:10px;height:10px;border-radius:2px;flex:none;align-self:center}
+.group-h h2{margin:0;font-family:var(--f-text);font-size:19px;font-weight:600;line-height:1.25;text-wrap:balance;min-width:0}
+.group-h span{color:var(--muted);font-size:13px}
+.ex{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:16px;padding:16px 14px}
+.ex.alt{background:var(--shade)}
+.ex .meta{align-self:stretch;border-radius:6px;padding:6px 6px 6px 0;margin:-6px 0}
+.ex[data-m] .meta{padding-right:8px}
+.ex[data-m="ya_hecho"] .meta{background:var(--m-ya_hecho)}
+.ex[data-m="demasiado_facil"] .meta{background:var(--m-demasiado_facil)}
+.ex[data-m="interesante"] .meta{background:var(--m-interesante)}
+.ex[data-m="error_grave"] .meta{background:var(--m-error_grave)}
+.ex[data-m="bonito"] .meta{background:var(--m-bonito)}
+.ex[data-m="hecho"] .meta{background:var(--m-hecho)}
+.ex[data-m="dificil"] .meta{background:var(--m-dificil)}
+.ex[data-m="pendiente"] .meta{background:none}
+.mdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0;border:1px solid var(--rule-strong)}
+.marca{padding-bottom:16px;border-bottom:1px solid var(--rule)}
+.marca .chk{user-select:none;-webkit-user-select:none}
+.marca .chips{gap:6px}
+.meta{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
+.meta .num{font-family:var(--f-text);font-size:22px;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
+.meta .num small{font-family:var(--f-ui);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.meta .tema{color:var(--ink)}
+.meta .id{font-family:var(--f-mono);font-size:11px}
+.body{font-family:var(--f-text);font-size:17.5px;line-height:1.55;max-width:78ch;min-width:0}
+.body .tt{font-family:var(--f-ui);font-size:12px;color:var(--muted);margin-bottom:4px}
+.body p{margin:0 0 .6em}.body p:last-child{margin-bottom:0}
+.body ol.enum{list-style:none;margin:.35em 0 .5em;padding:0;display:flex;flex-direction:column;gap:.3em}
+.body ol.enum>li{display:grid;grid-template-columns:2.6em minmax(0,1fr);align-items:baseline}
+.body ol.enum>li>.lbl{font-variant-numeric:tabular-nums}
+.body ol.enum>li>div{min-width:0}
+.body .center{text-align:center;margin:.4em 0}
+.body .tabwrap{overflow-x:auto;margin:.4em 0}
+.body table.tab{border-collapse:collapse;margin:0 auto;text-align:left}
+.body table.tab td{padding:.15em .8em .15em 0;vertical-align:baseline}
+.body .sc{font-variant:small-caps}
+.body .sf{font-family:var(--f-ui)}
+.body .small{font-size:.9em}
+.body .red{color:var(--red)}
+.body .disp{display:block;overflow-x:auto;overflow-y:hidden;margin:.45em 0;text-align:center;padding-block:2px}
+mjx-container[jax="SVG"]{color:inherit}
+mjx-container[display="true"]{margin:0!important}
+.tex-pending{color:var(--muted)}
+.actions{display:flex;align-items:flex-start}
+.copy{font:500 12px var(--f-ui);color:var(--muted);background:transparent;border:1px solid var(--rule);border-radius:6px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.copy:hover{color:var(--ink);border-color:var(--rule-strong)}
+.copy:focus-visible,.chk input:focus-visible+span,.clear:focus-visible,#q:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.empty{padding:48px 0;color:var(--muted);font-size:15px}
+.empty button{font:inherit;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline}
+mark{background:var(--hl);color:inherit;border-radius:2px}
+
+/* Filas clicables */
+.ex{cursor:pointer}
+.ex:hover{background:var(--accent-soft)}
+button.num{font-family:var(--f-text);font-size:22px;line-height:1.1;color:var(--ink);background:none;border:none;padding:0;cursor:pointer;width:100%;text-align:right;font-variant-numeric:tabular-nums}
+button.num:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+
+/* Ventana del ejercicio */
+dialog#ej{width:min(960px,calc(100vw - 32px));max-height:calc(100vh - 48px);padding:0;border:1px solid var(--rule-strong);border-radius:12px;background:var(--paper);color:var(--ink);box-shadow:0 24px 60px rgba(10,14,24,.28)}
+dialog#ej::backdrop{background:rgba(12,16,26,.55)}
+.dlg{display:flex;flex-direction:column;max-height:calc(100vh - 50px)}
+.dlg-h{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:18px 22px;border-bottom:1px solid var(--rule)}
+.dlg-h .ttl{flex:1;min-width:220px}
+.dlg-h .ctx{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.dlg-h .ctx .sw{width:8px;height:8px;border-radius:2px;flex:none}
+.dlg-h h2{margin:2px 0 0;font-family:var(--f-text);font-size:24px;font-weight:600}
+.timer{display:flex;align-items:center;gap:12px}
+.clock{font-family:var(--f-mono);font-size:30px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.02em;min-width:5.2ch;text-align:right}
+.timer.paused .clock{color:var(--muted)}
+.btn{font:600 13.5px var(--f-ui);color:var(--ink);background:var(--paper);border:1px solid var(--rule-strong);border-radius:8px;padding:10px 14px;cursor:pointer;min-height:44px}
+.btn:hover{background:var(--bg)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#pausa{min-width:112px}
+.x{font:400 22px/1 var(--f-ui);color:var(--muted);background:none;border:none;cursor:pointer;width:44px;height:44px;border-radius:8px}
+.x:hover{background:var(--bg);color:var(--ink)}
+.x:focus-visible{outline:2px solid var(--accent)}
+.dlg-b{padding:22px 26px;overflow:auto;min-height:0}
+.dlg-b .body{font-size:19px;max-width:none}
+.dlg-f{border-top:1px solid var(--rule);padding:16px 22px 20px;background:var(--bg);border-radius:0 0 12px 12px}
+.dlg-f .lbl{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.fin-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.fin-row .hint{color:var(--muted);font-size:13.5px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--paper);min-width:140px;font-size:15px}
+.btn.primary:hover{background:var(--accent);filter:brightness(1.08)}
+.btn[disabled]{opacity:.45;cursor:default}
+.preg-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.preg-h .lbl{margin:0!important;font-variant-numeric:tabular-nums}
+.est{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.est .btn{display:flex;align-items:center;gap:9px;text-align:left;font-weight:500}
+.est .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.hist-box{margin-top:26px;padding-top:16px;border-top:1px solid var(--rule)}
+.hist-box h3{margin:0 0 8px;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.hist-msg{margin:0;color:var(--muted);font-size:13.5px}
+.hist{border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums;width:100%;max-width:520px}
+.hist th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:4px 12px 6px 0;border-bottom:1px solid var(--rule)}
+.hist td{padding:6px 12px 6px 0;border-bottom:1px solid var(--rule);white-space:nowrap}
+.hist td:nth-child(2){white-space:normal}
+.hist th:last-child,.hist td:last-child{text-align:right;padding-right:0;font-family:var(--f-mono)}
+.hist tfoot td{font-weight:600;border-bottom:none}
+.hist .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;border:1px solid var(--rule-strong)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);font-size:13.5px;padding:10px 16px;border-radius:8px;z-index:20;max-width:calc(100vw - 32px)}
+@media (max-width:760px){.est{grid-template-columns:repeat(2,minmax(0,1fr))}.clock{font-size:24px}.dlg-b{padding:16px}}
+
+/* Botón flotante */
+.fab{position:fixed;right:calc(max(16px,env(safe-area-inset-right,0px)) + 8px);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:15;display:flex;align-items:center;gap:10px;font:600 14.5px var(--f-ui);color:var(--paper);background:var(--ink);border:none;border-radius:999px;padding:13px 20px 13px 16px;min-height:48px;cursor:pointer;box-shadow:0 8px 24px rgba(10,14,24,.25)}
+.fab:hover{background:var(--accent)}
+.fab:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.fab svg{width:20px;height:20px;flex:none}
+.app{padding-bottom:110px!important}
+
+/* Banda de filtros */
+aside{min-width:0;grid-column:2;grid-row:1/span 2}
+main{grid-column:1;grid-row:2}
+.panel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);max-height:calc(100vh - 104px);overflow:auto;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:16px 16px 20px;display:flex;flex-direction:column;gap:18px}
+.panel-h{display:flex;justify-content:space-between;align-items:center}
+.panel-h h2{margin:0;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.clear{font:500 12.5px var(--f-ui);color:var(--accent);background:none;border:none;cursor:pointer;padding:4px 0}
+.clear[disabled]{color:var(--muted);opacity:.5;cursor:default}
+.asig{display:flex;flex-direction:column;gap:6px;padding-bottom:16px;border-bottom:1px solid var(--rule)}
+.asig label{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+#asig{width:100%;font:500 15px var(--f-ui);color:var(--ink);background:var(--bg);border:1px solid var(--rule-strong);border-radius:7px;padding:9px 10px;cursor:pointer}
+#asig:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#q{width:100%;font:15px var(--f-ui);color:var(--ink);background:var(--bg);border:1px solid var(--rule-strong);border-radius:7px;padding:9px 11px}
+fieldset{border:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+legend{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:0;margin-bottom:6px;display:flex;justify-content:space-between;width:100%}
+legend .n{font-weight:500;letter-spacing:0;text-transform:none;color:var(--accent)}
+.sub{font-size:12px;font-weight:600;color:var(--muted);margin:8px 0 2px;display:flex;align-items:center;gap:6px}
+.sub .sw{width:8px;height:8px;border-radius:2px}
+.chk{display:flex;align-items:flex-start;gap:9px;padding:5px 6px;border-radius:6px;cursor:pointer;user-select:none}
+.chk:hover{background:var(--bg)}
+.chk input{position:absolute;opacity:0;width:1px;height:1px}
+.chk .box{flex:none;width:16px;height:16px;margin-top:1px;border:1.5px solid var(--rule-strong);border-radius:4px;display:grid;place-items:center;background:var(--paper)}
+.chk input:checked+.box{background:var(--accent);border-color:var(--accent)}
+.chk input:checked+.box::after{content:"";width:8px;height:4px;border-left:2px solid var(--paper);border-bottom:2px solid var(--paper);transform:translateY(-1px) rotate(-45deg)}
+.chk input:focus-visible+.box{outline:2px solid var(--accent);outline-offset:2px}
+.chk .lab{flex:1;min-width:0;font-size:13.5px}
+.chk .lab small{display:block;color:var(--muted);font-size:12px;line-height:1.3}
+.chk .c{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;padding-top:1px}
+.chk.zero .lab,.chk.zero .c{opacity:.45}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chips .chk{padding:0}
+.chips .chk .pill{font-size:13px;font-variant-numeric:tabular-nums;border:1px solid var(--rule-strong);border-radius:999px;padding:4px 11px;background:var(--paper)}
+.chips .chk input:checked+.pill{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.chips .chk input:focus-visible+.pill{outline:2px solid var(--accent);outline-offset:2px}
+.chips .chk.zero .pill{opacity:.45}
+details.fx>summary{display:none}
+
+@media (max-width:980px){
+  .app{grid-template-columns:minmax(0,1fr);gap:16px}
+  aside,main,header.top{grid-column:1;grid-row:auto}
+  header.top{order:-2}
+  aside{order:-1}
+  .panel{position:static;max-height:none;padding:12px 14px}
+  details.fx>summary{display:flex;justify-content:space-between;cursor:pointer;font-weight:600;list-style:none}
+  details.fx:not([open])>.inner{display:none}
+  .ex{grid-template-columns:minmax(0,1fr);gap:8px}
+  .meta{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+  .actions{display:none}
+  .body{font-size:16.5px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<script>
+// Tema elegido con el botón (cookie banco-tema); se aplica antes de pintar para que no parpadee.
+(function(){var m=document.cookie.match(/(?:^|; )banco-tema=(light|dark)/);if(m)document.documentElement.dataset.theme=m[1]})();
+</script>
+<script>
+window.MathJax={
+  tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']],processEscapes:false,
+       packages:{'[+]':['ams','color','boldsymbol','mathtools']}},
+  svg:{fontCache:'global'},
+  options:{skipHtmlTags:['script','noscript','style','textarea','pre','code','button','legend','label']},
+  startup:{typeset:false,ready(){MathJax.startup.defaultReady();window.__mjReady&&window.__mjReady()}}
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg-full.js" async></script>
+</head>
+<body>
+<!-- Aplicación en un único fichero: vista de ejercicios (por defecto) y vista ?vista=estadisticas -->
+<template id="v-ejercicios">
+<div class="app">
+  <header class="top">
+    <h1>EJERCICIOS DE MATEMÁTICAS</h1>
+    <div class="right">
+      <div class="count" id="count" aria-live="polite"></div>
+      <button class="hdr-btn" type="button" id="stats" title="Estadísticas de la asignatura">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/></svg>Estadísticas
+      </button>
+      <button class="tema-btn" type="button" id="tema" aria-label="Cambiar a tema oscuro" title="Cambiar a tema oscuro">
+        <svg class="luna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+        <svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </header>
+  <main id="list"></main>
+  <aside aria-label="Filtros">
+    <div class="panel">
+      <div class="asig"><label for="asig">Asignatura</label><select id="asig"></select></div>
+      <fieldset id="f-marca" class="marca"><legend>Marca</legend></fieldset>
+      <details class="fx" id="fx" open>
+        <summary>Filtros <span id="fxsum"></span></summary>
+        <div class="inner" style="display:flex;flex-direction:column;gap:18px">
+          <div class="panel-h"><h2>Filtrar</h2><button class="clear" id="clear" type="button">Quitar filtros</button></div>
+          <div><label for="q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Buscar en el enunciado</label>
+          <input id="q" type="search" placeholder="Buscar en los enunciados…" autocomplete="off"></div>
+          <fieldset id="f-tema"><legend>Tema <span class="n"></span></legend></fieldset>
+          <fieldset id="f-hoja"><legend>Hoja <span class="n"></span></legend></fieldset>
+        </div>
+      </details>
+    </div>
+  </aside>
+</div>
+
+<dialog id="ej" aria-labelledby="ej-t">
+  <div class="dlg">
+    <div class="dlg-h">
+      <div class="ttl"><div class="ctx"><span class="sw" id="ej-sw"></span><span id="ej-ctx"></span></div><h2 id="ej-t"></h2></div>
+      <div class="timer" id="timer"><span class="clock" id="clock" aria-label="Tiempo">00:00</span><button class="btn" type="button" id="pausa">Pausar</button></div>
+      <button class="x" type="button" id="ej-x" aria-label="Cerrar sin marcar" title="Cerrar sin marcar">×</button>
+    </div>
+    <div class="dlg-b"><div class="body" id="ej-body"></div><section class="hist-box" id="ej-hist" aria-label="Historial del ejercicio"></section></div>
+    <div class="dlg-f">
+      <div class="fin-row" id="fin-row"><span class="hint">Cuando acabes, pulsa Terminar y elige cómo marcarlo.</span><button class="btn primary" type="button" id="terminar">Terminar</button></div>
+      <div id="preg" hidden>
+        <div class="preg-h"><div class="lbl" id="preg-t">¿Cómo lo marcas?</div><button class="btn" type="button" id="volver">Seguir trabajando</button></div>
+        <div class="est" id="estados"></div>
+      </div>
+    </div>
+  </div>
+</dialog>
+<button class="fab" type="button" id="azar" title="Abre al azar uno de los ejercicios que cumplen los filtros"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/></svg>Ejercicio aleatorio</button>
+<div class="toast" id="toast" role="status" hidden></div>
+</template>
+<template id="v-estadisticas">
+<div class="stats">
+  <header class="top">
+    <h1>Estadísticas</h1>
+    <div class="right">
+      <a class="hdr-btn" href="?">← Ejercicios</a>
+      <button class="tema-btn" type="button" id="tema" aria-label="Cambiar a tema oscuro" title="Cambiar a tema oscuro">
+        <svg class="luna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+        <svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="st-ctl">
+    <div class="campo"><label for="asig">Asignatura</label><select id="asig"></select></div>
+    <div class="campo"><label for="examen">Fecha del examen</label><input type="date" id="examen"></div>
+    <p class="ritmo" id="ritmo" aria-live="polite"></p>
+  </div>
+
+  <section class="indices" id="indices" aria-live="polite"></section>
+
+  <section class="card">
+    <h2>Evolución de los índices</h2>
+    <p class="sub" id="graf-sub"></p>
+    <div class="leyenda" aria-hidden="true">
+      <span><i class="lk" style="background:var(--series-1)"></i>Índice de Cobertura</span>
+      <span><i class="lk" style="background:var(--series-2)"></i>Índice de Avance efectivo</span>
+    </div>
+    <div class="graf" id="graf"></div>
+    <details><summary>Ver los datos de cada día</summary><div class="tw" id="graf-tabla"></div></details>
+  </section>
+
+  <section class="card">
+    <h2>Ejercicios por estado</h2>
+    <p class="sub">Estado actual de cada ejercicio (su última marca).</p>
+    <div id="estados"></div>
+  </section>
+
+  <section class="card">
+    <h2 id="desglose-t">Por tema</h2>
+    <p class="sub" id="desglose-sub"></p>
+    <div class="tw" id="desglose"></div>
+  </section>
+</div>
+</template>
+<script>
+// Código común a las páginas (index.html y estadisticas.html): servicios REST de Oracle, marcas,
+// cookies y botón de tema. Se carga antes que el script de cada página y expone window.Banco.
+window.Banco=(function(){
+"use strict";
+const API='https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/mates/banco/';
+async function getJSON(path){
+  const r=await fetch(API+path,{cache:'no-cache'});
+  if(!r.ok)throw new Error(`HTTP ${r.status} en ${path}: ${await r.text()}`);
+  return r.json();
+}
+async function postJSON(path,datos){
+  const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
+  if(!r.ok)throw new Error(`HTTP ${r.status} en ${path}: ${await r.text()}`);
+  return r.json();
+}
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const MARCAS=[
+  {codigo:'ya_hecho',       texto:'Hecho. Ya lo hice',               corto:'Ya lo hice'},
+  {codigo:'demasiado_facil',texto:'Demasiado fácil / No aporta nada', corto:'Demasiado fácil'},
+  {codigo:'interesante',    texto:'Hecho. Muy interesante',          corto:'Interesante'},
+  {codigo:'error_grave',    texto:'Error grave, volverlo a ver',     corto:'Error grave'},
+  {codigo:'bonito',         texto:'Hecho. Muy bonito',               corto:'Bonito'},
+  {codigo:'hecho',          texto:'Hecho',                           corto:'Hecho'},
+  {codigo:'dificil',        texto:'Hecho. Difícil',                  corto:'Difícil'},
+  {codigo:'pendiente',      texto:'Pendiente',                       corto:'Pendiente'}
+];
+// Índices (mismas reglas que la vista v_indices_dia):
+//   Cobertura       = cubiertos / total
+//   Avance efectivo = efectivos / (total - descartados)
+const CUBIERTOS=['ya_hecho','hecho','dificil','interesante','bonito'];
+const EFECTIVOS=['hecho','dificil','interesante','bonito'];
+const DESCARTADOS=['ya_hecho','demasiado_facil'];
+
+function leerCookie(nombre){
+  const m=document.cookie.match(new RegExp('(?:^|; )'+nombre+'=([^;]*)'));
+  if(!m)return null;
+  try{return JSON.parse(decodeURIComponent(m[1]))}catch(_){return null}
+}
+function guardarCookie(nombre,valor){
+  document.cookie=`${nombre}=${encodeURIComponent(JSON.stringify(valor))}; max-age=31536000; path=/; SameSite=Lax`;
+}
+
+// Botón de tema (#tema): alterna claro/oscuro sobre el tema que se ve ahora (el del sistema si no se ha
+// elegido) y lo guarda en la cookie banco-tema. El <head> de cada página lo aplica antes de pintar.
+function iniciarTema(){
+  const btn=document.getElementById('tema');if(!btn)return;
+  const oscuroSistema=matchMedia('(prefers-color-scheme: dark)');
+  const actual=()=>document.documentElement.dataset.theme||(oscuroSistema.matches?'dark':'light');
+  const pintar=()=>{
+    const osc=actual()==='dark',t=osc?'Cambiar a tema claro':'Cambiar a tema oscuro';
+    document.documentElement.classList.toggle('tema-oscuro',osc);btn.title=t;btn.setAttribute('aria-label',t);
+    document.dispatchEvent(new CustomEvent('banco:tema'));
+  };
+  btn.addEventListener('click',()=>{
+    const nuevo=actual()==='dark'?'light':'dark';
+    document.documentElement.dataset.theme=nuevo;
+    document.cookie=`banco-tema=${nuevo}; max-age=31536000; path=/; SameSite=Lax`;
+    pintar();
+  });
+  oscuroSistema.addEventListener('change',pintar);
+  pintar();
+}
+
+return {API,getJSON,postJSON,esc,MARCAS,CUBIERTOS,EFECTIVOS,DESCARTADOS,leerCookie,guardarCookie,iniciarTema};
+})();
+window.__vistas={};
+</script>
+<script>
+// Banco de ejercicios: lee los ejercicios de Oracle (servicios REST de ORDS, módulo "banco"),
+// una asignatura cada vez, y monta la lista, los filtros y la ventana de trabajo.
+window.__vistas.ejercicios=async function(){
+"use strict";
+const {getJSON,postJSON,esc,MARCAS}=Banco;
+Banco.iniciarTema();
+let ASIG;
+try{ASIG=await getJSON('asignaturas')}
+catch(err){document.getElementById('list').innerHTML='<p class="empty">No se pudo conectar con el servicio de ejercicios (Oracle REST).</p>';console.error(err);return}
+const SUBJ_COLOR={'Álgebra I':'--s-alg','Análisis Matemático':'--s-ana','Probabilidad I':'--s-pro','Topología':'--s-top'};
+const col=s=>`var(${SUBJ_COLOR[s]||'--s-x'})`;
+const coll=new Intl.Collator('es');
+
+/* ---------- LaTeX (modo texto) → HTML; las fórmulas quedan para MathJax ---------- */
+function protectMath(src){
+  const math=[];let out='',i=0;
+  while(i<src.length){
+    const c=src[i];
+    if(c==='\\'&&src[i+1]==='$'){out+='\\$';i+=2;continue}
+    if(c==='\\'&&src[i+1]==='['){const j=src.indexOf('\\]',i+2);if(j>0){math.push({d:true,t:src.slice(i+2,j)});out+='\u0001'+(math.length-1)+'\u0002';i=j+2;continue}}
+    if(c==='\\'&&src[i+1]==='('){const j=src.indexOf('\\)',i+2);if(j>0){math.push({d:false,t:src.slice(i+2,j)});out+='\u0001'+(math.length-1)+'\u0002';i=j+2;continue}}
+    if(c==='$'){
+      const dbl=src[i+1]==='$';let j=i+(dbl?2:1);
+      while(j<src.length){if(src[j]==='\\'){j+=2;continue}if(src[j]==='$')break;j++}
+      if(j<src.length){math.push({d:dbl,t:src.slice(i+(dbl?2:1),j)});out+='\u0001'+(math.length-1)+'\u0002';i=j+(dbl?2:1);continue}
+    }
+    if(c==='\\'){out+=src.slice(i,i+2);i+=2;continue}
+    out+=c;i++;
+  }
+  return{s:out,math};
+}
+function readGroup(s,i){ // s[i]==='{' → [contenido, índice tras '}']
+  let d=0,j=i;
+  for(;j<s.length;j++){const c=s[j];if(c==='\\'){j++;continue}if(c==='{')d++;else if(c==='}'){d--;if(d===0)return[s.slice(i+1,j),j+1]}}
+  return[s.slice(i+1),s.length];
+}
+function readOpt(s,i){ // s[i]==='['
+  let d=0,j=i;
+  for(;j<s.length;j++){const c=s[j];if(c==='\\'){j++;continue}if(c==='{')d++;else if(c==='}')d--;else if(c===']'&&d===0)return[s.slice(i+1,j),j+1]}
+  return['',i];
+}
+function findEnd(s,i,env){ // desde i (tras \begin{env}...), devuelve [cuerpo, índice tras \end{env}]
+  const b='\\begin{'+env+'}',e='\\end{'+env+'}';let d=1,j=i;
+  while(j<s.length){
+    if(s.startsWith(b,j)){d++;j+=b.length;continue}
+    if(s.startsWith(e,j)){d--;if(d===0)return[s.slice(i,j),j+e.length];j+=e.length;continue}
+    if(s[j]==='\\'){j+=2;continue}j++;
+  }
+  return[s.slice(i),s.length];
+}
+function splitTop(s,sep){ // separa en el nivel superior (sin entrar en grupos ni entornos)
+  const parts=[];let d=0,env=0,last=0;
+  for(let j=0;j<s.length;j++){
+    const c=s[j];
+    if(c==='\\'){
+      if(s.startsWith('\\begin{',j)){env++;j=s.indexOf('}',j);continue}
+      if(s.startsWith('\\end{',j)){env--;j=s.indexOf('}',j);continue}
+      if(d===0&&env===0&&s.startsWith(sep,j)&&!/[a-zA-Z]/.test(s[j+sep.length]||'')){parts.push(s.slice(last,j));j+=sep.length-1;last=j+1;continue}
+      j++;continue;
+    }
+    if(c==='{')d++;else if(c==='}')d--;
+    else if(d===0&&env===0&&sep.length===1&&c===sep){parts.push(s.slice(last,j));last=j+1}
+  }
+  parts.push(s.slice(last));return parts;
+}
+const ROMAN=n=>{const m=[[10,'x'],[9,'ix'],[5,'v'],[4,'iv'],[1,'i']];let r='';for(const[v,k]of m)while(n>=v){r+=k;n-=v}return r};
+function labelFor(tpl,n,ctx){
+  const t=tpl.replace(/\\alph\*/g,String.fromCharCode(96+n)).replace(/\\Alph\*/g,String.fromCharCode(64+n))
+    .replace(/\\roman\*/g,ROMAN(n)).replace(/\\Roman\*/g,ROMAN(n).toUpperCase()).replace(/\\arabic\*/g,String(n));
+  return inline(t,ctx);
+}
+const TEXTCMD={textbf:['strong'],textit:['em'],emph:['em'],textsl:['em'],textsc:['span','sc'],textsf:['span','sf'],texttt:['code'],textup:['span'],textrm:['span'],underline:['u'],mbox:['span'],text:['span']};
+const SYMS={quad:'\u2003',qquad:'\u2003\u2003',ldots:'…',dots:'…',S:'§',textendash:'–',textemdash:'—',noindent:'',par:'\n\n',medskip:'',smallskip:'',bigskip:'',hfill:' ',centering:'',newline:'<br>',linebreak:'<br>',ss:'ß'};
+function inline(s,ctx){ // HTML sin bloques de párrafo
+  let out='',i=0;
+  while(i<s.length){
+    const c=s[i];
+    if(c==='\u0001'){const j=s.indexOf('\u0002',i);const m=ctx.math[+s.slice(i+1,j)];
+      out+=m.d?`<span class="disp">\\[${esc(m.t)}\\]</span>`:`\\(${esc(m.t)}\\)`;i=j+1;continue}
+    if(c==='\\'){
+      const nx=s[i+1]||'';
+      if(nx==='\\'){i+=2;if(s[i]==='['){i=readOpt(s,i)[1]}out+='<br>';continue}
+      if('$%&#_{}'.includes(nx)){out+=esc(nx);i+=2;continue}
+      if(nx===','||nx===' '||nx===';'||nx===':'){out+=nx===','?'\u2009':' ';i+=2;continue}
+      const m=/^[a-zA-Z]+\*?/.exec(s.slice(i+1));
+      if(!m){i+=2;continue}
+      const name=m[0];i+=1+name.length;
+      if(name==='begin'){const[env,k]=readGroup(s,i);i=k;let opt='';if(s[i]==='['){[opt,i]=readOpt(s,i)}
+        const[body,k2]=findEnd(s,i,env);i=k2;out+='\u0003'+envHTML(env,opt,body,ctx)+'\u0003';continue}
+      if(name==='textcolor'||name==='color'){
+        while(s[i]===' ')i++;let colr='';if(s[i]==='{'){[colr,i]=readGroup(s,i)}
+        while(s[i]===' ')i++;
+        if(name==='textcolor'&&s[i]==='{'){const[g,k]=readGroup(s,i);i=k;out+=`<span class="${colr==='red'?'red':''}" style="${colr==='red'?'':'color:'+esc(colr)}">${inline(g,ctx)}</span>`}
+        continue}
+      if(TEXTCMD[name]){while(s[i]===' ')i++;if(s[i]==='{'){const[g,k]=readGroup(s,i);i=k;const[tag,cls]=TEXTCMD[name];out+=`<${tag}${cls?` class="${cls}"`:''}>${inline(g,ctx)}</${tag}>`}continue}
+      if(name==='small'||name==='footnotesize'||name==='scriptsize'){ctx.size='small';continue}
+      if(name==='bfseries'||name==='itshape'||name==='scshape'){ctx.decl=name;continue}
+      if(name in SYMS){out+=SYMS[name];if(s[i]===' '&&/^[a-z]/.test(name))i++;continue}
+      if(name==='item'){continue}
+      // orden desconocida: se omite el nombre y se conserva su argumento
+      if(s[i]==='{'){const[g,k]=readGroup(s,i);i=k;out+=inline(g,ctx)}
+      continue;
+    }
+    if(c==='{'){const[g,k]=readGroup(s,i);i=k;const sub={math:ctx.math};const h=inline(g,sub);
+      const cls=[sub.size,sub.decl==='bfseries'?'':'',sub.decl==='scshape'?'sc':''].filter(Boolean).join(' ');
+      out+=sub.decl==='bfseries'?`<strong>${h}</strong>`:sub.decl==='itshape'?`<em>${h}</em>`:cls?`<span class="${cls}">${h}</span>`:h;continue}
+    if(c==='}'){i++;continue}
+    if(c==='~'){out+='\u00a0';i++;continue}
+    if(c==='-'&&s[i+1]==='-'){if(s[i+2]==='-'){out+='—';i+=3}else{out+='–';i+=2}continue}
+    if(c==='`'&&s[i+1]==='`'){out+='“';i+=2;continue}
+    if(c==="'"&&s[i+1]==="'"){out+='”';i+=2;continue}
+    if(c==='\n'){if(s[i+1]==='\n'||/^\n[ \t]*\n/.test(s.slice(i))){out+='\u0003';i=s.slice(i).match(/^\n[\s]*/)[0].length+i}else{out+=' ';i++}continue}
+    out+=esc(c);i++;
+  }
+  return out;
+}
+function envHTML(env,opt,body,ctx){
+  if(env==='enumerate'||env==='itemize'){
+    const lm=/label\s*=\s*(\{[^]*\}|[^,]*)/.exec(opt);let tpl=lm?lm[1].trim():'';
+    if(tpl.startsWith('{')&&tpl.endsWith('}'))tpl=tpl.slice(1,-1);
+    if(!tpl)tpl=env==='itemize'?'•':'\\arabic*.';
+    const items=splitTop(body,'\\item').slice(1);
+    return '<ol class="enum">'+items.map((it,k)=>{let t=it;if(/^\s*\[/.test(t)){const p=t.indexOf('[');const[o,e]=readOpt(t,p);return `<li><span class="lbl">${inline(o,ctx)}</span><div>${blocks(t.slice(e),ctx)}</div></li>`}
+      return `<li><span class="lbl">${labelFor(tpl,k+1,ctx)}</span><div>${blocks(t,ctx)}</div></li>`}).join('')+'</ol>';
+  }
+  if(env==='center'||env==='flushleft'||env==='flushright')return `<div class="center">${blocks(body,ctx)}</div>`;
+  if(env==='tabular'){
+    let b=body.replace(/^\s+/,'');if(b.startsWith('{')){b=b.slice(readGroup(b,0)[1])}
+    const rows=splitTop(b,'\\\\').map(r=>r.replace(/^\s*\[[^\]]*\]/,'')).filter(r=>r.trim()&&r.replace(/\\hline/g,'').trim());
+    return '<div class="tabwrap"><table class="tab">'+rows.map(r=>'<tr>'+splitTop(r.replace(/\\hline/g,''),'&').map(c=>`<td>${inline(c.trim(),ctx)}</td>`).join('')+'</tr>').join('')+'</table></div>';
+  }
+  return blocks(body,ctx);
+}
+function blocks(s,ctx){
+  const h=inline(s.trim(),ctx);
+  return h.split('\u0003').map(p=>p.trim()).filter(Boolean).map(p=>/^<(ol|div)/.test(p)?p:`<p>${p}</p>`).join('');
+}
+function texToHTML(src){const{s,math}=protectMath(src);return blocks(s,{math})}
+function plain(src){return src.replace(/\\[a-zA-Z]+/g,' ').replace(/[{}$\\_^&~]/g,' ').replace(/\s+/g,' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+
+/* ---------- Datos ---------- */
+// Asignaturas y totales vienen de GET asignaturas; los ejercicios, de la asignatura cargada (GET ejercicios).
+const TOTAL=Object.fromEntries(ASIG.map(a=>[a.asignatura,a.total]));
+const SUBJ=ASIG.map(a=>a.asignatura).sort(coll.compare);
+let EX=[],TEMAS={},HOJAS={},byKey=new Map();
+function setDatos(raw){
+  EX=raw.map(e=>({...e,gKey:e.asignatura+'|'+e.hoja+'|'+e.tema,key:e.id_ejercicio,tKey:e.asignatura+'|'+e.tema,hKey:e.asignatura+'|'+e.hoja,txt:plain(e.enunciado_latex)}))
+    .sort((a,b)=>coll.compare(a.asignatura,b.asignatura)||a.hoja-b.hoja||a.tema-b.tema||a.numero_ejercicio-b.numero_ejercicio);
+  TEMAS={};HOJAS={};
+  for(const e of EX){
+    (TEMAS[e.asignatura]??=new Map()).set(e.tema,TEMAS[e.asignatura].get(e.tema)||e.titulo_tema||'');
+    (HOJAS[e.asignatura]??=new Set()).add(e.hoja);
+  }
+  byKey=new Map(EX.map(e=>[e.key,e]));
+}
+
+/* ---------- Estado de filtros ---------- */
+// Última marca de cada ejercicio. Provisional: se guarda en este navegador hasta que exista la base de datos.
+// El último estado de cada ejercicio llega con GET ejercicios (campo "estado") y se actualiza en EX al marcar.
+const codigoMarca=k=>byKey.get(k)?.estado||'pendiente';
+// Última asignatura y filtros: cookie "banco-filtros" (un año).
+const st={asig:SUBJ[0],marca:new Set(),tema:new Set(),hoja:new Set(),q:''};
+try{const sv=Banco.leerCookie('banco-filtros');if(sv){st.asig=typeof sv.asig==='string'&&SUBJ.includes(sv.asig)?sv.asig:SUBJ[0];st.marca=new Set(sv.marca);st.tema=new Set(sv.tema);st.hoja=new Set(sv.hoja);st.q=sv.q||''}}catch(_){}
+const save=()=>Banco.guardarCookie('banco-filtros',{asig:st.asig,marca:[...st.marca],tema:[...st.tema],hoja:[...st.hoja],q:st.q});
+const qn=()=>st.q.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+function match(e,skip){
+  if(skip!=='asig'&&st.asig&&st.asig!==e.asignatura)return false;
+  if(skip!=='tema'&&st.tema.size&&!st.tema.has(e.tKey))return false;
+  if(skip!=='hoja'&&st.hoja.size&&!st.hoja.has(e.hKey))return false;
+  if(skip!=='marca'&&st.marca.size&&!st.marca.has(codigoMarca(e.key)))return false;
+  const q=qn();if(q&&!q.split(/\s+/).every(w=>e.txt.includes(w)))return false;
+  return true;
+}
+
+/* ---------- Lista ---------- */
+const list=document.getElementById('list');
+const rows=new Map(),heads=new Map();
+function vaciarLista(html){
+  if(window.MathJax&&MathJax.typesetClear)MathJax.typesetClear([list]);
+  rows.clear();heads.clear();list.innerHTML=html;
+}
+function renderList(){
+  let html='',prev='';
+  for(const e of EX){
+    const g=e.gKey;
+    if(g!==prev){prev=g;html+=`<div class="group-h" data-g="${esc(g)}"><span class="sw" style="background:${col(e.asignatura)}"></span><h2>${esc(e.titulo_tema?e.tema+' '+e.titulo_tema:'Hoja '+e.hoja)}</h2><span>${esc(e.asignatura)}${e.titulo_tema?' · Hoja '+e.hoja:''}</span></div>`}
+    html+=`<article class="ex" data-k="${esc(e.key)}"${codigoMarca(e.key)!=='sin'?` data-m="${codigoMarca(e.key)}"`:''}>
+      <div class="meta"><button class="num" type="button" title="${esc(e.key)}" aria-label="Abrir ejercicio ${e.numero_ejercicio}">${e.numero_ejercicio}</button></div>
+      <div class="body tex-pending">${texToHTML(e.enunciado_latex)}</div>
+      <div class="actions"><button class="copy" type="button" data-k="${esc(e.key)}">Copiar LaTeX</button></div>
+    </article>`;
+  }
+  vaciarLista(html+'<div class="empty" id="empty" hidden>Ningún ejercicio cumple estos filtros. <button type="button" id="clear2">Quitar filtros</button></div>');
+  list.querySelectorAll('.ex').forEach(el=>rows.set(el.dataset.k,el));
+  list.querySelectorAll('.group-h').forEach(el=>heads.set(el.dataset.g,el));
+}
+list.addEventListener('click',ev=>{
+  if(ev.target.closest('#clear2')){clearAll();return}
+  if(ev.target.closest('#reintentar')){cargar(st.asig);return}
+  const b=ev.target.closest('.copy');if(!b)return;
+  const t=byKey.get(b.dataset.k).enunciado_latex;
+  const done=()=>{b.textContent='Copiado';setTimeout(()=>b.textContent='Copiar LaTeX',1400)};
+  const fallback=()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done()}catch(_){b.textContent='No se pudo copiar'}ta.remove()};
+  try{navigator.clipboard.writeText(t).then(done,fallback)}catch(_){fallback()}
+});
+
+/* ---------- Banda de filtros ---------- */
+const selA=document.getElementById('asig'),fT=document.getElementById('f-tema'),fH=document.getElementById('f-hoja');
+const box=(field,val,lab,sub,cnt)=>`<label class="chk${cnt?'':' zero'}"><input type="checkbox" data-f="${field}" value="${esc(val)}"${st[field].has(val)?' checked':''}><span class="box"></span><span class="lab">${lab}${sub?`<small>${sub}</small>`:''}</span><span class="c">${cnt}</span></label>`;
+const pill=(field,val,lab,cnt)=>`<label class="chk${cnt?'':' zero'}" title="${cnt} ejercicios${field==='marca'?' · doble clic: solo esta marca':''}"><input type="checkbox" data-f="${field}" value="${esc(val)}"${st[field].has(val)?' checked':''}><span class="pill">${lab}</span></label>`;
+const legend=(f,label)=>`<legend>${label} <span class="n">${st[f].size?st[f].size+' sel.':''}</span></legend>`;
+function counts(skip,keyFn){const m=new Map();for(const e of EX)if(match(e,skip)){const k=keyFn(e);m.set(k,(m.get(k)||0)+1)}return m}
+function renderFilters(){
+  const cT=counts('tema',e=>e.tKey),cH=counts('hoja',e=>e.hKey);
+  const cM=counts('marca',e=>codigoMarca(e.key));
+  document.getElementById('f-marca').innerHTML=legend('marca','Marca')+'<div class="chips">'+
+    MARCAS.map(m=>pill('marca',m.codigo,`<span class="mdot" style="background:var(--m-${m.codigo==='sin'?'pendiente':m.codigo})"></span>${esc(m.corto)} <span style="opacity:.7">${cM.get(m.codigo)||0}</span>`,cM.get(m.codigo)||0)).join('')+'</div>';
+  selA.innerHTML=SUBJ.map(s=>`<option value="${esc(s)}">${esc(s)} (${TOTAL[s]||0})</option>`).join('');
+  selA.value=st.asig;
+  const shown=SUBJ.filter(s=>(!st.asig||st.asig===s)&&TEMAS[s]);
+  const subH=s=>st.asig?'':`<div class="sub"><span class="sw" style="background:${col(s)}"></span>${esc(s)}</div>`;
+  fT.innerHTML=legend('tema','Tema')+shown.map(s=>subH(s)+
+    [...TEMAS[s]].sort((a,b)=>a[0]-b[0]).map(([t,tit])=>box('tema',s+'|'+t,tit?esc(t+' '+tit):'Tema '+t,'',cT.get(s+'|'+t)||0)).join('')).join('');
+  fT.hidden=!shown.some(s=>[...TEMAS[s].values()].some(Boolean));
+  fH.innerHTML=legend('hoja','Hoja')+shown.map(s=>subH(s)+`<div class="chips">`+
+    [...HOJAS[s]].sort((a,b)=>a-b).map(h=>pill('hoja',s+'|'+h,'Hoja '+h,cH.get(s+'|'+h)||0)).join('')+'</div>').join('');
+}
+let cargando=false;
+function apply(){
+  if(cargando){renderFilters();save();return}
+  let n=0;const vis=new Set();
+  for(const e of EX){const ok=match(e);const r=rows.get(e.key);r.hidden=!ok;if(ok){n++;vis.add(e.gKey)}r.classList.toggle('alt',ok&&n%2===0)}
+  heads.forEach((el,g)=>el.hidden=!vis.has(g));
+  document.getElementById('empty').hidden=n>0;
+  document.getElementById('count').innerHTML=`<b>${n}</b> de ${EX.length} ejercicios`;
+  const act=st.marca.size+st.tema.size+st.hoja.size+(st.q.trim()?1:0);
+  document.getElementById('clear').disabled=!act;
+  document.getElementById('fxsum').textContent=act?`${act} activo${act>1?'s':''}`:'';
+  renderFilters();save();
+}
+document.querySelector('aside').addEventListener('change',ev=>{
+  const i=ev.target;if(!i.dataset||!i.dataset.f)return;
+  st[i.dataset.f][i.checked?'add':'delete'](i.value);
+  apply();
+});
+// Doble clic en una marca: deja seleccionada solo esa. Se mira el segundo clic (detail===2) y no
+// "dblclick" porque el primer clic ya redibuja los chips y el doble clic puede no llegar a dispararse.
+document.getElementById('f-marca').addEventListener('click',ev=>{
+  if(ev.detail!==2)return;
+  const i=ev.target.closest('label')?.querySelector('input[data-f="marca"]');if(!i)return;
+  ev.preventDefault(); // que el segundo clic no vuelva a cambiar la casilla
+  st.marca=new Set([i.value]);apply();
+});
+selA.addEventListener('change',()=>{
+  st.asig=selA.value;
+  cargar(st.asig);
+});
+// Una lectura por asignatura: GET ejercicios?asignatura=… y se rehace la lista entera.
+let nCarga=0;
+async function cargar(asig){
+  const n=++nCarga;
+  cargando=true;setDatos([]);
+  vaciarLista('<p class="empty">Cargando ejercicios…</p>');
+  document.getElementById('count').textContent='';
+  apply();
+  let raw;
+  try{raw=await getJSON('ejercicios?asignatura='+encodeURIComponent(asig))}
+  catch(err){
+    console.error(err);
+    if(n===nCarga)vaciarLista(`<p class="empty">No se pudieron cargar los ejercicios de ${esc(asig)}. <button type="button" id="reintentar">Reintentar</button></p>`);
+    return;
+  }
+  if(n!==nCarga)return; // el combo cambió mientras llegaba la respuesta
+  setDatos(raw);
+  // descarta temas/hojas que no son de esta asignatura (o temas sin título, que no tienen filtro)
+  for(const k of[...st.tema])if(k.split('|')[0]!==asig||!TEMAS[asig]?.get(+k.split('|')[1]))st.tema.delete(k);
+  for(const k of[...st.hoja])if(k.split('|')[0]!==asig)st.hoja.delete(k);
+  renderList();cargando=false;apply();
+  if(window.MathJax&&MathJax.typesetPromise)typeset();
+}
+document.getElementById('stats').addEventListener('click',()=>{location.href='?vista=estadisticas&asignatura='+encodeURIComponent(st.asig)});
+const q=document.getElementById('q');q.value=st.q;
+let qt;q.addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(()=>{st.q=q.value;apply()},120)});
+const clearAll=()=>{st.marca.clear();st.tema.clear();st.hoja.clear();st.q='';q.value='';apply()};
+document.getElementById('clear').addEventListener('click',clearAll);
+if(matchMedia('(max-width:980px)').matches)document.getElementById('fx').open=false;
+cargar(st.asig);
+
+/* ---------- Ventana del ejercicio ---------- */
+const ESTADOS=MARCAS.map(m=>({...m,color:`var(--m-${m.codigo})`}));
+const dlg=document.getElementById('ej'),clock=document.getElementById('clock'),pausa=document.getElementById('pausa'),timerEl=document.getElementById('timer');
+const estBox=document.getElementById('estados'),histEl=document.getElementById('ej-hist');
+estBox.innerHTML=ESTADOS.map(s=>`<button class="btn" type="button" data-e="${s.codigo}"><span class="dot" style="background:${s.color};border:1px solid var(--rule-strong)"></span>${esc(s.texto)}</button>`).join('');
+// base: tiempo acumulado en el histórico (ms); el contador arranca en él y se guarda solo lo trabajado desde entonces.
+const T={acc:0,base:0,start:0,running:false,iv:0,ex:null,n:0,guardando:false,abierto:null};
+const elapsed=()=>T.acc+(T.running?performance.now()-T.start:0);
+const fmt=ms=>{const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s/60)%60,ss=s%60,p=n=>String(n).padStart(2,'0');return h?`${h}:${p(m)}:${p(ss)}`:`${p(m)}:${p(ss)}`};
+const tick=()=>{clock.textContent=fmt(elapsed())};
+function setRunning(on){
+  if(on&&!T.running){T.start=performance.now();T.running=true}
+  else if(!on&&T.running){T.acc+=performance.now()-T.start;T.running=false}
+  pausa.textContent=T.running?'Pausar':'Reanudar';timerEl.classList.toggle('paused',!T.running);tick();
+}
+const fechaHora=iso=>new Date(iso).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+function pintarHistorial(h){
+  if(!h){histEl.innerHTML='<p class="hist-msg">No se pudo leer el historial; el contador empieza en 0.</p>';return}
+  if(!h.length){histEl.innerHTML='<p class="hist-msg">Sin historial: es la primera vez que lo trabajas.</p>';return}
+  const est=c=>ESTADOS.find(s=>s.codigo===c)||{texto:c,color:'var(--m-pendiente)'};
+  histEl.innerHTML=`<h3>Historial</h3><table class="hist"><thead><tr><th>Abierto</th><th>Estado elegido</th><th title="Tiempo de cronómetro de esa sesión">Tiempo</th></tr></thead><tbody>`+
+    h.map(r=>`<tr><td>${fechaHora(r.abierto)}</td><td><span class="dot" style="background:${est(r.estado).color}"></span>${esc(est(r.estado).texto)}</td><td>${fmt(r.segundos*1000)}</td></tr>`).join('')+
+    `</tbody><tfoot><tr><td colspan="2">Total</td><td>${fmt(h.reduce((s,r)=>s+r.segundos,0)*1000)}</td></tr></tfoot></table>`;
+}
+function abrir(key){
+  const e=byKey.get(key);if(!e)return;
+  const n=++T.n;
+  T.ex=e;T.acc=0;T.base=0;T.running=false;T.abierto=new Date();vista(false);
+  document.getElementById('ej-sw').style.background=col(e.asignatura);
+  document.getElementById('ej-ctx').textContent=`${e.asignatura} · Hoja ${e.hoja} · `+(e.titulo_tema?`${e.tema} ${e.titulo_tema}`:`Tema ${e.tema}`);
+  document.getElementById('ej-t').textContent=`Ejercicio ${e.numero_ejercicio}`;
+  const src=rows.get(key).querySelector('.body'),b=document.getElementById('ej-body');
+  b.innerHTML=src.innerHTML;
+  if(src.classList.contains('tex-pending')){b.innerHTML=texToHTML(e.enunciado_latex);if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([b]).catch(console.error)}
+  histEl.innerHTML='<p class="hist-msg">Cargando historial…</p>';
+  clearInterval(T.iv);clock.textContent='--:--';pausa.disabled=terminar.disabled=true;
+  dlg.showModal();dlg.querySelector('.dlg-b').scrollTop=0;
+  // El contador arranca cuando llega el histórico, con la suma de sus tiempos.
+  getJSON('historial?id_ejercicio='+encodeURIComponent(e.id_ejercicio)).catch(err=>{console.error(err);return null}).then(h=>{
+    if(n!==T.n||T.ex!==e)return; // se cerró o se abrió otro ejercicio
+    T.base=T.acc=h?h.reduce((s,r)=>s+r.segundos,0)*1000:0;
+    pintarHistorial(h);
+    pausa.disabled=terminar.disabled=false;
+    setRunning(true);T.iv=setInterval(tick,250);pausa.focus();
+  });
+}
+const finRow=document.getElementById('fin-row'),preg=document.getElementById('preg'),terminar=document.getElementById('terminar');
+function vista(preguntando){finRow.hidden=preguntando;preg.hidden=!preguntando;pausa.disabled=preguntando}
+terminar.addEventListener('click',()=>{
+  setRunning(false);vista(true);
+  document.getElementById('preg-t').textContent=`¿Cómo lo marcas? · ${fmt(elapsed())} (esta vez ${fmt(elapsed()-T.base)})`;
+  estBox.querySelector('button').focus();
+});
+document.getElementById('volver').addEventListener('click',()=>{vista(false);setRunning(true);terminar.focus()});
+// Cerrar con × o Esc no guarda nada.
+function cerrar(){setRunning(false);clearInterval(T.iv);if(dlg.open)dlg.close();T.ex=null}
+let toastT;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+pausa.addEventListener('click',()=>setRunning(!T.running));
+document.getElementById('ej-x').addEventListener('click',cerrar);
+dlg.addEventListener('cancel',ev=>{ev.preventDefault();cerrar()});
+// Al elegir estado: POST historial con la hora de apertura y lo trabajado en esta sesión; si va bien, se actualiza EX sin releer Oracle.
+estBox.addEventListener('click',async ev=>{
+  const b=ev.target.closest('button[data-e]');if(!b||!T.ex||T.guardando)return;
+  const est=ESTADOS.find(s=>s.codigo===b.dataset.e),e=T.ex,total=elapsed(),seg=Math.round((total-T.base)/1000);
+  T.guardando=true;estBox.querySelectorAll('button').forEach(x=>x.disabled=true);
+  let fila;
+  try{fila=await postJSON('historial',{id_ejercicio:e.id_ejercicio,estado:est.codigo,abierto:T.abierto.toISOString(),segundos:seg})}
+  catch(err){console.error(err);toast('No se pudo guardar el estado. Inténtalo de nuevo.')}
+  finally{T.guardando=false;estBox.querySelectorAll('button').forEach(x=>x.disabled=false)}
+  if(!fila)return;
+  e.estado=fila.estado;
+  if(T.ex===e)cerrar();
+  const r=rows.get(e.key);if(r)r.dataset.m=fila.estado;
+  apply();
+  toast(`Ejercicio ${e.numero_ejercicio}: ${est.texto} · +${fmt(seg*1000)} (total ${fmt(total)})`);
+});
+list.addEventListener('click',ev=>{
+  if(ev.target.closest('.copy'))return;
+  const r=ev.target.closest('.ex');if(!r)return;
+  if(!ev.target.closest('button.num')&&String(window.getSelection()||'').trim())return; // permite seleccionar texto sin abrir
+  abrir(r.dataset.k);
+});
+
+let ultimoAzar=null;
+document.getElementById('azar').addEventListener('click',()=>{
+  let pool=EX.filter(e=>match(e));
+  if(!pool.length){toast('Ningún ejercicio cumple los filtros actuales');return}
+  if(pool.length>1)pool=pool.filter(e=>e.key!==ultimoAzar);
+  const e=pool[Math.floor(Math.random()*pool.length)];ultimoAzar=e.key;
+  rows.get(e.key).scrollIntoView({block:'center'});
+  abrir(e.key);
+});
+
+/* ---------- Tipografía matemática ---------- */
+function typeset(){
+  const els=[...list.querySelectorAll('.body.tex-pending')];
+  MathJax.typesetPromise(els).then(()=>els.forEach(el=>el.classList.remove('tex-pending'))).catch(err=>console.error(err));
+}
+if(window.MathJax&&MathJax.typesetPromise)typeset();else window.__mjReady=typeset;
+};
+</script>
+<script>
+// Estadísticas de una asignatura: estado actual de los ejercicios (GET resumen), evolución diaria de los
+// índices (GET indices, calculada en Oracle por la vista v_indices_dia) y ritmo necesario hasta el examen.
+window.__vistas.estadisticas=async function(){
+"use strict";
+const {getJSON,esc,MARCAS,CUBIERTOS,EFECTIVOS,DESCARTADOS}=Banco;
+Banco.iniciarTema();
+const $=id=>document.getElementById(id);
+const SVGNS='http://www.w3.org/2000/svg';
+const coll=new Intl.Collator('es');
+// de más negativo a más positivo, como los colores
+const ORDEN=['pendiente','error_grave','demasiado_facil','ya_hecho','hecho','dificil','interesante','bonito'];
+const MARCA=Object.fromEntries(MARCAS.map(m=>[m.codigo,m]));
+const color=c=>c==='pendiente'?'var(--rule-strong)':`var(--m-${c})`;
+const dec2=v=>v.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=v=>v==null?'—':dec2(v)+' %';
+const aFecha=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const fCorta=d=>d.toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+const fLarga=d=>d.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+// Recuentos {estado:n} → índices (mismas reglas que v_indices_dia).
+function indices(cuenta,total){
+  const suma=l=>l.reduce((s,k)=>s+(cuenta[k]||0),0);
+  const cub=suma(CUBIERTOS),efe=suma(EFECTIVOS),des=suma(DESCARTADOS);
+  return {total,cub,efe,des,cobertura:total?100*cub/total:null,avance:total-des>0?100*efe/(total-des):null};
+}
+
+/* ---------- Asignatura y fecha del examen ---------- */
+let ASIG;
+try{ASIG=await getJSON('asignaturas')}
+catch(err){$('indices').innerHTML='<p class="vacio">No se pudo conectar con el servicio de ejercicios (Oracle REST).</p>';console.error(err);return}
+const SUBJ=ASIG.map(a=>a.asignatura).sort(coll.compare);
+let asig=new URLSearchParams(location.search).get('asignatura');
+if(!SUBJ.includes(asig))asig=Banco.leerCookie('banco-filtros')?.asig;
+if(!SUBJ.includes(asig))asig=SUBJ[0];
+const selA=$('asig');
+selA.innerHTML=SUBJ.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+selA.value=asig;
+selA.addEventListener('change',()=>{
+  asig=selA.value;
+  history.replaceState(null,'','?vista=estadisticas&asignatura='+encodeURIComponent(asig));
+  cargar();
+});
+
+// Fecha del examen por asignatura: cookie banco-examenes = {asignatura: "AAAA-MM-DD"}.
+const examen=$('examen');
+const examenes=()=>Banco.leerCookie('banco-examenes')||{};
+examen.addEventListener('change',()=>{
+  const ex=examenes();
+  if(examen.value)ex[asig]=examen.value;else delete ex[asig];
+  Banco.guardarCookie('banco-examenes',ex);
+  ritmo();
+});
+// Ejercicios al día para que la Cobertura llegue al 100 % el día del examen (cuenta hoy, no el día del examen).
+function ritmo(){
+  const out=$('ritmo');
+  if(!ACT){out.textContent='';return}
+  if(!examen.value){out.textContent='Pon la fecha del examen para calcular cuántos ejercicios hay que hacer al día.';return}
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const dias=Math.round((aFecha(examen.value)-hoy)/86400000);
+  const faltan=ACT.total-ACT.cub;
+  if(faltan<=0){out.textContent='Cobertura completa: no queda ningún ejercicio por cubrir.';return}
+  if(dias<0){out.textContent='La fecha del examen ya ha pasado.';return}
+  if(dias===0){out.textContent=`El examen es hoy; quedan ${faltan} ejercicios por cubrir.`;return}
+  out.innerHTML=`<b>${dec2(faltan/dias)}</b> ejercicios al día · faltan ${faltan} por cubrir en ${dias} día${dias>1?'s':''}`;
+}
+
+/* ---------- Carga ---------- */
+let ACT=null,nCarga=0;
+async function cargar(){
+  const n=++nCarga;
+  examen.value=examenes()[asig]||'';
+  ACT=null;ritmo();
+  $('indices').innerHTML='<p class="vacio">Cargando…</p>';
+  for(const id of['estados','desglose','graf','graf-tabla','graf-sub','desglose-sub'])$(id).textContent='';
+  let resumen,serie;
+  try{[resumen,serie]=await Promise.all([getJSON('resumen?asignatura='+encodeURIComponent(asig)),getJSON('indices?asignatura='+encodeURIComponent(asig))])}
+  catch(err){console.error(err);if(n===nCarga)$('indices').innerHTML='<p class="vacio">No se pudieron cargar las estadísticas.</p>';return}
+  if(n!==nCarga)return; // cambió la asignatura mientras llegaba la respuesta
+  pintarActual(resumen);
+  SERIE=serie;pintarGrafica();pintarTablaSerie();
+}
+
+/* ---------- Estado actual: índices, estados y desglose ---------- */
+function contar(filas){const c={};let t=0;for(const r of filas){c[r.estado]=(c[r.estado]||0)+r.n;t+=r.n}return[c,t]}
+const barra=(c,total,cls='')=>`<div class="barra ${cls}" role="img" aria-label="${esc(ORDEN.filter(k=>c[k]).map(k=>`${MARCA[k].corto}: ${c[k]}`).join(', '))}">`+
+  ORDEN.filter(k=>c[k]).map(k=>`<span style="flex:${c[k]};background:${color(k)}" title="${esc(MARCA[k].corto)}: ${c[k]} de ${total}"></span>`).join('')+'</div>';
+
+function pintarActual(resumen){
+  const[c,total]=contar(resumen);
+  ACT=indices(c,total);ritmo();
+  $('indices').innerHTML=`
+    <div class="card ind">
+      <div class="nombre"><i class="lk" style="background:var(--series-1)"></i>Índice de Cobertura <span class="alias">· progreso</span></div>
+      <div class="val">${pct(ACT.cobertura)}</div>
+      <div class="det">${ACT.cub} de ${total} ejercicios cubiertos</div>
+      <div class="formula">(Ya lo hice + Hecho + Difícil + Interesante + Bonito) / total</div>
+    </div>
+    <div class="card ind">
+      <div class="nombre"><i class="lk" style="background:var(--series-2)"></i>Índice de Avance efectivo <span class="alias">· progreso útil</span></div>
+      <div class="val">${pct(ACT.avance)}</div>
+      <div class="det">${ACT.efe} de ${total-ACT.des} ejercicios (sin contar ${ACT.des} ya hechos o demasiado fáciles)</div>
+      <div class="formula">(Hecho + Difícil + Interesante + Bonito) / (total − Ya lo hice − Demasiado fácil)</div>
+    </div>`;
+
+  $('estados').innerHTML=barra(c,total,'grande')+'<div class="est-grid">'+ORDEN.map(k=>`
+    <div class="est-t"><div class="nom"><span class="mk" style="background:${color(k)}"></span>${esc(MARCA[k].corto)}</div>
+      <div class="n">${c[k]||0} <small>/ ${total} · ${dec2(100*(c[k]||0)/total)} %</small></div></div>`).join('')+'</div>';
+
+  // Desglose por tema si la asignatura tiene títulos de tema; si no, por hoja.
+  const porTema=resumen.some(r=>r.titulo_tema);
+  const grupos=new Map();
+  for(const r of resumen){
+    const k=porTema?r.tema:r.hoja;
+    if(!grupos.has(k))grupos.set(k,{nombre:porTema?`${r.tema}. ${r.titulo_tema||''}`:`Hoja ${r.hoja}`,filas:[]});
+    grupos.get(k).filas.push(r);
+  }
+  $('desglose-t').textContent=porTema?'Por tema':'Por hoja';
+  $('desglose-sub').textContent=porTema?'Ejercicios de cada tema en cada estado.':'Esta asignatura no tiene títulos de tema: desglose por hoja.';
+  const fila=(nombre,cg,tg)=>{const ig=indices(cg,tg);return `<tr><td>${esc(nombre)}</td>`+
+    ORDEN.map(k=>`<td class="${cg[k]?'':'cero'}">${cg[k]||0}</td>`).join('')+
+    `<td>${tg}</td><td class="pc">${pct(ig.cobertura)}</td><td class="pc">${pct(ig.avance)}</td><td>${barra(cg,tg)}</td></tr>`};
+  $('desglose').innerHTML=`<table class="tab-st"><thead><tr><th>${porTema?'Tema':'Hoja'}</th>`+
+    ORDEN.map(k=>`<th><span class="mk" style="background:${color(k)}"></span>${esc(MARCA[k].corto)}</th>`).join('')+
+    `<th>Total</th><th>Cobertura</th><th>Avance ef.</th><th style="text-align:left">Distribución</th></tr></thead><tbody>`+
+    [...grupos.keys()].sort((a,b)=>a-b).map(k=>{const[cg,tg]=contar(grupos.get(k).filas);return fila(grupos.get(k).nombre,cg,tg)}).join('')+
+    `</tbody><tfoot>${fila('Total',c,total)}</tfoot></table>`;
+}
+
+/* ---------- Gráfica: las dos series en el mismo eje 0–100 % ---------- */
+let SERIE=[];
+const SERIES=[{k:'indice_cobertura',nombre:'Cobertura',color:'var(--series-1)'},{k:'indice_avance',nombre:'Avance efectivo',color:'var(--series-2)'}];
+const el=(tag,attrs,padre)=>{const e=document.createElementNS(SVGNS,tag);for(const a in attrs)e.setAttribute(a,attrs[a]);if(padre)padre.appendChild(e);return e};
+
+function pintarGrafica(){
+  const box=$('graf');box.textContent='';
+  if(!SERIE.length){$('graf-sub').textContent='';box.innerHTML='<p class="vacio">Todavía no hay marcas en esta asignatura.</p>';return}
+  const n=SERIE.length,dias=SERIE.map(d=>aFecha(d.dia));
+  $('graf-sub').textContent=`Un punto por día, del ${fLarga(dias[0])} al ${fLarga(dias[n-1])} (${n} día${n>1?'s':''}). Pasa el ratón o usa las flechas para ver cada día.`;
+  const W=Math.max(300,box.clientWidth),etiquetas=W>=560,H=300;
+  const m={l:46,r:etiquetas?150:14,t:14,b:30},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const x=i=>m.l+(n===1?iw/2:i*iw/(n-1)),y=v=>m.t+ih*(1-v/100);
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,tabindex:0,role:'img',
+    'aria-label':`Evolución diaria del Índice de Cobertura y del Índice de Avance efectivo en ${asig}. Los valores están en la tabla de datos.`},box);
+  // rejilla y eje Y
+  for(const v of[0,25,50,75,100]){
+    el('line',{x1:m.l,x2:m.l+iw,y1:y(v),y2:y(v),style:`stroke:var(${v===0?'--rule-strong':'--rule'});stroke-width:1`},svg);
+    el('text',{x:m.l-8,y:y(v)+4,'text-anchor':'end',class:'ax'},svg).textContent=v+' %';
+  }
+  // eje X: etiquetas espaciadas según el ancho
+  const paso=Math.max(1,Math.ceil(n/Math.max(2,Math.floor(iw/72))));
+  for(let i=0;i<n;i+=paso)el('text',{x:x(i),y:H-8,'text-anchor':n===1?'middle':i===0?'start':'middle',class:'ax'},svg).textContent=fCorta(dias[i]);
+  // líneas (se cortan donde un índice no tiene valor) y punto final
+  const fines=[];
+  for(const s of SERIES){
+    let d='',pluma=false;
+    SERIE.forEach((p,i)=>{const v=p[s.k];if(v==null){pluma=false;return}d+=(pluma?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);pluma=true});
+    if(d)el('path',{d,style:`fill:none;stroke:${s.color};stroke-width:2;stroke-linejoin:round;stroke-linecap:round`},svg);
+    const u=SERIE.map(p=>p[s.k]).findLastIndex(v=>v!=null);
+    if(u>=0){el('circle',{cx:x(u),cy:y(SERIE[u][s.k]),r:4,style:`fill:${s.color};stroke:var(--paper);stroke-width:2`},svg);fines.push({s,i:u,v:SERIE[u][s.k]})}
+  }
+  // etiquetas directas al final de cada línea (separadas si se solapan)
+  if(etiquetas&&fines.length){
+    fines.forEach(f=>f.ty=y(f.v)+4);
+    if(fines.length===2&&Math.abs(fines[0].ty-fines[1].ty)<16){
+      const[a,b]=fines[0].ty<=fines[1].ty?fines:[fines[1],fines[0]],mid=(a.ty+b.ty)/2;a.ty=mid-8;b.ty=mid+8;
+    }
+    for(const f of fines)el('text',{x:x(f.i)+10,y:f.ty,class:'fin'},svg).textContent=`${f.s.nombre} ${pct(f.v)}`;
+  }
+  // capa de lectura: línea vertical que sigue al puntero, puntos y una ficha con las dos series
+  const cruz=el('line',{y1:m.t,y2:m.t+ih,style:'stroke:var(--muted);stroke-width:1',visibility:'hidden'},svg);
+  const marcas=SERIES.map(s=>el('circle',{r:4.5,style:`fill:${s.color};stroke:var(--paper);stroke-width:2`,visibility:'hidden'},svg));
+  const tip=document.createElement('div');tip.className='tip';tip.hidden=true;box.appendChild(tip);
+  let actual=-1;
+  function mostrar(i){
+    actual=i;const px=x(i);
+    cruz.setAttribute('x1',px);cruz.setAttribute('x2',px);cruz.setAttribute('visibility','visible');
+    SERIES.forEach((s,j)=>{const v=SERIE[i][s.k];marcas[j].setAttribute('visibility',v==null?'hidden':'visible');if(v!=null){marcas[j].setAttribute('cx',px);marcas[j].setAttribute('cy',y(v))}});
+    tip.textContent='';
+    const t=document.createElement('div');t.className='t';t.textContent=fLarga(dias[i]);tip.appendChild(t);
+    for(const s of SERIES){
+      const f=document.createElement('div');f.className='f';
+      const lk=document.createElement('i');lk.className='lk';lk.style.background=s.color;
+      const b=document.createElement('b');b.textContent=pct(SERIE[i][s.k]);
+      const nm=document.createElement('span');nm.textContent=s.nombre;
+      f.append(lk,b,nm);tip.appendChild(f);
+    }
+    const c=document.createElement('div');c.className='t';c.style.margin='4px 0 0';
+    c.textContent=`${SERIE[i].cubiertos} cubiertos · ${SERIE[i].efectivos} efectivos de ${SERIE[i].total}`;tip.appendChild(c);
+    tip.hidden=false;
+    const escala=box.clientWidth/W,tw=tip.offsetWidth,izq=px*escala+14;
+    tip.style.left=(izq+tw>box.clientWidth?px*escala-14-tw:izq)+'px';
+    tip.style.top=Math.max(0,m.t*escala)+'px';
+  }
+  function ocultar(){actual=-1;cruz.setAttribute('visibility','hidden');marcas.forEach(c=>c.setAttribute('visibility','hidden'));tip.hidden=true}
+  const zona=el('rect',{x:m.l-10,y:m.t,width:iw+20,height:ih,style:'fill:transparent'},svg);
+  zona.addEventListener('pointermove',ev=>{
+    const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)*W/r.width;
+    mostrar(n===1?0:Math.max(0,Math.min(n-1,Math.round((px-m.l)/(iw/(n-1))))));
+  });
+  zona.addEventListener('pointerleave',ocultar);
+  svg.addEventListener('focus',()=>mostrar(actual<0?n-1:actual));
+  svg.addEventListener('blur',ocultar);
+  svg.addEventListener('keydown',ev=>{
+    const d={ArrowLeft:-1,ArrowRight:1,Home:-n,End:n}[ev.key];if(d==null)return;
+    ev.preventDefault();mostrar(Math.max(0,Math.min(n-1,(actual<0?n-1:actual)+d)));
+  });
+}
+function pintarTablaSerie(){
+  $('graf-tabla').innerHTML=SERIE.length?'<table class="tab-st"><thead><tr><th>Día</th><th>Cobertura</th><th>Avance efectivo</th><th>Cubiertos</th><th>Efectivos</th><th>Ya hechos o demasiado fáciles</th><th>Total</th></tr></thead><tbody>'+
+    SERIE.map(d=>`<tr><td>${esc(fLarga(aFecha(d.dia)))}</td><td>${pct(d.indice_cobertura)}</td><td>${pct(d.indice_avance)}</td><td>${d.cubiertos}</td><td>${d.efectivos}</td><td>${d.descartados}</td><td>${d.total}</td></tr>`).join('')+'</tbody></table>':'';
+}
+// redibuja la gráfica al cambiar el ancho
+let anchoPrevio=0;
+new ResizeObserver(()=>requestAnimationFrame(()=>{const w=$('graf').clientWidth;if(w!==anchoPrevio&&SERIE.length){anchoPrevio=w;pintarGrafica()}})).observe($('graf'));
+
+cargar();
+};
+</script>
+<script>
+// Monta la vista pedida en la URL y arranca su código.
+(function(){
+  const v=new URLSearchParams(location.search).get('vista')==='estadisticas'?'estadisticas':'ejercicios';
+  if(v==='estadisticas')document.title='Estadísticas · EJERCICIOS DE MATEMÁTICAS';
+  document.body.prepend(document.getElementById('v-'+v).content.cloneNode(true));
+  window.__vistas[v]();
+})();
+</script>
+</body>
+</html>
