@@ -15,7 +15,7 @@
   /* marcas: rojos (negativas) → sin color (pendiente) → verdes de menos a más positivo */
   --m-error_grave:#f67f79; --m-demasiado_facil:#fcc2bf; --m-pendiente:transparent;
   --m-ya_hecho:#e5faeb; --m-hecho:#aaeebc; --m-dificil:#8fe5a6; --m-interesante:#76db91; --m-bonito:#5dd07c; --red:#b3261e;
-  --s-alg:#1f4fa8; --s-ana:#a3480f; --s-pro:#1d7461; --s-top:#7a3b92; --s-x:#5a6272;
+  --s-alg:#2a78d6; --s-ana:#eda100; --s-pro:#008300; --s-top:#e87ba4; --s-x:#5a6272;
   --series-1:#2a78d6; --series-2:#eb6834;
   --f-text:"STIX Two Text","STIX Two","Times New Roman",serif;
   --f-ui:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -27,7 +27,7 @@
   --m-ya_hecho:#0f2e1a; --m-hecho:#1a562e; --m-dificil:#1e6b38; --m-interesante:#228142; --m-bonito:#26974b;
   --paper:#1a1e26; --ink:#e7e9ee; --muted:#9aa2b1; --rule:#2b313c; --rule-strong:#3a4250;
   --accent:#8fb2ff; --accent-soft:#1f2a42; --hl:#4a3f12; --red:#ff8a80;
-  --s-alg:#8fb2ff; --s-ana:#f0a46c; --s-pro:#6fd3b6; --s-top:#d39cf0; --s-x:#9aa2b1; color-scheme:dark;
+  --s-alg:#3987e5; --s-ana:#c98500; --s-pro:#008300; --s-top:#d55181; --s-x:#9aa2b1; color-scheme:dark;
   --series-1:#3987e5; --series-2:#d95926}}
 :root[data-theme="light"]{color-scheme:light}
 :root[data-theme="dark"]{
@@ -36,7 +36,7 @@
   --m-ya_hecho:#0f2e1a; --m-hecho:#1a562e; --m-dificil:#1e6b38; --m-interesante:#228142; --m-bonito:#26974b;
   --paper:#1a1e26; --ink:#e7e9ee; --muted:#9aa2b1; --rule:#2b313c; --rule-strong:#3a4250;
   --accent:#8fb2ff; --accent-soft:#1f2a42; --hl:#4a3f12; --red:#ff8a80;
-  --s-alg:#8fb2ff; --s-ana:#f0a46c; --s-pro:#6fd3b6; --s-top:#d39cf0; --s-x:#9aa2b1; color-scheme:dark;
+  --s-alg:#3987e5; --s-ana:#c98500; --s-pro:#008300; --s-top:#d55181; --s-x:#9aa2b1; color-scheme:dark;
   --series-1:#3987e5; --series-2:#d95926}
 
 *{box-sizing:border-box}
@@ -87,6 +87,12 @@ header.top .right{display:flex;align-items:center;gap:14px}
 .leyenda{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:13px;color:var(--muted);margin-bottom:6px}
 .leyenda span{display:inline-flex;align-items:center;gap:7px}
 .graf{position:relative}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--rule-strong);border-radius:8px;overflow:hidden;margin:0 0 12px}
+.seg label{position:relative;padding:7px 14px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer}
+.seg label+label{border-left:1px solid var(--rule-strong)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--ink);color:var(--paper)}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
 .graf svg{display:block;width:100%;height:auto;overflow:visible}
 .graf svg:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px}
 .graf .ax{fill:var(--muted);font:11.5px var(--f-ui)}
@@ -162,7 +168,9 @@ main{min-width:0}
 mjx-container[jax="SVG"]{color:inherit}
 mjx-container[display="true"]{margin:0!important}
 .tex-pending{color:var(--muted)}
-.actions{display:flex;align-items:flex-start}
+.actions{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.actions .ia{display:flex;gap:6px}
+.actions .ia .copy{flex:1;padding:4px 8px;font-size:11.5px}
 .copy{font:500 12px var(--f-ui);color:var(--muted);background:transparent;border:1px solid var(--rule);border-radius:6px;padding:6px 10px;cursor:pointer;white-space:nowrap}
 .copy:hover{color:var(--ink);border-color:var(--rule-strong)}
 .copy:focus-visible,.chk input:focus-visible+span,.clear:focus-visible,#q:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -201,6 +209,10 @@ dialog#ej::backdrop{background:rgba(12,16,26,.55)}
 .dlg-f .lbl{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
 .fin-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .fin-row .hint{color:var(--muted);font-size:13.5px}
+.fin-acc{display:flex;gap:10px;flex-wrap:wrap}
+#ej-copy{min-width:132px}
+.btn.sm{font-weight:500;font-size:12.5px;color:var(--muted);padding:8px 12px}
+.btn.sm:hover{color:var(--ink)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--paper);min-width:140px;font-size:15px}
 .btn.primary:hover{background:var(--accent);filter:brightness(1.08)}
 .btn[disabled]{opacity:.45;cursor:default}
@@ -219,6 +231,7 @@ dialog#ej::backdrop{background:rgba(12,16,26,.55)}
 .hist th:last-child,.hist td:last-child{text-align:right;padding-right:0;font-family:var(--f-mono)}
 .hist tfoot td{font-weight:600;border-bottom:none}
 .hist .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;border:1px solid var(--rule-strong)}
+.toast a{color:inherit;font-weight:600}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);font-size:13.5px;padding:10px 16px;border-radius:8px;z-index:20;max-width:calc(100vw - 32px)}
 @media (max-width:760px){.est{grid-template-columns:repeat(2,minmax(0,1fr))}.clock{font-size:24px}.dlg-b{padding:16px}}
 
@@ -341,7 +354,7 @@ window.MathJax={
     </div>
     <div class="dlg-b"><div class="body" id="ej-body"></div><section class="hist-box" id="ej-hist" aria-label="Historial del ejercicio"></section></div>
     <div class="dlg-f">
-      <div class="fin-row" id="fin-row"><span class="hint">Cuando acabes, pulsa Terminar y elige cómo marcarlo.</span><button class="btn primary" type="button" id="terminar">Terminar</button></div>
+      <div class="fin-row" id="fin-row"><span class="hint">Cuando acabes, pulsa Terminar y elige cómo marcarlo.</span><div class="fin-acc"><button class="btn sm" type="button" data-ia="pista" title="Pide a Claude una pista breve">Pista</button><button class="btn sm" type="button" data-ia="resolver" title="Pide a Claude que lo resuelva">Resolver</button><button class="btn" type="button" id="ej-copy">Copiar LaTeX</button><button class="btn primary" type="button" id="terminar">Terminar</button></div></div>
       <div id="preg" hidden>
         <div class="preg-h"><div class="lbl" id="preg-t">¿Cómo lo marcas?</div><button class="btn" type="button" id="volver">Seguir trabajando</button></div>
         <div class="est" id="estados"></div>
@@ -382,6 +395,18 @@ window.MathJax={
     </div>
     <div class="graf" id="graf"></div>
     <details><summary>Ver los datos de cada día</summary><div class="tw" id="graf-tabla"></div></details>
+  </section>
+
+  <section class="card" id="por-asig" hidden>
+    <h2>Avance de cada asignatura</h2>
+    <p class="sub" id="pa-sub"></p>
+    <div class="seg" role="radiogroup" aria-label="Índice que se muestra">
+      <label><input type="radio" name="pa-ind" value="indice_cobertura" checked>Índice de Cobertura</label>
+      <label><input type="radio" name="pa-ind" value="indice_avance">Índice de Avance efectivo</label>
+    </div>
+    <div class="leyenda" id="pa-leyenda" aria-hidden="true"></div>
+    <div class="graf" id="pa-graf"></div>
+    <details><summary>Ver los datos de cada día</summary><div class="tw" id="pa-tabla"></div></details>
   </section>
 
   <section class="card">
@@ -432,13 +457,17 @@ const CUBIERTOS=['ya_hecho','hecho','dificil','interesante','bonito'];
 const EFECTIVOS=['hecho','dificil','interesante','bonito'];
 const DESCARTADOS=['ya_hecho','demasiado_facil'];
 
+// Color de cada asignatura (tokens --s-* de estilos.css), el mismo en todas las páginas.
+const SUBJ_COLOR={'Álgebra I':'--s-alg','Análisis Matemático':'--s-ana','Probabilidad I':'--s-pro','Topología':'--s-top'};
+const colorAsig=s=>`var(${SUBJ_COLOR[s]||'--s-x'})`;
+
 function leerCookie(nombre){
   const m=document.cookie.match(new RegExp('(?:^|; )'+nombre+'=([^;]*)'));
   if(!m)return null;
   try{return JSON.parse(decodeURIComponent(m[1]))}catch(_){return null}
 }
-function guardarCookie(nombre,valor){
-  document.cookie=`${nombre}=${encodeURIComponent(JSON.stringify(valor))}; max-age=31536000; path=/; SameSite=Lax`;
+function guardarCookie(nombre,valor,segundos=31536000){
+  document.cookie=`${nombre}=${encodeURIComponent(JSON.stringify(valor))}; max-age=${segundos}; path=/; SameSite=Lax`;
 }
 
 // Botón de tema (#tema): alterna claro/oscuro sobre el tema que se ve ahora (el del sistema si no se ha
@@ -462,7 +491,7 @@ function iniciarTema(){
   pintar();
 }
 
-return {API,getJSON,postJSON,esc,MARCAS,CUBIERTOS,EFECTIVOS,DESCARTADOS,leerCookie,guardarCookie,iniciarTema};
+return {API,getJSON,postJSON,esc,MARCAS,CUBIERTOS,EFECTIVOS,DESCARTADOS,colorAsig,leerCookie,guardarCookie,iniciarTema};
 })();
 window.__vistas={};
 </script>
@@ -476,8 +505,7 @@ Banco.iniciarTema();
 let ASIG;
 try{ASIG=await getJSON('asignaturas')}
 catch(err){document.getElementById('list').innerHTML='<p class="empty">No se pudo conectar con el servicio de ejercicios (Oracle REST).</p>';console.error(err);return}
-const SUBJ_COLOR={'Álgebra I':'--s-alg','Análisis Matemático':'--s-ana','Probabilidad I':'--s-pro','Topología':'--s-top'};
-const col=s=>`var(${SUBJ_COLOR[s]||'--s-x'})`;
+const col=Banco.colorAsig;
 const coll=new Intl.Collator('es');
 
 /* ---------- LaTeX (modo texto) → HTML; las fórmulas quedan para MathJax ---------- */
@@ -656,7 +684,7 @@ function renderList(){
     html+=`<article class="ex" data-k="${esc(e.key)}"${codigoMarca(e.key)!=='sin'?` data-m="${codigoMarca(e.key)}"`:''}>
       <div class="meta"><button class="num" type="button" title="${esc(e.key)}" aria-label="Abrir ejercicio ${e.numero_ejercicio}">${e.numero_ejercicio}</button></div>
       <div class="body tex-pending">${texToHTML(e.enunciado_latex)}</div>
-      <div class="actions"><button class="copy" type="button" data-k="${esc(e.key)}">Copiar LaTeX</button></div>
+      <div class="actions"><button class="copy" type="button" data-k="${esc(e.key)}">Copiar LaTeX</button><div class="ia"><button class="copy" type="button" data-k="${esc(e.key)}" data-ia="pista" title="Pide a Claude una pista breve">Pista</button><button class="copy" type="button" data-k="${esc(e.key)}" data-ia="resolver" title="Pide a Claude que lo resuelva">Resolver</button></div></div>
     </article>`;
   }
   vaciarLista(html+'<div class="empty" id="empty" hidden>Ningún ejercicio cumple estos filtros. <button type="button" id="clear2">Quitar filtros</button></div>');
@@ -667,11 +695,47 @@ list.addEventListener('click',ev=>{
   if(ev.target.closest('#clear2')){clearAll();return}
   if(ev.target.closest('#reintentar')){cargar(st.asig);return}
   const b=ev.target.closest('.copy');if(!b)return;
-  const t=byKey.get(b.dataset.k).enunciado_latex;
-  const done=()=>{b.textContent='Copiado';setTimeout(()=>b.textContent='Copiar LaTeX',1400)};
-  const fallback=()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done()}catch(_){b.textContent='No se pudo copiar'}ta.remove()};
-  try{navigator.clipboard.writeText(t).then(done,fallback)}catch(_){fallback()}
+  const e=byKey.get(b.dataset.k);
+  if(b.dataset.ia)preguntarClaude(e,b.dataset.ia);else copiarLatex(b,e.enunciado_latex);
 });
+// El textarea de respaldo se mete en el contenedor del botón: dentro de un <dialog> modal, fuera de él no se puede seleccionar.
+function copiarLatex(b,t){
+  const done=()=>{b.textContent='Copiado';setTimeout(()=>b.textContent='Copiar LaTeX',1400)};
+  const fallback=()=>{const ta=document.createElement('textarea');ta.value=t;b.parentNode.appendChild(ta);ta.select();try{document.execCommand('copy');done()}catch(_){b.textContent='No se pudo copiar'}ta.remove()};
+  try{navigator.clipboard.writeText(t).then(done,fallback)}catch(_){fallback()}
+}
+const PROMPTS={
+  resolver:e=>`Resuelve paso a paso este ejercicio de ${e.asignatura} (grado en Matemáticas), justificando cada paso.\n\nEnunciado en LaTeX:\n\n${e.enunciado_latex}`,
+  pista:e=>`Estoy resolviendo este ejercicio de ${e.asignatura} (grado en Matemáticas). No me lo resuelvas ni me des la solución: dame solo una pista breve, de una o dos frases, que me ayude a dar el siguiente paso.\n\nEnunciado en LaTeX:\n\n${e.enunciado_latex}`
+};
+// Abre Claude con la petición ya escrita: primero la app de escritorio (claude://…; la deja escrita, sin enviarla)
+// y, si no se abre, claude.ai. Lo que funcionó se recuerda en la cookie banco-claude: "app" un año, "web" 30 días
+// (luego se vuelve a probar la app). En el móvil no hay app de escritorio: va siempre a la web.
+const MOVIL=navigator.userAgentData?.mobile??/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+function preguntarClaude(e,tipo){
+  const q=encodeURIComponent(PROMPTS[tipo](e)),web='https://claude.ai/new?q='+q;
+  if(MOVIL||Banco.leerCookie('banco-claude')==='web'){abrirWeb(web);return}
+  // Si la app se abre, esta ventana pierde el foco. Si en 3,5 s no lo ha perdido, se abre la web: aún dentro de
+  // los ~5 s tras el clic en que el navegador deja abrir pestañas nuevas.
+  let hecho=false;
+  const fin=ok=>{
+    if(hecho)return;hecho=true;
+    clearTimeout(espera);removeEventListener('blur',siApp);document.removeEventListener('visibilitychange',siOculta);
+    if(ok){Banco.guardarCookie('banco-claude','app');return}
+    Banco.guardarCookie('banco-claude','web',30*86400);
+    toast('No se abrió la app de Claude: se usará claude.ai.');abrirWeb(web);
+  };
+  const siApp=()=>fin(true),siOculta=()=>{if(document.hidden)fin(true)};
+  addEventListener('blur',siApp);document.addEventListener('visibilitychange',siOculta);
+  const espera=setTimeout(()=>fin(false),3500);
+  toast('Abriendo la app de Claude…');
+  location.href='claude://claude.ai/new?q='+q;
+}
+function abrirWeb(url){
+  const w=window.open(url,'_blank');
+  if(w)w.opener=null;
+  else toast('El navegador no dejó abrir la pestaña.',{href:url,texto:'Abrir en claude.ai'});
+}
 
 /* ---------- Banda de filtros ---------- */
 const selA=document.getElementById('asig'),fT=document.getElementById('f-tema'),fH=document.getElementById('f-hoja');
@@ -808,11 +872,20 @@ terminar.addEventListener('click',()=>{
   document.getElementById('preg-t').textContent=`¿Cómo lo marcas? · ${fmt(elapsed())} (esta vez ${fmt(elapsed()-T.base)})`;
   estBox.querySelector('button').focus();
 });
+document.getElementById('ej-copy').addEventListener('click',ev=>{if(T.ex)copiarLatex(ev.currentTarget,T.ex.enunciado_latex)});
+document.querySelectorAll('#ej [data-ia]').forEach(b=>b.addEventListener('click',()=>{if(T.ex)preguntarClaude(T.ex,b.dataset.ia)}));
 document.getElementById('volver').addEventListener('click',()=>{vista(false);setRunning(true);terminar.focus()});
 // Cerrar con × o Esc no guarda nada.
 function cerrar(){setRunning(false);clearInterval(T.iv);if(dlg.open)dlg.close();T.ex=null}
 let toastT;
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+// Con el diálogo abierto, el aviso va dentro de él: fuera quedaría debajo del modal y no se podría pulsar.
+function toast(msg,enlace){
+  const t=document.getElementById('toast');
+  (dlg.open?dlg:document.body).appendChild(t);
+  t.textContent=msg;
+  if(enlace){const a=document.createElement('a');a.href=enlace.href;a.target='_blank';a.rel='noopener';a.textContent=enlace.texto;t.append(' ',a)}
+  t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,enlace?8000:2600);
+}
 pausa.addEventListener('click',()=>setRunning(!T.running));
 document.getElementById('ej-x').addEventListener('click',cerrar);
 dlg.addEventListener('cancel',ev=>{ev.preventDefault();cerrar()});
@@ -858,8 +931,8 @@ if(window.MathJax&&MathJax.typesetPromise)typeset();else window.__mjReady=typese
 };
 </script>
 <script>
-// Estadísticas de una asignatura: estado actual de los ejercicios (GET resumen), evolución diaria de los
-// índices (GET indices, calculada en Oracle por la vista v_indices_dia) y ritmo necesario hasta el examen.
+// Estadísticas de una asignatura, o de TODAS: estado actual de los ejercicios (GET resumen), evolución diaria
+// de los índices (GET indices, calculada en Oracle por la vista v_indices_dia) y ritmo necesario hasta el examen.
 window.__vistas.estadisticas=async function(){
 "use strict";
 const {getJSON,esc,MARCAS,CUBIERTOS,EFECTIVOS,DESCARTADOS}=Banco;
@@ -875,6 +948,8 @@ const dec2=v=>v.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionD
 const pct=v=>v==null?'—':dec2(v)+' %';
 const aFecha=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 const fCorta=d=>d.toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+// Duración en segundos → "3 h 05 min", "25 min", "40 s".
+const dur=s=>{const h=Math.floor(s/3600),m=Math.floor(s/60)%60;return s<60?`${s} s`:h?`${h} h ${String(m).padStart(2,'0')} min`:`${m} min`};
 const fLarga=d=>d.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 
 // Recuentos {estado:n} → índices (mismas reglas que v_indices_dia).
@@ -889,11 +964,15 @@ let ASIG;
 try{ASIG=await getJSON('asignaturas')}
 catch(err){$('indices').innerHTML='<p class="vacio">No se pudo conectar con el servicio de ejercicios (Oracle REST).</p>';console.error(err);return}
 const SUBJ=ASIG.map(a=>a.asignatura).sort(coll.compare);
+// TODAS: en la URL y en la cookie de exámenes es '*'; a Oracle se le pide sin parámetro asignatura.
+const TODAS='*',OPC=[TODAS,...SUBJ];
+const nombreAsig=()=>asig===TODAS?'todas las asignaturas':asig;
+const param=()=>asig===TODAS?'':'?asignatura='+encodeURIComponent(asig);
 let asig=new URLSearchParams(location.search).get('asignatura');
-if(!SUBJ.includes(asig))asig=Banco.leerCookie('banco-filtros')?.asig;
-if(!SUBJ.includes(asig))asig=SUBJ[0];
+if(!OPC.includes(asig))asig=Banco.leerCookie('banco-filtros')?.asig;
+if(!OPC.includes(asig))asig=SUBJ[0];
 const selA=$('asig');
-selA.innerHTML=SUBJ.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+selA.innerHTML=`<option value="${TODAS}">TODAS</option>`+SUBJ.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
 selA.value=asig;
 selA.addEventListener('change',()=>{
   asig=selA.value;
@@ -901,47 +980,62 @@ selA.addEventListener('change',()=>{
   cargar();
 });
 
-// Fecha del examen por asignatura: cookie banco-examenes = {asignatura: "AAAA-MM-DD"}.
+// Fecha del examen por asignatura: cookie banco-examenes = {asignatura: "AAAA-MM-DD", "*": la de TODAS}.
+// En TODAS, si no se ha puesto una, se toma el examen más próximo de las asignaturas que no haya pasado.
 const examen=$('examen');
 const examenes=()=>Banco.leerCookie('banco-examenes')||{};
+const hoyISO=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`};
+let examenDe=null; // asignatura de la que sale la fecha por defecto de TODAS
+function ponerExamen(){
+  const ex=examenes();examenDe=null;
+  if(asig!==TODAS||ex[TODAS]){examen.value=ex[asig]||'';return}
+  const hoy=hoyISO(),prox=SUBJ.filter(s=>ex[s]&&ex[s]>=hoy).sort((a,b)=>ex[a]<ex[b]?-1:ex[a]>ex[b]?1:0)[0];
+  examen.value=prox?ex[prox]:'';examenDe=prox||null;
+}
 examen.addEventListener('change',()=>{
   const ex=examenes();
   if(examen.value)ex[asig]=examen.value;else delete ex[asig];
   Banco.guardarCookie('banco-examenes',ex);
-  ritmo();
+  ponerExamen();ritmo();
 });
 // Ejercicios al día para que la Cobertura llegue al 100 % el día del examen (cuenta hoy, no el día del examen).
 function ritmo(){
   const out=$('ritmo');
   if(!ACT){out.textContent='';return}
   if(!examen.value){out.textContent='Pon la fecha del examen para calcular cuántos ejercicios hay que hacer al día.';return}
+  const nota=examenDe?` · fecha del examen más próximo (${examenDe})`:'';
   const hoy=new Date();hoy.setHours(0,0,0,0);
   const dias=Math.round((aFecha(examen.value)-hoy)/86400000);
   const faltan=ACT.total-ACT.cub;
   if(faltan<=0){out.textContent='Cobertura completa: no queda ningún ejercicio por cubrir.';return}
   if(dias<0){out.textContent='La fecha del examen ya ha pasado.';return}
-  if(dias===0){out.textContent=`El examen es hoy; quedan ${faltan} ejercicios por cubrir.`;return}
-  out.innerHTML=`<b>${dec2(faltan/dias)}</b> ejercicios al día · faltan ${faltan} por cubrir en ${dias} día${dias>1?'s':''}`;
+  if(dias===0){out.textContent=`El examen es hoy; quedan ${faltan} ejercicios por cubrir${nota}.`;return}
+  out.innerHTML=`<b>${dec2(faltan/dias)}</b> ejercicios al día · faltan ${faltan} por cubrir en ${dias} día${dias>1?'s':''}${esc(nota)}`;
 }
 
 /* ---------- Carga ---------- */
 let ACT=null,nCarga=0;
 async function cargar(){
   const n=++nCarga;
-  examen.value=examenes()[asig]||'';
+  ponerExamen();
   ACT=null;ritmo();
   $('indices').innerHTML='<p class="vacio">Cargando…</p>';
-  for(const id of['estados','desglose','graf','graf-tabla','graf-sub','desglose-sub'])$(id).textContent='';
+  for(const id of['estados','desglose','graf','graf-tabla','graf-sub','desglose-sub','pa-graf','pa-tabla','pa-sub'])$(id).textContent='';
+  $('por-asig').hidden=asig!==TODAS;
   let resumen,serie;
-  try{[resumen,serie]=await Promise.all([getJSON('resumen?asignatura='+encodeURIComponent(asig)),getJSON('indices?asignatura='+encodeURIComponent(asig))])}
+  try{[resumen,serie]=await Promise.all([getJSON('resumen'+param()),getJSON('indices'+param())])}
   catch(err){console.error(err);if(n===nCarga)$('indices').innerHTML='<p class="vacio">No se pudieron cargar las estadísticas.</p>';return}
   if(n!==nCarga)return; // cambió la asignatura mientras llegaba la respuesta
   pintarActual(resumen);
-  SERIE=serie;pintarGrafica();pintarTablaSerie();
+  // con TODAS llegan la serie conjunta ('*') y la de cada asignatura
+  SERIE=asig===TODAS?serie.filter(r=>r.asignatura===TODAS):serie;
+  POR_ASIG=asig===TODAS?serie.filter(r=>r.asignatura!==TODAS):[];
+  pintarGrafica();pintarTablaSerie();pintarPorAsig();
 }
 
 /* ---------- Estado actual: índices, estados y desglose ---------- */
 function contar(filas){const c={};let t=0;for(const r of filas){c[r.estado]=(c[r.estado]||0)+r.n;t+=r.n}return[c,t]}
+const segundos=filas=>filas.reduce((s,r)=>s+(r.segundos||0),0);
 const barra=(c,total,cls='')=>`<div class="barra ${cls}" role="img" aria-label="${esc(ORDEN.filter(k=>c[k]).map(k=>`${MARCA[k].corto}: ${c[k]}`).join(', '))}">`+
   ORDEN.filter(k=>c[k]).map(k=>`<span style="flex:${c[k]};background:${color(k)}" title="${esc(MARCA[k].corto)}: ${c[k]} de ${total}"></span>`).join('')+'</div>';
 
@@ -960,47 +1054,60 @@ function pintarActual(resumen){
       <div class="val">${pct(ACT.avance)}</div>
       <div class="det">${ACT.efe} de ${total-ACT.des} ejercicios (sin contar ${ACT.des} ya hechos o demasiado fáciles)</div>
       <div class="formula">(Hecho + Difícil + Interesante + Bonito) / (total − Ya lo hice − Demasiado fácil)</div>
+    </div>
+    <div class="card ind">
+      <div class="nombre">Tiempo dedicado <span class="alias">· cronómetro</span></div>
+      <div class="val">${dur(segundos(resumen))}</div>
+      <div class="det">${total-(c.pendiente||0)} de ${total} ejercicios marcados${total-(c.pendiente||0)?` · ${dur(Math.round(segundos(resumen)/(total-(c.pendiente||0))))} de media por ejercicio marcado`:''}</div>
+      <div class="formula">Suma del tiempo de todas las sesiones, sin pausas</div>
     </div>`;
 
   $('estados').innerHTML=barra(c,total,'grande')+'<div class="est-grid">'+ORDEN.map(k=>`
     <div class="est-t"><div class="nom"><span class="mk" style="background:${color(k)}"></span>${esc(MARCA[k].corto)}</div>
       <div class="n">${c[k]||0} <small>/ ${total} · ${dec2(100*(c[k]||0)/total)} %</small></div></div>`).join('')+'</div>';
 
-  // Desglose por tema si la asignatura tiene títulos de tema; si no, por hoja.
-  const porTema=resumen.some(r=>r.titulo_tema);
+  // Desglose: con TODAS, por asignatura; si no, por tema si la asignatura tiene títulos de tema, o por hoja.
+  const D=asig===TODAS?{t:'Asignatura',titulo:'Por asignatura',sub:'Ejercicios de cada asignatura en cada estado y tiempo dedicado.',
+                         k:r=>r.asignatura,nombre:r=>r.asignatura,orden:coll.compare}
+         :resumen.some(r=>r.titulo_tema)?{t:'Tema',titulo:'Por tema',sub:'Ejercicios de cada tema en cada estado y tiempo dedicado.',
+                         k:r=>r.tema,nombre:r=>`${r.tema}. ${r.titulo_tema||''}`,orden:(a,b)=>a-b}
+         :{t:'Hoja',titulo:'Por hoja',sub:'Esta asignatura no tiene títulos de tema: desglose por hoja.',
+           k:r=>r.hoja,nombre:r=>`Hoja ${r.hoja}`,orden:(a,b)=>a-b};
   const grupos=new Map();
   for(const r of resumen){
-    const k=porTema?r.tema:r.hoja;
-    if(!grupos.has(k))grupos.set(k,{nombre:porTema?`${r.tema}. ${r.titulo_tema||''}`:`Hoja ${r.hoja}`,filas:[]});
+    const k=D.k(r);
+    if(!grupos.has(k))grupos.set(k,{nombre:D.nombre(r),filas:[]});
     grupos.get(k).filas.push(r);
   }
-  $('desglose-t').textContent=porTema?'Por tema':'Por hoja';
-  $('desglose-sub').textContent=porTema?'Ejercicios de cada tema en cada estado.':'Esta asignatura no tiene títulos de tema: desglose por hoja.';
-  const fila=(nombre,cg,tg)=>{const ig=indices(cg,tg);return `<tr><td>${esc(nombre)}</td>`+
+  $('desglose-t').textContent=D.titulo;
+  $('desglose-sub').textContent=D.sub;
+  const fila=(nombre,cg,tg,sg)=>{const ig=indices(cg,tg);return `<tr><td>${esc(nombre)}</td>`+
     ORDEN.map(k=>`<td class="${cg[k]?'':'cero'}">${cg[k]||0}</td>`).join('')+
-    `<td>${tg}</td><td class="pc">${pct(ig.cobertura)}</td><td class="pc">${pct(ig.avance)}</td><td>${barra(cg,tg)}</td></tr>`};
-  $('desglose').innerHTML=`<table class="tab-st"><thead><tr><th>${porTema?'Tema':'Hoja'}</th>`+
+    `<td>${tg}</td><td class="pc">${pct(ig.cobertura)}</td><td class="pc">${pct(ig.avance)}</td><td class="${sg?'':'cero'}">${dur(sg)}</td><td>${barra(cg,tg)}</td></tr>`};
+  $('desglose').innerHTML=`<table class="tab-st"><thead><tr><th>${D.t}</th>`+
     ORDEN.map(k=>`<th><span class="mk" style="background:${color(k)}"></span>${esc(MARCA[k].corto)}</th>`).join('')+
-    `<th>Total</th><th>Cobertura</th><th>Avance ef.</th><th style="text-align:left">Distribución</th></tr></thead><tbody>`+
-    [...grupos.keys()].sort((a,b)=>a-b).map(k=>{const[cg,tg]=contar(grupos.get(k).filas);return fila(grupos.get(k).nombre,cg,tg)}).join('')+
-    `</tbody><tfoot>${fila('Total',c,total)}</tfoot></table>`;
+    `<th>Total</th><th>Cobertura</th><th>Avance ef.</th><th>Tiempo</th><th style="text-align:left">Distribución</th></tr></thead><tbody>`+
+    [...grupos.keys()].sort(D.orden).map(k=>{const g=grupos.get(k),[cg,tg]=contar(g.filas);return fila(g.nombre,cg,tg,segundos(g.filas))}).join('')+
+    `</tbody><tfoot>${fila('Total',c,total,segundos(resumen))}</tfoot></table>`;
 }
 
-/* ---------- Gráfica: las dos series en el mismo eje 0–100 % ---------- */
-let SERIE=[];
+/* ---------- Gráficas de líneas en un eje 0–100 % ---------- */
+// SERIE: los índices día a día (de la asignatura o de todas juntas). POR_ASIG: con TODAS, las filas de cada asignatura.
+let SERIE=[],POR_ASIG=[];
 const SERIES=[{k:'indice_cobertura',nombre:'Cobertura',color:'var(--series-1)'},{k:'indice_avance',nombre:'Avance efectivo',color:'var(--series-2)'}];
+const INDICES={indice_cobertura:'Índice de Cobertura',indice_avance:'Índice de Avance efectivo'};
 const el=(tag,attrs,padre)=>{const e=document.createElementNS(SVGNS,tag);for(const a in attrs)e.setAttribute(a,attrs[a]);if(padre)padre.appendChild(e);return e};
 
-function pintarGrafica(){
-  const box=$('graf');box.textContent='';
-  if(!SERIE.length){$('graf-sub').textContent='';box.innerHTML='<p class="vacio">Todavía no hay marcas en esta asignatura.</p>';return}
-  const n=SERIE.length,dias=SERIE.map(d=>aFecha(d.dia));
-  $('graf-sub').textContent=`Un punto por día, del ${fLarga(dias[0])} al ${fLarga(dias[n-1])} (${n} día${n>1?'s':''}). Pasa el ratón o usa las flechas para ver cada día.`;
+// Dibuja en box una línea por serie ({nombre,color,vals}, un valor o null por día), con etiqueta al final de cada
+// línea y una ficha que sigue al puntero o a las flechas; extra(i) añade una línea a la ficha.
+function dibujar(box,{dias,series,aria,extra}){
+  box.textContent='';
+  const n=dias.length;
   const W=Math.max(300,box.clientWidth),etiquetas=W>=560,H=300;
-  const m={l:46,r:etiquetas?150:14,t:14,b:30},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const largo=Math.max(...series.map(s=>s.nombre.length));
+  const m={l:46,r:etiquetas?Math.min(230,(largo+9)*7+14):14,t:14,b:30},iw=W-m.l-m.r,ih=H-m.t-m.b;
   const x=i=>m.l+(n===1?iw/2:i*iw/(n-1)),y=v=>m.t+ih*(1-v/100);
-  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,tabindex:0,role:'img',
-    'aria-label':`Evolución diaria del Índice de Cobertura y del Índice de Avance efectivo en ${asig}. Los valores están en la tabla de datos.`},box);
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,tabindex:0,role:'img','aria-label':aria},box);
   // rejilla y eje Y
   for(const v of[0,25,50,75,100]){
     el('line',{x1:m.l,x2:m.l+iw,y1:y(v),y2:y(v),style:`stroke:var(${v===0?'--rule-strong':'--rule'});stroke-width:1`},svg);
@@ -1009,43 +1116,43 @@ function pintarGrafica(){
   // eje X: etiquetas espaciadas según el ancho
   const paso=Math.max(1,Math.ceil(n/Math.max(2,Math.floor(iw/72))));
   for(let i=0;i<n;i+=paso)el('text',{x:x(i),y:H-8,'text-anchor':n===1?'middle':i===0?'start':'middle',class:'ax'},svg).textContent=fCorta(dias[i]);
-  // líneas (se cortan donde un índice no tiene valor) y punto final
+  // líneas (se cortan donde no hay valor) y punto final
   const fines=[];
-  for(const s of SERIES){
+  for(const s of series){
     let d='',pluma=false;
-    SERIE.forEach((p,i)=>{const v=p[s.k];if(v==null){pluma=false;return}d+=(pluma?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);pluma=true});
+    s.vals.forEach((v,i)=>{if(v==null){pluma=false;return}d+=(pluma?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);pluma=true});
     if(d)el('path',{d,style:`fill:none;stroke:${s.color};stroke-width:2;stroke-linejoin:round;stroke-linecap:round`},svg);
-    const u=SERIE.map(p=>p[s.k]).findLastIndex(v=>v!=null);
-    if(u>=0){el('circle',{cx:x(u),cy:y(SERIE[u][s.k]),r:4,style:`fill:${s.color};stroke:var(--paper);stroke-width:2`},svg);fines.push({s,i:u,v:SERIE[u][s.k]})}
+    const u=s.vals.findLastIndex(v=>v!=null);
+    if(u>=0){el('circle',{cx:x(u),cy:y(s.vals[u]),r:4,style:`fill:${s.color};stroke:var(--paper);stroke-width:2`},svg);fines.push({s,i:u,v:s.vals[u]})}
   }
-  // etiquetas directas al final de cada línea (separadas si se solapan)
+  // etiquetas directas al final de cada línea, separadas 16 px si se solapan
   if(etiquetas&&fines.length){
     fines.forEach(f=>f.ty=y(f.v)+4);
-    if(fines.length===2&&Math.abs(fines[0].ty-fines[1].ty)<16){
-      const[a,b]=fines[0].ty<=fines[1].ty?fines:[fines[1],fines[0]],mid=(a.ty+b.ty)/2;a.ty=mid-8;b.ty=mid+8;
-    }
+    fines.sort((a,b)=>a.ty-b.ty);
+    for(let i=1;i<fines.length;i++)fines[i].ty=Math.max(fines[i].ty,fines[i-1].ty+16);
+    const sobra=fines[fines.length-1].ty-(m.t+ih+4);
+    if(sobra>0)fines.forEach(f=>f.ty-=sobra);
     for(const f of fines)el('text',{x:x(f.i)+10,y:f.ty,class:'fin'},svg).textContent=`${f.s.nombre} ${pct(f.v)}`;
   }
-  // capa de lectura: línea vertical que sigue al puntero, puntos y una ficha con las dos series
+  // capa de lectura: línea vertical que sigue al puntero, puntos y una ficha con todas las series
   const cruz=el('line',{y1:m.t,y2:m.t+ih,style:'stroke:var(--muted);stroke-width:1',visibility:'hidden'},svg);
-  const marcas=SERIES.map(s=>el('circle',{r:4.5,style:`fill:${s.color};stroke:var(--paper);stroke-width:2`,visibility:'hidden'},svg));
+  const marcas=series.map(s=>el('circle',{r:4.5,style:`fill:${s.color};stroke:var(--paper);stroke-width:2`,visibility:'hidden'},svg));
   const tip=document.createElement('div');tip.className='tip';tip.hidden=true;box.appendChild(tip);
   let actual=-1;
   function mostrar(i){
     actual=i;const px=x(i);
     cruz.setAttribute('x1',px);cruz.setAttribute('x2',px);cruz.setAttribute('visibility','visible');
-    SERIES.forEach((s,j)=>{const v=SERIE[i][s.k];marcas[j].setAttribute('visibility',v==null?'hidden':'visible');if(v!=null){marcas[j].setAttribute('cx',px);marcas[j].setAttribute('cy',y(v))}});
+    series.forEach((s,j)=>{const v=s.vals[i];marcas[j].setAttribute('visibility',v==null?'hidden':'visible');if(v!=null){marcas[j].setAttribute('cx',px);marcas[j].setAttribute('cy',y(v))}});
     tip.textContent='';
     const t=document.createElement('div');t.className='t';t.textContent=fLarga(dias[i]);tip.appendChild(t);
-    for(const s of SERIES){
+    for(const s of series){
       const f=document.createElement('div');f.className='f';
       const lk=document.createElement('i');lk.className='lk';lk.style.background=s.color;
-      const b=document.createElement('b');b.textContent=pct(SERIE[i][s.k]);
+      const b=document.createElement('b');b.textContent=pct(s.vals[i]);
       const nm=document.createElement('span');nm.textContent=s.nombre;
       f.append(lk,b,nm);tip.appendChild(f);
     }
-    const c=document.createElement('div');c.className='t';c.style.margin='4px 0 0';
-    c.textContent=`${SERIE[i].cubiertos} cubiertos · ${SERIE[i].efectivos} efectivos de ${SERIE[i].total}`;tip.appendChild(c);
+    if(extra){const c=document.createElement('div');c.className='t';c.style.margin='4px 0 0';c.textContent=extra(i);tip.appendChild(c)}
     tip.hidden=false;
     const escala=box.clientWidth/W,tw=tip.offsetWidth,izq=px*escala+14;
     tip.style.left=(izq+tw>box.clientWidth?px*escala-14-tw:izq)+'px';
@@ -1065,14 +1172,58 @@ function pintarGrafica(){
     ev.preventDefault();mostrar(Math.max(0,Math.min(n-1,(actual<0?n-1:actual)+d)));
   });
 }
+const sinMarcas=()=>`<p class="vacio">Todavía no hay marcas en ${asig===TODAS?'ninguna asignatura':'esta asignatura'}.</p>`;
+
+function pintarGrafica(){
+  const box=$('graf');
+  if(!SERIE.length){$('graf-sub').textContent='';box.innerHTML=sinMarcas();return}
+  const n=SERIE.length,dias=SERIE.map(d=>aFecha(d.dia));
+  $('graf-sub').textContent=`Un punto por día, del ${fLarga(dias[0])} al ${fLarga(dias[n-1])} (${n} día${n>1?'s':''}). Pasa el ratón o usa las flechas para ver cada día.`;
+  dibujar(box,{dias,series:SERIES.map(s=>({...s,vals:SERIE.map(p=>p[s.k])})),
+    aria:`Evolución diaria del Índice de Cobertura y del Índice de Avance efectivo en ${nombreAsig()}. Los valores están en la tabla de datos.`,
+    extra:i=>`${SERIE[i].cubiertos} cubiertos · ${SERIE[i].efectivos} efectivos de ${SERIE[i].total}`});
+}
 function pintarTablaSerie(){
   $('graf-tabla').innerHTML=SERIE.length?'<table class="tab-st"><thead><tr><th>Día</th><th>Cobertura</th><th>Avance efectivo</th><th>Cubiertos</th><th>Efectivos</th><th>Ya hechos o demasiado fáciles</th><th>Total</th></tr></thead><tbody>'+
     SERIE.map(d=>`<tr><td>${esc(fLarga(aFecha(d.dia)))}</td><td>${pct(d.indice_cobertura)}</td><td>${pct(d.indice_avance)}</td><td>${d.cubiertos}</td><td>${d.efectivos}</td><td>${d.descartados}</td><td>${d.total}</td></tr>`).join('')+'</tbody></table>':'';
 }
-// redibuja la gráfica al cambiar el ancho
-let anchoPrevio=0;
-new ResizeObserver(()=>requestAnimationFrame(()=>{const w=$('graf').clientWidth;if(w!==anchoPrevio&&SERIE.length){anchoPrevio=w;pintarGrafica()}})).observe($('graf'));
 
+/* ---------- Con TODAS: el índice elegido de cada asignatura ---------- */
+let indPA='indice_cobertura';
+document.querySelectorAll('input[name="pa-ind"]').forEach(r=>r.addEventListener('change',()=>{indPA=r.value;pintarPorAsig()}));
+// Valores de cada asignatura en los días de la serie conjunta: antes de su primera marca todo está pendiente
+// (0 %) y después de la última conserva el valor de ese día, igual que hace v_indices_dia con los ejercicios.
+function seriesAsig(){
+  return SUBJ.map(s=>{
+    const filas=new Map(POR_ASIG.filter(r=>r.asignatura===s).map(r=>[r.dia,r]));
+    let v={indice_cobertura:0,indice_avance:0};
+    return {nombre:s,color:Banco.colorAsig(s),vals:SERIE.map(d=>{v=filas.get(d.dia)||v;return v[indPA]})};
+  });
+}
+function pintarPorAsig(){
+  const sec=$('por-asig');sec.hidden=asig!==TODAS;
+  if(sec.hidden)return;
+  const box=$('pa-graf');
+  $('pa-leyenda').innerHTML=SUBJ.map(s=>`<span><i class="lk" style="background:${Banco.colorAsig(s)}"></i>${esc(s)}</span>`).join('');
+  if(!SERIE.length){$('pa-sub').textContent='';$('pa-tabla').textContent='';box.innerHTML=sinMarcas();return}
+  const series=seriesAsig(),dias=SERIE.map(d=>aFecha(d.dia));
+  $('pa-sub').textContent=`${INDICES[indPA]} de cada asignatura, un punto por día. Antes de su primera marca una asignatura está al 0 %; después de la última conserva su valor.`;
+  dibujar(box,{dias,series,aria:`Evolución diaria del ${INDICES[indPA]} de cada asignatura. Los valores están en la tabla de datos.`});
+  $('pa-tabla').innerHTML=`<table class="tab-st"><thead><tr><th>Día</th>${SUBJ.map(s=>`<th>${esc(s)}</th>`).join('')}</tr></thead><tbody>`+
+    dias.map((d,i)=>`<tr><td>${esc(fLarga(d))}</td>${series.map(s=>`<td>${pct(s.vals[i])}</td>`).join('')}</tr>`).join('')+'</tbody></table>';
+}
+
+// redibuja cada gráfica al cambiar su ancho
+const anchos=new Map();
+const ro=new ResizeObserver(entradas=>requestAnimationFrame(()=>{
+  for(const {target:b} of entradas){
+    const w=b.clientWidth;if(!w||w===anchos.get(b))continue;
+    anchos.set(b,w);
+    if(b.id==='graf'&&SERIE.length)pintarGrafica();
+    else if(b.id==='pa-graf'&&SERIE.length&&asig===TODAS)pintarPorAsig();
+  }
+}));
+ro.observe($('graf'));ro.observe($('pa-graf'));
 cargar();
 };
 </script>
