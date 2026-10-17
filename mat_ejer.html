@@ -354,7 +354,7 @@ window.MathJax={
     </div>
     <div class="dlg-b"><div class="body" id="ej-body"></div><section class="hist-box" id="ej-hist" aria-label="Historial del ejercicio"></section></div>
     <div class="dlg-f">
-      <div class="fin-row" id="fin-row"><span class="hint">Cuando acabes, pulsa Terminar y elige cómo marcarlo.</span><div class="fin-acc"><button class="btn sm" type="button" data-ia="pista" title="Pide a Claude una pista breve">Pista</button><button class="btn sm" type="button" data-ia="resolver" title="Pide a Claude que lo resuelva">Resolver</button><button class="btn" type="button" id="ej-copy">Copiar LaTeX</button><button class="btn primary" type="button" id="terminar">Terminar</button></div></div>
+      <div class="fin-row" id="fin-row"><span class="hint">Cuando acabes, pulsa Terminar y elige cómo marcarlo.</span><div class="fin-acc"><button class="btn sm" type="button" data-ia="pista_breve" title="Pide a Claude una pista de 3 o 4 palabras">Pista breve</button><button class="btn sm" type="button" data-ia="pista" title="Pide a Claude una pista de una o dos frases">Pista</button><button class="btn sm" type="button" data-ia="resolver" title="Pide a Claude que lo resuelva">Resolver</button><button class="btn" type="button" id="ej-copy">Copiar LaTeX</button><button class="btn primary" type="button" id="terminar">Terminar</button></div></div>
       <div id="preg" hidden>
         <div class="preg-h"><div class="lbl" id="preg-t">¿Cómo lo marcas?</div><button class="btn" type="button" id="volver">Seguir trabajando</button></div>
         <div class="est" id="estados"></div>
@@ -684,7 +684,7 @@ function renderList(){
     html+=`<article class="ex" data-k="${esc(e.key)}"${codigoMarca(e.key)!=='sin'?` data-m="${codigoMarca(e.key)}"`:''}>
       <div class="meta"><button class="num" type="button" title="${esc(e.key)}" aria-label="Abrir ejercicio ${e.numero_ejercicio}">${e.numero_ejercicio}</button></div>
       <div class="body tex-pending">${texToHTML(e.enunciado_latex)}</div>
-      <div class="actions"><button class="copy" type="button" data-k="${esc(e.key)}">Copiar LaTeX</button><div class="ia"><button class="copy" type="button" data-k="${esc(e.key)}" data-ia="pista" title="Pide a Claude una pista breve">Pista</button><button class="copy" type="button" data-k="${esc(e.key)}" data-ia="resolver" title="Pide a Claude que lo resuelva">Resolver</button></div></div>
+      <div class="actions"><button class="copy" type="button" data-k="${esc(e.key)}">Copiar LaTeX</button><div class="ia"><button class="copy" type="button" data-k="${esc(e.key)}" data-ia="pista_breve" title="Pide a Claude una pista de 3 o 4 palabras">Pista breve</button><button class="copy" type="button" data-k="${esc(e.key)}" data-ia="pista" title="Pide a Claude una pista de una o dos frases">Pista</button><button class="copy" type="button" data-k="${esc(e.key)}" data-ia="resolver" title="Pide a Claude que lo resuelva">Resolver</button></div></div>
     </article>`;
   }
   vaciarLista(html+'<div class="empty" id="empty" hidden>Ningún ejercicio cumple estos filtros. <button type="button" id="clear2">Quitar filtros</button></div>');
@@ -706,7 +706,8 @@ function copiarLatex(b,t){
 }
 const PROMPTS={
   resolver:e=>`Resuelve paso a paso este ejercicio de ${e.asignatura} (grado en Matemáticas), justificando cada paso.\n\nEnunciado en LaTeX:\n\n${e.enunciado_latex}`,
-  pista:e=>`Estoy resolviendo este ejercicio de ${e.asignatura} (grado en Matemáticas). No me lo resuelvas ni me des la solución: dame solo una pista breve, de una o dos frases, que me ayude a dar el siguiente paso.\n\nEnunciado en LaTeX:\n\n${e.enunciado_latex}`
+  pista:e=>`Estoy resolviendo este ejercicio de ${e.asignatura} (grado en Matemáticas). No me lo resuelvas ni me des la solución: dame solo una pista breve, de una o dos frases, que me ayude a dar el siguiente paso.\n\nEnunciado en LaTeX:\n\n${e.enunciado_latex}`,
+  pista_breve:e=>`Estoy resolviendo este ejercicio de ${e.asignatura} (grado en Matemáticas). No me lo resuelvas ni me des la solución: dame solo una pista de como máximo 3 o 4 palabras, sin explicaciones ni nada más.\n\nEnunciado en LaTeX:\n\n${e.enunciado_latex}`
 };
 // Abre Claude con la petición ya escrita: primero la app de escritorio (claude://…; la deja escrita, sin enviarla)
 // y, si no se abre, claude.ai. Lo que funcionó se recuerda en la cookie banco-claude: "app" un año, "web" 30 días
