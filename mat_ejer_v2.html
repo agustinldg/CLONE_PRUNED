@@ -281,6 +281,54 @@ dialog#ej::backdrop,dialog#cfg::backdrop{background:rgba(12,16,26,.55)}
 .cfg-pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.5 var(--f-mono);background:var(--bg);border:1px solid var(--rule);border-radius:7px;padding:10px 12px;max-height:260px;overflow:auto}
 .hint.cfg-err{color:var(--red)}
 @media (max-width:760px){.cfg-fila{grid-template-columns:minmax(0,1fr)}}
+.cfg-api{display:flex;flex-direction:column;gap:8px;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--rule)}
+.cfg-api h3,.cfg-sec{margin:0;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.cfg-sec{margin-bottom:8px}
+.cfg-clave{display:flex;flex-direction:column;gap:5px}
+.cfg-clave-fila{display:flex;gap:8px;flex-wrap:wrap}
+#cfg-clave{flex:1;min-width:220px;font:14px var(--f-mono);color:var(--ink);background:var(--bg);border:1px solid var(--rule-strong);border-radius:7px;padding:8px 10px}
+#cfg-clave:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cfg-api-est{margin:0;color:var(--muted);font-size:13px;min-height:1.2em}
+.cfg-api-est.cfg-err{color:var(--red)}
+.cfg-p select{font:14px var(--f-ui);color:var(--ink);background:var(--bg);border:1px solid var(--rule-strong);border-radius:7px;padding:7px 8px}
+.cfg-p select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+@media (min-width:761px){.cfg-fila.cfg-mod{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}}
+
+/* Respuestas de Claude (API) en la ventana del ejercicio */
+.ia-box{margin-top:24px;padding-top:14px;border-top:1px solid var(--rule)}
+.ia-box>h3{margin:0 0 4px;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.ia-conv{border:1px solid var(--rule);border-radius:10px;background:var(--paper);margin-top:10px}
+.ia-conv>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;padding:10px 14px;cursor:pointer;list-style:none}
+.ia-conv>summary::-webkit-details-marker{display:none}
+.ia-conv>summary::before{content:"▸";color:var(--muted);display:inline-block;width:10px}
+.ia-conv[open]>summary::before{content:"▾"}
+.ia-conv>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:10px}
+.ia-tit{font-weight:600}
+.ia-meta{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+.ia-cuerpo{display:flex;flex-direction:column;gap:12px;padding:0 16px 14px}
+.ia-prompt>summary,.ia-raz>summary{cursor:pointer;color:var(--muted);font-size:12.5px;width:max-content}
+.ia-prompt pre{margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 var(--f-mono);background:var(--bg);border:1px solid var(--rule);border-radius:7px;padding:8px 10px;max-height:220px;overflow:auto}
+.ia-yo{align-self:flex-end;max-width:85%;background:var(--accent-soft);border-radius:10px;padding:8px 12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+.ia-resp{display:flex;flex-direction:column;gap:8px;min-width:0}
+.ia-txt{font-family:var(--f-text);font-size:16.5px;line-height:1.55;overflow-wrap:break-word;min-width:0}
+.ia-txt p{margin:0 0 .6em}.ia-txt>:last-child{margin-bottom:0}
+.ia-txt h1,.ia-txt h2,.ia-txt h3,.ia-txt h4{font-size:1.05em;margin:.8em 0 .3em}
+.ia-txt ul,.ia-txt ol{margin:.3em 0 .6em;padding-left:1.4em}
+.ia-txt code{font-family:var(--f-mono);font-size:.85em;background:var(--bg);border-radius:4px;padding:0 3px}
+.ia-txt pre{overflow:auto;background:var(--bg);border:1px solid var(--rule);border-radius:7px;padding:8px 10px}
+.ia-txt blockquote{margin:.4em 0;padding-left:12px;border-left:3px solid var(--rule-strong);color:var(--muted)}
+.ia-txt table{border-collapse:collapse;margin:.4em 0}.ia-txt th,.ia-txt td{border:1px solid var(--rule);padding:3px 8px}
+.ia-txt .disp{display:block;overflow-x:auto;overflow-y:hidden;margin:.45em 0;text-align:center;padding-block:2px}
+.ia-raz .ia-txt,.ia-raz-vivo{color:var(--muted);font-size:14px}
+.ia-raz .ia-txt{margin-top:6px;padding-left:10px;border-left:3px solid var(--rule)}
+.ia-raz-vivo{padding-left:10px;border-left:3px solid var(--rule-strong)}
+.ia-pensando{margin:0;color:var(--muted);font-style:italic}
+.ia-nota{margin:0;color:var(--muted);font-size:12.5px}
+.ia-pie{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.ia-preg{display:flex;gap:8px;align-items:flex-end}
+.ia-preg textarea{flex:1;min-width:0;min-height:44px;resize:vertical;font:14px/1.4 var(--f-ui);color:var(--ink);background:var(--bg);border:1px solid var(--rule-strong);border-radius:8px;padding:8px 10px}
+.ia-preg textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ia-acc{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
 
 /* Botón flotante */
 .fab{position:fixed;right:calc(max(16px,env(safe-area-inset-right,0px)) + 8px);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:15;display:flex;align-items:center;gap:10px;font:600 14.5px var(--f-ui);color:var(--paper);background:var(--ink);border:none;border-radius:999px;padding:13px 20px 13px 16px;min-height:48px;cursor:pointer;box-shadow:0 8px 24px rgba(10,14,24,.25)}
@@ -346,9 +394,12 @@ details.fx>summary{display:none}
 (function(){var m=document.cookie.match(/(?:^|; )banco-tema=(light|dark)/);if(m)document.documentElement.dataset.theme=m[1]})();
 </script>
 <script>
+// ui/safe y sin el paquete html: las respuestas de Claude y lo guardado en Oracle (escribible por cualquiera) también pasan
+// por MathJax, y \href, \class, \style o \cssId podrían meter enlaces javascript: o estilos en la página.
 window.MathJax={
+  loader:{load:['ui/safe']},
   tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']],processEscapes:false,
-       packages:{'[+]':['ams','color','boldsymbol','mathtools']}},
+       packages:{'[-]':['html'],'[+]':['ams','color','boldsymbol','mathtools']}},
   svg:{fontCache:'global'},
   options:{skipHtmlTags:['script','noscript','style','textarea','pre','code','button','legend','label']},
   startup:{typeset:false,ready(){MathJax.startup.defaultReady();window.__mjReady&&window.__mjReady()}}
@@ -402,7 +453,7 @@ window.MathJax={
       <div class="timer" id="timer"><span class="clock" id="clock" aria-label="Tiempo">00:00</span><button class="btn" type="button" id="pausa">Pausar</button></div>
       <button class="x" type="button" id="ej-x" aria-label="Cerrar sin marcar" title="Cerrar sin marcar">×</button>
     </div>
-    <div class="dlg-b"><div class="body" id="ej-body"></div><section class="hist-box" id="ej-hist" aria-label="Historial del ejercicio"></section></div>
+    <div class="dlg-b"><div class="body" id="ej-body"></div><section class="ia-box" id="ej-ia" aria-label="Respuestas de Claude" hidden></section><section class="hist-box" id="ej-hist" aria-label="Historial del ejercicio"></section></div>
     <div class="dlg-f">
       <div class="fin-row" id="fin-row"><span class="hint">Cuando acabes, pulsa Terminar y elige cómo marcarlo.</span><div class="fin-acc"><button class="btn sm" type="button" data-ia="pista_breve" title="Pide a Claude una pista de 3 o 4 palabras">Pista breve</button><button class="btn sm" type="button" data-ia="pista" title="Pide a Claude una pista de una o dos frases">Pista</button><button class="btn sm" type="button" data-ia="resolver" title="Pide a Claude que lo resuelva">Resolver</button><button class="btn" type="button" id="ej-copy">Copiar LaTeX</button><button class="btn primary" type="button" id="terminar">Terminar</button></div></div>
       <div id="preg" hidden>
@@ -415,10 +466,17 @@ window.MathJax={
 <dialog id="cfg" aria-labelledby="cfg-t">
   <div class="dlg">
     <div class="dlg-h">
-      <div class="ttl"><div class="ctx">Configuración</div><h2 id="cfg-t">Prompts de Claude</h2></div>
+      <div class="ttl"><div class="ctx">Configuración</div><h2 id="cfg-t">Claude</h2></div>
       <button class="x" type="button" id="cfg-x" aria-label="Cerrar sin guardar" title="Cerrar sin guardar">×</button>
     </div>
     <div class="dlg-b">
+      <section class="cfg-api" aria-labelledby="cfg-api-t">
+        <h3 id="cfg-api-t">API de Claude</h3>
+        <p class="cfg-ayuda">Con una clave del API, los botones de Claude responden aquí mismo, en la ventana del ejercicio, y puedes repreguntar; sin clave, abren la app de Claude o claude.ai. La clave, el modelo y el esfuerzo se guardan solo en este navegador; las conversaciones, en Oracle.</p>
+        <div class="cfg-clave"><label class="cfg-l" for="cfg-clave">Clave del API</label><div class="cfg-clave-fila"><input type="password" id="cfg-clave" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"><button class="btn sm" type="button" id="cfg-probar">Probar</button><button class="btn sm" type="button" id="cfg-olvidar">Olvidar</button></div></div>
+        <p class="cfg-api-est" id="cfg-api-estado" aria-live="polite"></p>
+      </section>
+      <h3 class="cfg-sec">Prompts</h3>
       <div class="cfg-top">
         <div class="campo"><label for="cfg-asig">Asignatura</label><select id="cfg-asig"></select></div>
         <p class="cfg-ayuda">Variables: <code>{asignatura}</code> <code>{enunciado}</code> <code>{hoja}</code> <code>{tema}</code> <code>{titulo_tema}</code> <code>{numero}</code>. Un prompt propio de una asignatura sustituye al común solo en ella.</p>
@@ -521,6 +579,11 @@ async function postJSON(path,datos){
   if(!r.ok)throw new Error(`HTTP ${r.status} en ${path}: ${await r.text()}`);
   return r.json();
 }
+async function delJSON(path){
+  const r=await fetch(API+path,{method:'DELETE'});
+  if(!r.ok)throw new Error(`HTTP ${r.status} en ${path}: ${await r.text()}`);
+  return r.json();
+}
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 const MARCAS=[
@@ -576,7 +639,7 @@ function iniciarTema(){
   pintar();
 }
 
-return {API,getJSON,postJSON,esc,MARCAS,CUBIERTOS,EFECTIVOS,DESCARTADOS,VISTOS,colorAsig,leerCookie,guardarCookie,iniciarTema};
+return {API,getJSON,postJSON,delJSON,esc,MARCAS,CUBIERTOS,EFECTIVOS,DESCARTADOS,VISTOS,colorAsig,leerCookie,guardarCookie,iniciarTema};
 })();
 window.__vistas={};
 </script>
@@ -585,7 +648,7 @@ window.__vistas={};
 // una asignatura cada vez, y monta la lista, los filtros y la ventana de trabajo.
 window.__vistas.ejercicios=async function(){
 "use strict";
-const {getJSON,postJSON,esc,MARCAS}=Banco;
+const {getJSON,postJSON,delJSON,esc,MARCAS}=Banco;
 Banco.iniciarTema();
 // Los prompts de los botones de Claude (GET prompts) se piden a la vez que las asignaturas; se aplican al llegar.
 const pPrompts=getJSON('prompts').catch(err=>{console.error(err);return null});
@@ -785,7 +848,7 @@ list.addEventListener('click',ev=>{
   if(ev.target.closest('#reintentar')){cargar(st.asig);return}
   const b=ev.target.closest('.copy');if(!b)return;
   const e=byKey.get(b.dataset.k);
-  if(b.dataset.ia)preguntarClaude(e,b.dataset.ia);else copiarLatex(b,e.enunciado_latex);
+  if(b.dataset.ia)iaBoton(e,b.dataset.ia);else copiarLatex(b,e.enunciado_latex);
 });
 // El textarea de respaldo se mete en el contenedor del botón: dentro de un <dialog> modal, fuera de él no se puede seleccionar.
 function copiarLatex(b,t){
@@ -978,6 +1041,7 @@ function abrir(key){
   histEl.innerHTML='<p class="hist-msg">Cargando historial…</p>';
   clearInterval(T.iv);clock.textContent='--:--';pausa.disabled=terminar.disabled=true;
   dlg.showModal();dlg.querySelector('.dlg-b').scrollTop=0;
+  iaCargar(e);
   // El contador arranca cuando llega el histórico, con la suma de sus tiempos.
   getJSON('historial?version=2&id_ejercicio='+encodeURIComponent(e.id_ejercicio)).catch(err=>{console.error(err);return null}).then(h=>{
     if(n!==T.n||T.ex!==e)return; // se cerró o se abrió otro ejercicio
@@ -995,10 +1059,10 @@ terminar.addEventListener('click',()=>{
   estBox.querySelector('button').focus();
 });
 document.getElementById('ej-copy').addEventListener('click',ev=>{if(T.ex)copiarLatex(ev.currentTarget,T.ex.enunciado_latex)});
-document.querySelectorAll('#ej [data-ia]').forEach(b=>b.addEventListener('click',()=>{if(T.ex)preguntarClaude(T.ex,b.dataset.ia)}));
+document.querySelectorAll('#ej [data-ia]').forEach(b=>b.addEventListener('click',()=>{if(T.ex)iaBoton(T.ex,b.dataset.ia)}));
 document.getElementById('volver').addEventListener('click',()=>{vista(false);setRunning(true);terminar.focus()});
 // Cerrar con × o Esc no guarda nada.
-function cerrar(){setRunning(false);clearInterval(T.iv);if(dlg.open)dlg.close();T.ex=null}
+function cerrar(){setRunning(false);clearInterval(T.iv);if(dlg.open)dlg.close();T.ex=null;iaCerrar()}
 let toastT;
 // Con una ventana abierta, el aviso va dentro de ella: fuera quedaría debajo del modal y no se podría pulsar.
 function toast(msg,enlace){
@@ -1034,6 +1098,274 @@ list.addEventListener('click',ev=>{
   abrir(r.dataset.k);
 });
 
+/* ---------- Claude por API: respuestas en la ventana del ejercicio ---------- */
+// Con una clave del API (Configuración), los botones de Claude preguntan al API y la respuesta sale en la ventana del
+// ejercicio, con repreguntas; las conversaciones se guardan en Oracle (servicio ia). Sin clave, abren Claude como antes.
+// La clave y el modelo y el esfuerzo de cada botón se guardan solo en este navegador (localStorage), nunca en Oracle.
+const LS={
+  get(k){try{return localStorage.getItem(k)}catch(_){return null}},
+  set(k,v){try{if(v==null||v==='')localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){}}
+};
+// Precio en $ por millón de tokens de entrada y de salida (el razonamiento cuenta como salida), para el coste estimado.
+const MODELOS=[
+  {id:'claude-opus-5-5',nombre:'Opus 5.5',ent:4,sal:20},
+  {id:'claude-sonnet-5-5',nombre:'Sonnet 5.5',ent:2,sal:10},
+  {id:'claude-haiku-5-5',nombre:'Haiku 5.5',ent:0.1,sal:0.5},
+  {id:'claude-fable-5-1',nombre:'Fable 5.1',ent:10,sal:50}
+];
+// Modelos a los que puede pasar el fallback (no se eligen, pero pueden responder): para el coste.
+const PRECIOS_EXTRA={'claude-opus-5':{nombre:'Opus 5',ent:5,sal:25},'claude-opus-4-8':{nombre:'Opus 4.8',ent:5,sal:25},'claude-sonnet-5':{nombre:'Sonnet 5',ent:2,sal:10}};
+const precio=id=>MODELOS.find(x=>x.id===id)||PRECIOS_EXTRA[id];
+const ESFUERZOS=['low','medium','high','xhigh','max'];
+const IA_DEF={pista_breve:{modelo:'claude-opus-5-5',esfuerzo:'low'},pista:{modelo:'claude-opus-5-5',esfuerzo:'low'},resolver:{modelo:'claude-opus-5-5',esfuerzo:'high'}};
+// Si el modelo rechaza la petición, el API la continúa con otro (fallbacks:"default"); solo en los modelos que lo admiten.
+const CON_FALLBACK=new Set(['claude-opus-5-5','claude-sonnet-5-5','claude-fable-5-1']);
+// Fijo: si cambiara, el razonamiento de las conversaciones guardadas ya no valdría (el API lo descarta: drop_block).
+const SISTEMA='Responde en español. Usa Markdown y escribe todas las fórmulas en LaTeX, entre $…$ en línea o $$…$$ aparte.';
+const claveAPI=()=>LS.get('banco-claude-api')||'';
+function iaCfg(){
+  let g={};try{g=JSON.parse(LS.get('banco-claude-modelos')||'{}')||{}}catch(_){}
+  return Object.fromEntries(CODIGOS.map(c=>[c,{...IA_DEF[c],...g[c]}]));
+}
+const nombreModelo=id=>precio(id)?.nombre||id||'';
+// SDK oficial de Anthropic, marked y DOMPurify, de jsDelivr con versión fija; se cargan la primera vez que hacen falta.
+let LIBS=null;
+const libs=()=>LIBS??=Promise.all([
+  import('https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.131.0/+esm'),
+  import('https://cdn.jsdelivr.net/npm/marked@18.0.14/+esm'),
+  import('https://cdn.jsdelivr.net/npm/dompurify@3.4.16/+esm')
+]).then(([sdk,mk,dp])=>({sdk,Anthropic:sdk.default,marked:mk.marked,DOMPurify:dp.default})).catch(err=>{LIBS=null;throw err});
+// banco-claude-base solo sirve para pruebas: un servidor local que imita el API.
+async function cliente(clave=claveAPI()){
+  const {Anthropic}=await libs(),base=LS.get('banco-claude-base');
+  return new Anthropic({apiKey:clave,dangerouslyAllowBrowser:true,...(base?{baseURL:base}:{})});
+}
+// Error del SDK → mensaje para el usuario; null si se paró a propósito.
+function errorIA(err,L){
+  const s=L?.sdk,es=c=>!!s?.[c]&&err instanceof s[c],det=()=>err.error?.error?.message||err.message;
+  if(es('APIUserAbortError'))return null;
+  if(es('AuthenticationError'))return 'La clave del API no es válida: revísala en Configuración.';
+  if(es('PermissionDeniedError'))return 'La clave no tiene permiso para esto: '+det();
+  if(es('RateLimitError'))return 'Límite de uso del API alcanzado: espera un poco y vuelve a probar.';
+  if(es('BadRequestError'))return 'El API rechazó la petición: '+det();
+  if(es('APIConnectionError'))return 'No se pudo conectar con el API de Claude.';
+  if(es('APIError'))return `Error del API de Claude (${err.status??'sin estado'}): ${det()}`;
+  return 'No se pudo usar el API de Claude: '+err.message;
+}
+// Markdown de Claude → HTML limpio (DOMPurify: la clave está en este navegador). Las fórmulas se apartan antes con
+// protectMath, como en los enunciados, para que Markdown no toque sus _ y \, y vuelven como \(…\) y \[…\] para MathJax.
+function mdHTML(src,L){
+  if(!L)return `<p style="white-space:pre-wrap">${esc(src)}</p>`;
+  const{s,math}=protectMath(src);
+  const h=L.marked.parse(s.replace(/\u0001(\d+)\u0002/g,'MJXPH$1X'))
+    .replace(/MJXPH(\d+)X/g,(_,n)=>{const m=math[+n];return !m?'':m.d?`<span class="disp">\\[${esc(m.t)}\\]</span>`:`\\(${esc(m.t)}\\)`});
+  return L.DOMPurify.sanitize(h);   // al final: revisa también lo restaurado (un marcador dentro de un atributo no rompe nada)
+}
+// content de una respuesta, tolerante: solo bloques que sean objetos (lo guardado en Oracle lo puede escribir cualquiera).
+const bloques=content=>Array.isArray(content)?content.filter(b=>b&&typeof b==='object'):[];
+const textoDe=content=>bloques(content).filter(b=>b.type==='text'&&typeof b.text==='string').map(b=>b.text).join('\n\n').trim();
+// content para reenviar al repreguntar: tal cual, salvo lo que el API pide omitir tras un fallback a mitad de respuesta
+// (razonamiento y bloques de herramientas anteriores al último bloque fallback) y, si quedara vacío (p. ej. un rechazo
+// antes de escribir nada, o cortada por max_tokens mientras razonaba), el texto mostrado: un turno de assistant sin
+// texto (vacío o solo razonamiento) no se puede reenviar.
+function paraReenviar(m){
+  const bl=bloques(m.contenido),f=bl.map(b=>b.type).lastIndexOf('fallback');
+  const c=f<0?bl:bl.filter((b,i)=>i>=f||b.type==='text'||b.type==='fallback');
+  return c.some(b=>b.type==='text'&&typeof b.text==='string'&&b.text)?c:[{type:'text',text:m.texto||'(sin texto)'}];
+}
+const fmtTok=n=>(n??0).toLocaleString('es-ES');
+function coste(m){
+  const p=precio(m.modelo);
+  return p&&m.tokens_entrada!=null?(m.tokens_entrada*p.ent+(m.tokens_salida||0)*p.sal)/1e6:null;
+}
+const fmtCoste=d=>d<0.01?`${(d*100).toLocaleString('es-ES',{maximumFractionDigits:2})} ¢`:`${d.toLocaleString('es-ES',{maximumFractionDigits:3})} $`;
+// Bloques content de una respuesta → HTML. Mientras llega (vivo) el razonamiento se ve abierto; al acabar, plegado.
+function contenidoHTML(m,L){
+  let h='';
+  for(const b of bloques(m.contenido)){
+    if(b.type==='thinking'&&typeof b.thinking==='string'&&b.thinking)h+=m.vivo?`<div class="ia-raz-vivo ia-txt">${mdHTML(b.thinking,L)}</div>`
+      :`<details class="ia-raz"><summary>Razonamiento (resumen)</summary><div class="ia-txt">${mdHTML(b.thinking,L)}</div></details>`;
+    else if(b.type==='text'&&typeof b.text==='string'&&b.text)h+=`<div class="ia-txt">${mdHTML(b.text,L)}</div>`;
+    else if(b.type==='fallback')h+=`<p class="ia-nota">Respondió ${esc(nombreModelo(b.to?.model))} en lugar de ${esc(nombreModelo(b.from?.model))}.</p>`;
+  }
+  if(m.vivo)return h||'<p class="ia-pensando">Pensando…</p>';
+  if(!textoDe(m.contenido))h+=`<div class="ia-txt">${mdHTML(String(m.texto||''),L)}</div>`;
+  if(m.stop_reason==='refusal')h+='<p class="ia-nota">Claude ha rechazado esta petición; lo que hubiera escrito antes de pararse se ha descartado.</p>';
+  if(m.stop_reason==='max_tokens')h+='<p class="ia-nota">Respuesta cortada: se alcanzó el máximo de tokens.</p>';
+  const c=coste(m);
+  return h+`<div class="ia-pie">${esc(nombreModelo(m.modelo))} · ${fmtTok(m.tokens_entrada)} → ${fmtTok(m.tokens_salida)} tokens${c==null?'':' · ≈ '+fmtCoste(c)}</div>`;
+}
+
+// IA.convs: conversaciones del ejercicio abierto, la más reciente primero: {k (clave en la página), id (id_conv de
+// Oracle; null si aún no se ha guardado), codigo, modelo, esfuerzo, creado, mensajes, guardados (cuántos de ellos ya
+// están en Oracle), abierta, borrador}. IA.activo: la petición en curso ({conv, stream, parar}).
+const iaBox=document.getElementById('ej-ia');
+const IA={convs:[],ex:null,n:0,activo:null,L:null};
+let kConv=0,nPintIA=0;
+const normConv=c=>({k:++kConv,id:c.id_conv,codigo:c.codigo,modelo:c.modelo,esfuerzo:c.esfuerzo,creado:c.creado,
+  mensajes:c.mensajes||[],guardados:(c.mensajes||[]).length,abierta:false,borrador:''});
+const convDe=el=>{const d=el.closest('.ia-conv');return d?IA.convs.find(c=>c.k===+d.dataset.k):null};
+const pararIA=()=>{if(IA.activo){IA.activo.parar=true;IA.activo.stream?.abort()}};
+// Al abrir un ejercicio: sus conversaciones guardadas (sin el servicio, o sin conexión, simplemente no se ven).
+function iaCargar(e){
+  pararIA();
+  const n=++IA.n;IA.ex=e;IA.convs=[];pintarIA();
+  getJSON('ia?id_ejercicio='+encodeURIComponent(e.id_ejercicio)).then(filas=>{
+    if(n!==IA.n)return;
+    const ids=new Set(IA.convs.map(c=>c.id).filter(x=>x!=null));
+    IA.convs=[...IA.convs,...filas.filter(f=>!ids.has(f.id_conv)).map(normConv).reverse()];
+    pintarIA();
+  }).catch(err=>console.error(err));
+}
+// Al cerrar la ventana se para la respuesta en curso (lo que no ha terminado no se guarda).
+function iaCerrar(){pararIA();IA.n++;IA.ex=null;IA.convs=[];pintarIA()}
+function metaConv(c){
+  const tot=c.mensajes.reduce((s,m)=>s+(coste(m)||0),0);
+  return [c.creado?fechaHora(c.creado):'',nombreModelo(c.modelo),c.esfuerzo,tot?'≈ '+fmtCoste(tot):'',
+    IA.activo?.conv===c?'':c.guardando?'guardando…':c.mensajes.length&&(c.id==null||c.guardados<c.mensajes.length)?'sin guardar':''
+  ].filter(Boolean).join(' · ');
+}
+function convHTML(c,L){
+  const p=comun(c.codigo),activa=IA.activo?.conv===c;
+  return `<details class="ia-conv" data-k="${c.k}"${c.abierta?' open':''}>
+    <summary><span class="ia-tit">${esc(p?.etiqueta||c.codigo)}</span><span class="ia-meta">${esc(metaConv(c))}</span></summary>
+    <div class="ia-cuerpo">${c.mensajes.map((m,j)=>m.rol==='user'
+        ?(j===0?`<details class="ia-prompt"><summary>Prompt enviado</summary><pre>${esc(m.texto)}</pre></details>`:`<div class="ia-yo">${esc(m.texto)}</div>`)
+        :`<div class="ia-resp"${m.vivo?' data-vivo':''}>${contenidoHTML(m,L)}</div>`).join('')}
+      ${activa?'<div class="ia-acc"><button class="btn sm" type="button" data-acc="parar">Parar</button></div>'
+        :`${!claveAPI()?'':`<form class="ia-preg"><textarea rows="2" placeholder="Repregunta sobre esta respuesta… (Ctrl+Intro)" aria-label="Repregunta">${esc(c.borrador)}</textarea><button class="btn sm" type="submit">Preguntar</button></form>`}
+      <div class="ia-acc"><button class="clear" type="button" data-acc="web" title="Abre una conversación nueva en claude.ai con el mismo prompt">Abrir en claude.ai</button><button class="clear" type="button" data-acc="borrar">Borrar</button></div>`}
+    </div></details>`;
+}
+async function pintarIA(){
+  const k=++nPintIA;
+  if(!IA.convs.length){iaBox.hidden=true;iaBox.textContent='';return}
+  let L=IA.L;
+  if(!L)try{L=IA.L=await libs()}catch(err){console.error(err)}   // sin las librerías, el texto tal cual
+  if(k!==nPintIA)return;
+  if(!IA.convs.some(c=>c.abierta))IA.convs[0].abierta=true;
+  const act=document.activeElement,ka=iaBox.contains(act)&&act.matches('.ia-preg textarea')?convDe(act)?.k:null;
+  const sel=ka!=null?[act.selectionStart,act.selectionEnd]:null;
+  const abiertos=new Set([...iaBox.querySelectorAll('.ia-cuerpo details[open]')].map(d=>{
+    const cv=d.closest('.ia-conv');return cv.dataset.k+':'+[...cv.querySelectorAll('.ia-cuerpo details')].indexOf(d)}));
+  if(window.MathJax&&MathJax.typesetClear)MathJax.typesetClear([iaBox]);
+  iaBox.innerHTML='<h3>Claude</h3>'+IA.convs.map(c=>convHTML(c,L)).join('');
+  iaBox.hidden=false;
+  iaBox.querySelectorAll('.ia-conv').forEach(cv=>cv.querySelectorAll('.ia-cuerpo details').forEach((d,i)=>{if(abiertos.has(cv.dataset.k+':'+i))d.open=true}));
+  if(ka!=null){const t=iaBox.querySelector(`.ia-conv[data-k="${ka}"] .ia-preg textarea`);if(t){t.focus({preventScroll:true});t.setSelectionRange(...sel)}}
+  // la respuesta que está llegando se queda sin componer: su HTML se rehace en cada trozo
+  if(window.MathJax&&MathJax.typesetPromise){
+    const els=IA.activo?[...iaBox.querySelectorAll('.ia-resp:not([data-vivo]),.ia-prompt')]:[iaBox];
+    if(els.length)MathJax.typesetPromise(els).catch(console.error);
+  }
+}
+const paraOracle=m=>m.rol==='user'?{rol:'user',texto:m.texto}
+  :{rol:'assistant',texto:m.texto,contenido:m.contenido,tokens_entrada:m.tokens_entrada,tokens_salida:m.tokens_salida,modelo:m.modelo,stop_reason:m.stop_reason};
+// POST ia con lo que falte por guardar: la conversación entera si es nueva; si no, los mensajes nuevos. Los guardados de
+// una conversación van en serie (conv.guardando), así cada POST ve el id_conv y los guardados que dejó el anterior.
+const pintarMeta=conv=>{const m=iaBox.querySelector(`.ia-conv[data-k="${conv.k}"] .ia-meta`);if(m)m.textContent=metaConv(conv)};
+function guardarConv(conv,e){
+  const sig=(conv.guardando||Promise.resolve()).then(()=>guardarConvYa(conv,e));
+  conv.guardando=sig;pintarMeta(conv);
+  return sig.finally(()=>{if(conv.guardando===sig){conv.guardando=null;pintarMeta(conv)}});
+}
+async function guardarConvYa(conv,e){
+  if(conv.borrada)return;
+  const nueva=conv.id==null,desde=nueva?0:conv.guardados,mensajes=conv.mensajes.slice(desde).filter(m=>!m.vivo).map(paraOracle);
+  if(!mensajes.length)return;
+  try{
+    const r=await postJSON('ia',nueva?{id_conv:null,id_ejercicio:e.id_ejercicio,codigo:conv.codigo,modelo:conv.modelo,esfuerzo:conv.esfuerzo,mensajes}
+                                    :{id_conv:conv.id,mensajes});
+    conv.id=r.id_conv;conv.guardados=desde+mensajes.length;
+    // si la lectura al abrir ya la había traído (su POST no había respondido aún), se quita la copia
+    const i=nueva?IA.convs.findIndex(x=>x!==conv&&x.id===conv.id):-1;
+    if(i>=0){IA.convs.splice(i,1);if(!IA.activo)pintarIA()}
+  }catch(err){console.error(err);toast('No se pudo guardar la respuesta en Oracle: '+msgError(err))}
+}
+// Pregunta (el prompt del botón o una repregunta) en streaming. Se reenvía la conversación con el content de cada
+// respuesta tal como llegó (con sus bloques de razonamiento y firmas), como pide el API para seguir una conversación.
+async function preguntar(conv,pregunta){
+  if(!claveAPI()){conv.borrador=pregunta;toast('Para preguntar a Claude desde aquí hace falta una clave del API: ponla en Configuración.');return}
+  if(IA.activo){toast('Espera a que acabe la respuesta en curso, o párala.');return}
+  const n=IA.n,e=IA.ex,previos=conv.mensajes.slice();
+  const vivo={rol:'assistant',vivo:true,contenido:[]};
+  conv.mensajes.push({rol:'user',texto:pregunta},vivo);conv.abierta=true;conv.borrador='';
+  IA.activo={conv,stream:null,parar:false};
+  let L=null,msg;
+  try{
+    await pintarIA();
+    iaBox.querySelector(`.ia-conv[data-k="${conv.k}"] [data-vivo]`)?.scrollIntoView({block:'nearest',behavior:'smooth'});
+    L=IA.L=await libs();
+    const client=await cliente(),fb=CON_FALLBACK.has(conv.modelo);
+    const stream=client.beta.messages.stream({
+      model:conv.modelo,max_tokens:64000,system:SISTEMA,
+      thinking:{type:'adaptive',display:'summarized',block_binding:{prefix_mismatch_behavior:'drop_block'}},
+      output_config:{effort:conv.esfuerzo},
+      messages:[...previos.map(m=>m.rol==='user'?{role:'user',content:m.texto}:{role:'assistant',content:paraReenviar(m)}),
+                {role:'user',content:pregunta}],
+      betas:['thinking-binding-controls-2026-08-01',...(fb?['server-side-fallback-2026-07-01']:[])],
+      ...(fb?{fallbacks:'default'}:{})
+    });
+    IA.activo.stream=stream;
+    if(IA.activo.parar)stream.abort();
+    let pend=false;
+    stream.on('streamEvent',(_,snap)=>{
+      vivo.contenido=snap.content;
+      if(pend)return;pend=true;
+      requestAnimationFrame(()=>{pend=false;const el=n===IA.n&&iaBox.querySelector('[data-vivo]');if(el)el.innerHTML=contenidoHTML(vivo,L)});
+    });
+    msg=await stream.finalMessage();
+  }catch(err){
+    IA.activo=null;
+    conv.mensajes.splice(-2,2);
+    if(n!==IA.n)return; // se cerró la ventana
+    const txt=errorIA(err,L);if(txt){console.error(err);toast(txt)}
+    if(previos.length)conv.borrador=pregunta;else IA.convs.splice(IA.convs.indexOf(conv),1);
+    pintarIA();return;
+  }
+  IA.activo=null;
+  // rechazo (también el de los modelos de fallback): lo escrito antes de pararse se descarta, como indica el API
+  const rechazo=msg.stop_reason==='refusal';
+  Object.assign(vivo,{vivo:false,contenido:rechazo?[]:msg.content,
+    texto:rechazo?'(Claude no ha respondido a esta petición)':textoDe(msg.content)||'(sin texto)',
+    tokens_entrada:msg.usage?.input_tokens,tokens_salida:msg.usage?.output_tokens,modelo:msg.model,stop_reason:msg.stop_reason});
+  if(n===IA.n)await pintarIA();
+  guardarConv(conv,e);   // también si ya se cerró la ventana: la respuesta está completa (y pagada)
+}
+// Botón de Claude (de la lista o de la ventana): con clave, conversación nueva en la ventana del ejercicio (sin parar
+// el cronómetro); sin clave, abre Claude como antes.
+function iaBoton(e,codigo){
+  if(!e)return;
+  if(!claveAPI()){preguntarClaude(e,codigo);return}
+  if(!dlg.open||T.ex!==e)abrir(e.key);
+  if(IA.activo){toast('Espera a que acabe la respuesta en curso, o párala.');return}
+  const cfg=iaCfg()[codigo];
+  const conv={k:++kConv,id:null,codigo,modelo:cfg.modelo,esfuerzo:cfg.esfuerzo,creado:new Date().toISOString(),mensajes:[],guardados:0,abierta:true,borrador:''};
+  IA.convs.forEach(c=>c.abierta=false);IA.convs.unshift(conv);
+  preguntar(conv,textoPrompt(e,codigo));
+}
+// "toggle" no burbujea: se escucha en la fase de captura
+iaBox.addEventListener('toggle',ev=>{if(ev.target.matches('.ia-conv')){const c=convDe(ev.target);if(c)c.abierta=ev.target.open}},true);
+iaBox.addEventListener('input',ev=>{if(ev.target.matches('.ia-preg textarea')){const c=convDe(ev.target);if(c)c.borrador=ev.target.value}});
+iaBox.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey)&&ev.target.matches('.ia-preg textarea')){ev.preventDefault();ev.target.form.requestSubmit()}});
+iaBox.addEventListener('submit',ev=>{
+  ev.preventDefault();
+  const c=convDe(ev.target),q=ev.target.querySelector('textarea').value.trim();
+  if(c&&q)preguntar(c,q);
+});
+iaBox.addEventListener('click',async ev=>{
+  const b=ev.target.closest('[data-acc]');if(!b)return;
+  const c=convDe(b);if(!c)return;
+  if(b.dataset.acc==='parar'){pararIA();return}
+  if(b.dataset.acc==='web'){abrirWeb('https://claude.ai/new?q='+encodeURIComponent(c.mensajes[0]?.texto||''));return}
+  if(b.dataset.acc!=='borrar'||c.borrando||IA.activo?.conv===c||!confirm('¿Borrar esta conversación con Claude?'))return;
+  c.borrando=true;
+  await c.guardando;
+  if(c.id!=null)try{await delJSON('ia?id_conv='+c.id)}catch(err){console.error(err);c.borrando=false;toast('No se pudo borrar: '+msgError(err));return}
+  c.borrada=true;
+  IA.convs=IA.convs.filter(x=>x!==c);pintarIA();
+});
+
 /* ---------- Configuración: prompts de los botones de Claude ---------- */
 // Se edita un borrador (BORR: filas por "codigo|asignatura") de la fila común de cada botón y de los prompts
 // propios de cada asignatura. Guardar envía a POST prompts solo lo que cambió (texto null = borrar el propio).
@@ -1042,6 +1374,12 @@ const cfgEstado=document.getElementById('cfg-estado'),cfgGuardar=document.getEle
 const clave=(c,a)=>c+'|'+a;
 const TXT_PROPIO=['Se usa el común; márcalo para cambiarlo solo en esta asignatura.','Sustituye al común en esta asignatura.'];
 let BORR=null;
+// Borrador de lo que se guarda en este navegador: la clave (en su campo) y LBORR = {codigo: {modelo, esfuerzo}}.
+let LBORR=null;
+const cfgClave=document.getElementById('cfg-clave'),cfgApiEst=document.getElementById('cfg-api-estado');
+const cambiosLocales=()=>!!LBORR&&(cfgClave.value.trim()!==claveAPI()||JSON.stringify(LBORR)!==JSON.stringify(iaCfg()));
+function estadoApi(txt,error){cfgApiEst.textContent=txt;cfgApiEst.classList.toggle('cfg-err',!!error)}
+const opciones=(lista,v)=>lista.map(([val,txt])=>`<option value="${esc(val)}"${val===v?' selected':''}>${esc(txt)}</option>`).join('');
 function cambiosCfg(){
   if(!BORR)return[];
   const out=[];
@@ -1068,7 +1406,8 @@ function pintarCfg(){
     const base=BORR.get(clave(c,'*')),propio=!com&&BORR.has(clave(c,a)),txt=(propio?BORR.get(clave(c,a)):base).texto,id='cfg-t-'+c;
     return `<section class="cfg-p" data-c="${c}">
       <h3>${esc(base.etiqueta)}</h3>
-      ${com?`<div class="cfg-fila"><label><span class="cfg-l">Texto del botón</span><input type="text" data-campo="etiqueta" maxlength="40" value="${esc(base.etiqueta)}"></label><label><span class="cfg-l">Ayuda del botón (al pasar el ratón)</span><input type="text" data-campo="ayuda" maxlength="200" value="${esc(base.ayuda||'')}"></label></div>`
+      ${com?`<div class="cfg-fila"><label><span class="cfg-l">Texto del botón</span><input type="text" data-campo="etiqueta" maxlength="40" value="${esc(base.etiqueta)}"></label><label><span class="cfg-l">Ayuda del botón (al pasar el ratón)</span><input type="text" data-campo="ayuda" maxlength="200" value="${esc(base.ayuda||'')}"></label></div>
+      <div class="cfg-fila cfg-mod"><label><span class="cfg-l">Modelo del API (en este navegador)</span><select data-local="modelo">${opciones(MODELOS.map(m=>[m.id,'Claude '+m.nombre]),LBORR[c].modelo)}</select></label><label><span class="cfg-l">Esfuerzo</span><select data-local="esfuerzo">${opciones(ESFUERZOS.map(x=>[x,x]),LBORR[c].esfuerzo)}</select></label></div>`
         :`<label class="chk"><input type="checkbox" data-campo="propio"${propio?' checked':''}><span class="box"></span><span class="lab">Prompt propio para ${esc(a)}<small>${TXT_PROPIO[+propio]}</small></span></label>`}
       <label class="cfg-l" for="${id}">Prompt</label>
       <textarea id="${id}" data-campo="texto" rows="6" spellcheck="false"${com||propio?'':' disabled'}>${esc(txt)}</textarea>
@@ -1110,7 +1449,9 @@ cfgBox.addEventListener('input',ev=>{
   if(campo==='texto'){sec.querySelector('.cfg-aviso').hidden=i.value.includes('{enunciado}');pintarPrev(sec)}
 });
 cfgBox.addEventListener('change',ev=>{
-  const i=ev.target;if(i.dataset.campo!=='propio')return;
+  const i=ev.target;
+  if(i.dataset.local){LBORR[i.closest('.cfg-p').dataset.c][i.dataset.local]=i.value;return}
+  if(i.dataset.campo!=='propio')return;
   const sec=i.closest('.cfg-p'),c=sec.dataset.c,a=cfgSel.value,ta=sec.querySelector('textarea');
   if(i.checked)BORR.set(clave(c,a),{codigo:c,asignatura:a,texto:BORR.get(clave(c,'*')).texto});else BORR.delete(clave(c,a));
   ta.disabled=!i.checked;ta.value=BORR.get(clave(c,i.checked?a:'*')).texto;
@@ -1138,6 +1479,8 @@ async function abrirCfg(){
   cfgBox.innerHTML='<p class="hist-msg">Cargando los prompts…</p>';
   cfgEstado.textContent='';cfgEstado.classList.remove('cfg-err');cfgGuardar.disabled=true;
   cfgSel.innerHTML='<option value="*">Común a todas las asignaturas</option>';cfgSel.value='*';
+  LBORR=iaCfg();cfgClave.value=claveAPI();
+  estadoApi(claveAPI()?'Hay una clave guardada en este navegador: las respuestas salen en la ventana del ejercicio.':'Sin clave, los botones abren la app de Claude o claude.ai.');
   cfgDlg.showModal();
   try{CFG=conComunes(await getJSON('prompts'));pintarBotonesIA()}
   catch(err){console.error(err);cfgEstado.textContent='No se pudieron leer los prompts de Oracle: se muestran los últimos que se cargaron.'}
@@ -1146,9 +1489,22 @@ async function abrirCfg(){
   pintarSelCfg();pintarCfg();cfgGuardar.disabled=false;
 }
 function cerrarCfg(){
-  if(cambiosCfg().length&&!confirm('¿Cerrar sin guardar los cambios?'))return;
-  cfgDlg.close();BORR=null;
+  if((cambiosCfg().length||cambiosLocales())&&!confirm('¿Cerrar sin guardar los cambios?'))return;
+  cfgDlg.close();BORR=null;LBORR=null;
 }
+// Probar la clave escrita: GET del modelo por defecto (no cuesta nada) comprueba la clave y que el navegador llega al API.
+document.getElementById('cfg-probar').addEventListener('click',async()=>{
+  const k=cfgClave.value.trim();
+  if(!k){estadoApi('Escribe primero la clave.',true);return}
+  estadoApi('Probando…');
+  let L=null;
+  try{
+    L=await libs();
+    const m=await (await cliente(k)).models.retrieve(IA_DEF.resolver.modelo);
+    estadoApi(`Clave válida: ${m.display_name||m.id} disponible.${k!==claveAPI()?' Pulsa Guardar para usarla.':''}`);
+  }catch(err){console.error(err);estadoApi(errorIA(err,L)||'Cancelado.',true)}
+});
+document.getElementById('cfg-olvidar').addEventListener('click',()=>{cfgClave.value='';estadoApi('Al pulsar Guardar se borrará la clave de este navegador.')});
 // Mensaje de error del servicio: postJSON lanza "HTTP 400 en prompts: {"error":"…"}".
 const msgError=err=>{try{return JSON.parse(/\{.*\}\s*$/s.exec(err.message)[0]).error||err.message}catch(_){return err.message}};
 document.getElementById('config').addEventListener('click',abrirCfg);
@@ -1156,15 +1512,20 @@ document.getElementById('cfg-x').addEventListener('click',cerrarCfg);
 document.getElementById('cfg-cancelar').addEventListener('click',cerrarCfg);
 cfgDlg.addEventListener('cancel',ev=>{ev.preventDefault();cerrarCfg()});
 cfgGuardar.addEventListener('click',async()=>{
-  const cambios=cambiosCfg();
-  if(!cambios.length){cerrarCfg();return}
+  const cambios=cambiosCfg(),locales=cambiosLocales();
+  if(!cambios.length&&!locales){cerrarCfg();return}
   const mal=cambios.find(r=>r.asignatura==='*'&&(!r.texto.trim()||!r.etiqueta.trim()));
   if(mal){cfgEstado.classList.add('cfg-err');cfgEstado.textContent=`${comun(mal.codigo).etiqueta}: el texto del botón y el prompt común no pueden quedar vacíos.`;return}
-  cfgGuardar.disabled=true;cfgEstado.classList.remove('cfg-err');cfgEstado.textContent='Guardando…';
-  try{CFG=conComunes(await postJSON('prompts',cambios))}
-  catch(err){console.error(err);cfgEstado.classList.add('cfg-err');cfgEstado.textContent='No se pudo guardar: '+msgError(err);cfgGuardar.disabled=false;return}
-  pintarBotonesIA();BORR=null;cfgDlg.close();
-  toast(`Prompts guardados (${cambios.length} cambio${cambios.length>1?'s':''}).`);
+  if(cambios.length){
+    cfgGuardar.disabled=true;cfgEstado.classList.remove('cfg-err');cfgEstado.textContent='Guardando…';
+    try{CFG=conComunes(await postJSON('prompts',cambios))}
+    catch(err){console.error(err);cfgEstado.classList.add('cfg-err');cfgEstado.textContent='No se pudo guardar: '+msgError(err);cfgGuardar.disabled=false;return}
+  }
+  // después del POST: si falla, no queda nada a medias (ni la clave ni el modelo)
+  if(locales){LS.set('banco-claude-api',cfgClave.value.trim());LS.set('banco-claude-modelos',JSON.stringify(LBORR))}
+  if(locales&&IA.convs.length)pintarIA();   // con o sin clave cambia si se ofrece repreguntar
+  pintarBotonesIA();BORR=null;LBORR=null;cfgDlg.close();
+  toast(cambios.length?`Configuración guardada (${cambios.length} cambio${cambios.length>1?'s':''} de prompts).`:'Configuración guardada.');
 });
 
 let ultimoAzar=null;
