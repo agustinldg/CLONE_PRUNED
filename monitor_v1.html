@@ -87,6 +87,10 @@ main { max-width: 1500px; margin: 0 auto; padding: 12px 12px 32px; display: grid
 }
 .controles label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .controles .hueco { flex: 1; }
+/* Textos de los controles: versión larga en pantalla grande y corta en el móvil */
+.corto { display: none; }
+/* «Rueda = zoom» solo tiene sentido si hay ratón o trackpad */
+@media not all and (any-pointer: fine) { .solo-raton { display: none !important; } }
 
 /* El gráfico no secuestra el desplazamiento vertical de la página */
 .highcharts-container, .highcharts-container svg { touch-action: pan-y !important; }
@@ -125,6 +129,46 @@ details.amb > summary { cursor: pointer; font-weight: 600; padding: 4px; }
 .rejilla-amb > div { min-width: 0; height: 290px; }
 .rejilla-amb > div:last-child { grid-column: 1 / -1; }
 
+/* ── Ampliar una caja (un gráfico o el panel de tarjetas) a toda la pantalla ─
+   Se hace con CSS y no con la pantalla completa del navegador, que Safari en iPhone no ofrece para gráficos. */
+.resumen { display: grid; gap: 14px; min-width: 0; }
+.resumen .alcance { min-height: 36px; padding-right: 46px; display: flex; align-items: center; }
+.resumen:has(#tiles:empty) > .b-ampliar { display: none; }
+.ampliable { position: relative; }
+.b-ampliar {
+  position: absolute; top: 2px; right: 2px; z-index: 5;
+  width: 36px; height: 36px; padding: 0; display: grid; place-items: center;
+  background: transparent; border: 0; border-radius: 8px; color: var(--tenue); cursor: pointer;
+}
+.b-ampliar:hover { color: var(--texto); background: var(--boton); }
+@media (pointer: coarse) { .b-ampliar { width: 44px; height: 44px; } }
+/* La gráfica principal ya tiene su menú en esa esquina: se amplía desde el menú o tocando el título,
+   y el botón solo aparece, junto al menú, para cerrar */
+#g-principal > .b-ampliar, #g-comparado > .b-ampliar { right: 42px; top: 6px; }
+#g-principal:not(.ampliado) > .b-ampliar, #g-comparado:not(.ampliado) > .b-ampliar { display: none; }
+.ampliado {
+  position: fixed !important; inset: 0; z-index: 40;            /* por encima de la barra de fecha, por debajo del aviso flotante */
+  width: auto !important; height: auto !important; margin: 0 !important;
+  background: var(--tarjeta); overflow: hidden;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.ampliado > .b-ampliar { top: calc(4px + env(safe-area-inset-top)); right: calc(4px + env(safe-area-inset-right)); color: var(--texto); background: var(--boton); }
+#g-principal.ampliado > .b-ampliar, #g-comparado.ampliado > .b-ampliar { right: calc(42px + env(safe-area-inset-right)); top: calc(6px + env(safe-area-inset-top)); }
+/* Con un gráfico ampliado, un dedo en vertical no debe mover la página que queda debajo */
+.ampliado .highcharts-container, .ampliado .highcharts-container svg { touch-action: none !important; }
+html.con-ampliado, html.con-ampliado body { overflow: hidden; }
+.resumen.ampliado { align-content: start; gap: 12px; padding: 8px 12px 16px; overflow: auto; overscroll-behavior: contain; }
+.resumen.ampliado .alcance { font-size: clamp(12px, 3.4vmin, 15px); min-height: 44px; }
+.resumen.ampliado .tiles { grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (orientation: landscape) { .resumen.ampliado .tiles { grid-template-columns: repeat(3, 1fr); } }
+.resumen.ampliado .tile { padding: clamp(10px, 2.8vmin, 18px) clamp(12px, 3.2vmin, 20px); }
+.resumen.ampliado .tile h3 { font-size: clamp(12px, 3.5vmin, 16px); }
+.resumen.ampliado .tile .valor { font-size: clamp(22px, 6.4vmin, 36px); }
+.resumen.ampliado .tile .valor small, .resumen.ampliado .tile .linea { font-size: clamp(13px, 3.7vmin, 18px); }
+.resumen.ampliado .tile .otro .cual { font-size: clamp(11px, 3vmin, 14px); }
+.resumen.ampliado .tile .otro .dato { font-size: clamp(17px, 4.8vmin, 26px); }
+.resumen.ampliado .tile .otro .dato small, .resumen.ampliado .tile .dif { font-size: clamp(12px, 3.3vmin, 16px); }
+
 /* ── Calendario y menú de comparar (popover) ───────────────────────────── */
 [popover] {
   position: fixed; inset: auto; top: 62px; left: 50%; transform: translateX(-50%); margin: 0;
@@ -158,20 +202,29 @@ details.amb > summary { cursor: pointer; font-weight: 600; padding: 4px; }
 footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12px 24px; }
 
 @media (max-width: 768px) {
-  body { font-size: 14px; }
-  main { padding: 8px 8px 96px; gap: 10px; }
+  /* La barra va fija abajo: el final de la página (el pie incluido) deja un hueco de su altura real, que mide el JS */
+  body { font-size: 14px; padding-bottom: var(--alto-barra, 130px); }
+  main { padding: 8px 8px 16px; gap: 10px; }
   .barra { position: fixed; top: auto; bottom: 0; left: 0; right: 0; border-bottom: 0; border-top: 1px solid var(--borde); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
   .barra .fecha { order: -1; flex-basis: 100%; min-width: 0; }
   .barra button { flex: 1; padding: 6px 2px; font-size: 13px; min-width: 0; }
+  /* Controles en una sola línea: desplegable, «Punto = 5 min» y, a la derecha, el eje Y */
+  .controles { gap: 8px 10px; }
+  .controles .largo { display: none; }
+  .controles .corto { display: inline; }
+  .controles select { max-width: 6.5em; font-size: 16px; }    /* 16 px: Safari no amplía la página al abrir el desplegable */
+  .controles #info-grupo { margin-right: auto; }
+  .controles .hueco { display: none; }
   #g-principal { height: 470px; }
   #g-comparado { height: 400px; }
+  .resumen { gap: 10px; }
   .dos, .rejilla-amb { grid-template-columns: 1fr; }
-  .rejilla-amb > div { height: 250px; }
+  .rejilla-amb > div { height: 272px; }      /* 22 px más que antes: la leyenda tiene una línea más (media de 7 días) */
   .tiles { grid-template-columns: 1fr 1fr; }
   .tile .valor { font-size: 19px; }
   .tile .valor small { display: block; }
-  [popover] { top: auto; bottom: 120px; }
-  #toast { bottom: 130px; }
+  [popover] { top: auto; bottom: calc(var(--alto-barra, 108px) + 12px); }
+  #toast { bottom: calc(var(--alto-barra, 108px) + 22px); }
 }
 </style>
 </head>
@@ -208,8 +261,8 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
 <main>
   <section class="tarjeta">
     <div class="controles">
-      <label>Agrupación
-        <select id="sel-grupo" title="Cuánto abarca cada punto del gráfico">
+      <label><span class="largo">Agrupación</span>
+        <select id="sel-grupo" aria-label="Agrupación" title="Cuánto abarca cada punto del gráfico">
           <optgroup label="Automática: se adapta al zoom">
             <option value="px:5">5 px</option><option value="px:10">10 px</option><option value="px:25">25 px</option>
             <option value="px:50" selected>50 px</option><option value="px:100">100 px</option><option value="px:200">200 px</option>
@@ -224,9 +277,9 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
       </label>
       <span id="info-grupo" title="Tiempo que resume cada punto ahora mismo"></span>
       <label title="Desmarcado: escala fija 60–105 y PI 0–5; lo que se salga no se ve. Marcado: la escala se ajusta a los datos.">
-        <input type="checkbox" id="chk-auto"> Eje Y automático
+        <input type="checkbox" id="chk-auto"> <span class="largo">Eje Y automático</span><span class="corto">Eje Y auto</span>
       </label>
-      <label title="Marcado: la rueda del ratón amplía y reduce los gráficos en vez de desplazar la página. Ctrl (o ⌘) + rueda amplía siempre, esté o no marcado.">
+      <label class="solo-raton" title="Marcado: la rueda del ratón amplía y reduce los gráficos en vez de desplazar la página. Ctrl (o ⌘) + rueda amplía siempre, esté o no marcado.">
         <input type="checkbox" id="chk-rueda"> Rueda = zoom
       </label>
       <span class="hueco"></span>
@@ -238,8 +291,10 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
     <div class="pista" id="pista"></div>
   </section>
 
-  <div class="alcance" id="alcance"></div>
-  <section class="tiles" id="tiles" aria-label="Resumen"></section>
+  <div class="resumen" id="resumen">
+    <div class="alcance" id="alcance"></div>
+    <section class="tiles" id="tiles" aria-label="Resumen"></section>
+  </div>
 
   <section class="dos">
     <div class="tarjeta"><div id="h-spo2" style="height:290px"></div></div>
@@ -286,7 +341,7 @@ var CFG = {
   ruedaZoom: false,         // casilla "Rueda = zoom": la rueda amplía los gráficos en vez de desplazar la página
   // Versión de los datos que entiende esta página. Va en la dirección de cada petición, así que al
   // cambiarla el navegador deja de usar los días que tenía guardados con el formato anterior.
-  formato: 3
+  formato: 4
 };
 var DIA_MS = 86400000;
 
@@ -436,13 +491,16 @@ function decodificar(j) {
   } else if (j.dt) {
     dt = j.dt;
   }
-  var cols = {};
+  var cols = {}, cols7 = {};
   (j.amb && j.amb.cols || []).forEach(function (c, i) { cols[c] = i; });
+  (j.amb && j.amb.cols7 || []).forEach(function (c, i) { cols7[c] = i; });
   return {
     d: j.d, t0: Date.parse(j.t0 + 'Z'), h: j.h, cerrado: j.cerrado, cur: j.cur, offset_s: j.offset_s,
     dt: dt, spo2: j.spo2 || [], bpm: j.bpm || [], pi100: j.pi100 || [], pvi: j.pvi || [],
     ambCols: cols, ambDia: (j.amb && j.amb.dia) || [], ambAyer: (j.amb && j.amb.ayer) || [],
     ant: j.ant || null,       // resumen de la noche anterior con datos (noche completa)
+    ant7: j.ant7 || null,     // media de las noches con datos de los 7 días anteriores (noches completas)
+    ambCols7: cols7, ambM7: (j.amb && j.amb.m7) || [],   // ambiente interior medio de esos 7 días, a cada media hora
     bajado: Date.now()
   };
 }
@@ -546,7 +604,9 @@ function aplicarTemaHC() {
       fallbackToExportServer: false,
       local: true,
       libURL: 'https://code.highcharts.com/12.6.0/lib/',
-      buttons: { contextButton: { menuItems: ['viewFullscreen', 'printChart', 'separator', 'downloadPNG', 'downloadJPEG', 'downloadPDF', 'downloadSVG', 'separator', 'downloadCSV', 'downloadXLS', 'viewData'] } },
+      // "Pantalla completa" usa la ampliación propia de esta página, que también funciona en el iPhone
+      menuItemDefinitions: { ampliar: { text: 'Pantalla completa', onclick: function () { alternarAmpliado(this.renderTo); } } },
+      buttons: { contextButton: { menuItems: ['ampliar', 'printChart', 'separator', 'downloadPNG', 'downloadJPEG', 'downloadPDF', 'downloadSVG', 'separator', 'downloadCSV', 'downloadXLS', 'viewData'] } },
       buttonOptions: { theme: { fill: 'transparent', states: { hover: { fill: borde }, select: { fill: borde } } } },
       menuItemHoverStyle: { background: fuerte, color: '#ffffff' },
       menuStyle: { background: tarjeta, border: '1px solid ' + borde },
@@ -562,7 +622,9 @@ function aplicarTemaHC() {
     navigator: {
       handles: { backgroundColor: tenue, borderColor: texto }, outlineColor: tenue,
       maskFill: esClaro() ? 'rgba(75,54,201,0.12)' : 'rgba(255,255,255,0.1)',
-      series: { color: '#7798BF', lineColor: '#A6C7ED' }, xAxis: { gridLineColor: rejilla, labels: { style: { color: tenue } } }
+      series: { color: '#7798BF', lineColor: '#A6C7ED' },
+      // La línea del eje cierra el marco por abajo (antes lo cerraba el borde de la barra de scroll)
+      xAxis: { gridLineColor: rejilla, labels: { style: { color: tenue } }, lineWidth: 1, lineColor: tenue }
     },
     rangeSelector: {
       buttonTheme: {
@@ -698,7 +760,7 @@ function infoGrupo(chart) {
   ['spo2', 'bpm', 'spo2r', 'pvi', 'pi', 'bpm_stats'].some(function (id) { var x = chart.get(id); if (x && x.visible) { s = x; return true; } return false; });
   var g = s && s.hasGroupedData && s.currentDataGrouping;
   if (g) txt = g.count + ' ' + ({ millisecond: 'ms', second: 's', minute: 'min', hour: 'h', day: 'día', week: 'semana' }[g.unitName] || g.unitName);
-  $('info-grupo').textContent = s ? 'Cada punto = ' + txt : '';
+  $('info-grupo').innerHTML = s ? '<span class="largo">Cada punto</span><span class="corto">Punto</span> = ' + txt : '';
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -877,6 +939,7 @@ function pintarPrincipal(dia, otro, conservarRango) {
 function prepararInteraccion(chart, conCursor) {
   ruedaConTecla(chart);
   gestosTactiles(chart);
+  botonAmpliar(chart.renderTo);
   if (conCursor) {
     var cont = chart.container;
     cont.addEventListener('mousemove', moverCursorAmbiente);
@@ -972,19 +1035,25 @@ function pintarResumen() {
   var ant = !S.otro ? S.dia.ant : null;                                // noche anterior, completa (agregados de Oracle)
   var todo = e.dataMin != null && a <= e.dataMin + 1000 && b >= e.dataMax - 1000;
   var cual = S.otro ? diaCorto(S.otro.d) + ' · mismo tramo' : (ant ? 'Noche anterior · ' + diaCorto(ant.d) : '');
+  // Media de las noches con datos de los 7 días anteriores (también de Oracle y de noches completas). No se muestra al comparar.
+  var a7 = !S.otro ? S.dia.ant7 : null;
+  var cual7 = a7 ? 'Media 7 noches' + (a7.n < 7 ? ' · ' + a7.n + ' de 7' : '') : '';
 
   function dif(v1, v2, dec) {
     if (v1 == null || v2 == null) return '';
     var d = v1 - v2;
     return ' <span class="dif">(' + (d > 0 ? '+' : d < 0 ? '−' : '') + num(Math.abs(d), dec) + ')</span>';
   }
-  // otro: html del dato del otro día (o '' si no hay)
-  function tile(color, titulo, valor, lineas, otro) {
+  // otro: html del dato del otro día; siete: html de la media de 7 noches ('' si no hay)
+  function tile(color, titulo, valor, lineas, otro, siete) {
+    function banda(rotulo, dato) { return dato ? '<div class="otro"><span class="cual">' + rotulo + '</span><span class="dato">' + dato + '</span></div>' : ''; }
     return '<div class="tile"><h3>' + (color ? '<i style="background:' + color + '"></i>' : '') + titulo + '</h3>' +
       '<div class="valor">' + valor + '</div>' + (lineas || []).map(function (l) { return '<div class="linea">' + l + '</div>'; }).join('') +
-      (otro ? '<div class="otro"><span class="cual">' + cual + '</span><span class="dato">' + otro + '</span></div>' : '') + '</div>';
+      banda(cual, otro) + banda(cual7, siete) + '</div>';
   }
   function tiempo(seg, total) { return hms(seg) + ' <small>' + pct(seg, total) + '</small>'; }
+  // En la media de 7 noches los tiempos llegan sumados: se muestra el tiempo medio por noche y el porcentaje sobre el total
+  function tiempo7(seg, total) { return hms(Math.round(seg / a7.n)) + ' <small>' + pct(seg, total) + '</small>'; }
   function hora(iso) { return iso.slice(11, 16); }
 
   var lt90 = x.binsSpo2[0] + x.binsSpo2[1], lt85 = x.binsSpo2[0];
@@ -996,53 +1065,71 @@ function pintarResumen() {
   html += tile(null, 'Duración', x.n ? hms(x.dur) : '–',
     x.n ? [horaDe(x.ini) + ' → ' + horaDe(x.fin), 'Cobertura ' + pct(x.n, x.dur + 1) + ' · ' + hms(Math.max(x.dur + 1 - x.n, 0)) + ' sin lectura'] : ['Sin lecturas en este rango'],
     y ? (y.n ? hms(y.dur) + ' <small>' + horaDe(y.ini) + ' → ' + horaDe(y.fin) + '</small>' : 'sin lecturas')
-      : ant ? hms(ant.dur_s) + ' <small>' + hora(ant.t_ini) + ' → ' + hora(ant.t_fin) + '</small>' : '');
+      : ant ? hms(ant.dur_s) + ' <small>' + hora(ant.t_ini) + ' → ' + hora(ant.t_fin) + '</small>' : '',
+    a7 ? hms(a7.dur_s) : '');
   html += tile(P.spo2, 'SpO2 media', num(x.spo2Media, 2) + ' <small>± ' + num(x.spo2Desv, 2) + ' %</small>',
     ['Mínimo ' + (x.spo2Min == null ? '–' : x.spo2Min + ' %')],
     y ? num(y.spo2Media, 2) + ' <small>± ' + num(y.spo2Desv, 2) + '</small>' + dif(x.spo2Media, y.spo2Media, 2)
-      : ant ? num(ant.spo2_avg, 2) + ' <small>± ' + num(ant.spo2_mad, 2) + ' · mín. ' + ant.spo2_min + '</small>' + (conDif ? dif(x.spo2Media, ant.spo2_avg, 2) : '') : '');
+      : ant ? num(ant.spo2_avg, 2) + ' <small>± ' + num(ant.spo2_mad, 2) + ' · mín. ' + ant.spo2_min + '</small>' + (conDif ? dif(x.spo2Media, ant.spo2_avg, 2) : '') : '',
+    a7 && a7.spo2_avg != null ? num(a7.spo2_avg, 2) + ' <small>· mín. medio ' + num(a7.spo2_min, 1) + '</small>' + (conDif ? dif(x.spo2Media, a7.spo2_avg, 2) : '') : '');
   html += tile(P.spo2, 'Tiempo con SpO2 bajo 90 %', tiempo(lt90, x.spo2n),
     ['Bajo 85 %: ' + hms(lt85) + ' · ' + pct(lt85, x.spo2n)],
-    y ? tiempo(y.binsSpo2[0] + y.binsSpo2[1], y.spo2n) : ant ? tiempo(ant.s_lt90, ant.spo2_n) : '');
+    y ? tiempo(y.binsSpo2[0] + y.binsSpo2[1], y.spo2n) : ant ? tiempo(ant.s_lt90, ant.spo2_n) : '',
+    a7 ? tiempo7(a7.s_lt90, a7.spo2_n) : '');
   html += tile(P.bpm, 'Pulso medio', num(x.bpmMedia, 1) + ' <small>± ' + num(x.bpmDesv, 1) + ' lpm</small>',
     ['Máximo ' + (x.bpmMax == null ? '–' : x.bpmMax + ' lpm')],
     y ? num(y.bpmMedia, 1) + ' <small>± ' + num(y.bpmDesv, 1) + '</small>' + dif(x.bpmMedia, y.bpmMedia, 1)
-      : ant ? num(ant.bpm_avg, 1) + ' <small>± ' + num(ant.bpm_mad, 1) + ' · máx. ' + ant.bpm_max + '</small>' + (conDif ? dif(x.bpmMedia, ant.bpm_avg, 1) : '') : '');
+      : ant ? num(ant.bpm_avg, 1) + ' <small>± ' + num(ant.bpm_mad, 1) + ' · máx. ' + ant.bpm_max + '</small>' + (conDif ? dif(x.bpmMedia, ant.bpm_avg, 1) : '') : '',
+    a7 && a7.bpm_avg != null ? num(a7.bpm_avg, 1) + ' <small>· máx. medio ' + num(a7.bpm_max, 0) + '</small>' + (conDif ? dif(x.bpmMedia, a7.bpm_avg, 1) : '') : '');
   html += tile(P.bpm, 'Tiempo con pulso de 80 o más', tiempo(ge80, x.bpmn),
     ['90 o más: ' + hms(ge90) + ' · ' + pct(ge90, x.bpmn), '100 o más: ' + hms(ge100) + ' · ' + pct(ge100, x.bpmn)],
-    y ? tiempo(yge80, y.bpmn) : ant ? tiempo(ant.s_ge80, ant.bpm_n) : '');
+    y ? tiempo(yge80, y.bpmn) : ant ? tiempo(ant.s_ge80, ant.bpm_n) : '',
+    a7 ? tiempo7(a7.s_ge80, a7.bpm_n) : '');
   html += tile(P.temp, 'Temperatura de la habitación', num(x.temp, 1) + ' <small>± ' + num(x.tempDesv, 1) + ' °C</small>', [],
     y ? num(y.temp, 1) + ' <small>± ' + num(y.tempDesv, 1) + ' °C</small>' + dif(x.temp, y.temp, 1)
-      : ant && ant.temp_avg != null ? num(ant.temp_avg, 1) + ' <small>°C</small>' + (conDif ? dif(x.temp, ant.temp_avg, 1) : '') : '');
+      : ant && ant.temp_avg != null ? num(ant.temp_avg, 1) + ' <small>°C</small>' + (conDif ? dif(x.temp, ant.temp_avg, 1) : '') : '',
+    a7 && a7.temp_avg != null ? num(a7.temp_avg, 1) + ' <small>°C</small>' + (conDif ? dif(x.temp, a7.temp_avg, 1) : '') : '');
   $('tiles').innerHTML = html;
 
   $('alcance').textContent = !x.n ? '' :
     (todo ? 'Resumen de la noche completa.' : 'Resumen del tramo visible: ' + horaDe(Math.max(a, x.ini)) + ' → ' + horaDe(Math.min(b, x.fin)) + '.') +
-    (ant ? ' La noche anterior se resume siempre completa.' : '');
+    (ant ? (a7 ? ' La noche anterior y la media de 7 noches se resumen siempre completas.' : ' La noche anterior se resume siempre completa.') : '');
 
   pintarHistograma('spo2', 'h-spo2', 'Distribución de SpO2', CAT_SPO2, x.binsSpo2, x.spo2n, y && y.binsSpo2, y && y.spo2n, P.spo2, S.otro ? diaCorto(S.otro.d) : '');
   pintarHistograma('bpm', 'h-bpm', 'Distribución del pulso', CAT_BPM, x.binsBpm, x.bpmn, y && y.binsBpm, y && y.bpmn, P.bpm, S.otro ? diaCorto(S.otro.d) : '');
 }
 
 function pintarHistograma(clave, el, titulo, categorias, bins, total, binsOtro, totalOtro, color, etq) {
-  var texto = css('--texto'), tenue = css('--tenue'), rejilla = css('--rejilla'), tarjeta = css('--tarjeta');
+  var texto = css('--texto'), tenue = css('--tenue'), rejilla = css('--rejilla');
+  // En la barra, solo el porcentaje, fuera de ella (sobre el fondo se lee siempre). El tiempo va en el aviso.
   function etiqueta() {
     if (!this.y) return null;
-    return hms(this.y) + ' | ' + pct(this.y, this.series.options.total || 1);
+    return pct(this.y, this.series.options.total || 1);
+  }
+  // Aviso: tramo con su unidad, día, tiempo y porcentaje. El tramo es this.category: this.x es solo su posición (0, 1, 2…).
+  function aviso() {
+    var tramo = String(this.category).replace('<', '&lt;');
+    return '<b>' + (clave === 'spo2' ? 'SpO2 ' + tramo + ' %' : 'Pulso ' + tramo + ' lpm') + '</b><br/>' +
+           this.series.name + ': ' + hms(this.y) + ' · ' + pct(this.y, this.series.options.total || 1);
   }
   if (!H[clave]) {
     H[clave] = Highcharts.chart(el, {
       chart: { type: 'bar' },
       title: { text: titulo, style: { fontSize: '13px' } },
-      xAxis: { categories: categorias, labels: { style: { color: tenue, fontSize: '11px' } }, lineColor: rejilla, tickColor: rejilla },
-      yAxis: { title: { text: null }, labels: { enabled: false }, gridLineWidth: 0 },
+      xAxis: { categories: categorias, labels: { style: { color: tenue, fontSize: '12px' } }, lineColor: rejilla, tickColor: rejilla },
+      // maxPadding deja sitio a la derecha para la etiqueta de la barra más larga
+      yAxis: { title: { text: null }, labels: { enabled: false }, gridLineWidth: 0, maxPadding: 0.25, endOnTick: false },
       legend: { enabled: false, itemStyle: { fontSize: '11px' } },
       exporting: { enabled: false },
-      tooltip: { formatter: function () { return '<b>' + this.series.name + ' · ' + this.x + '</b><br/>' + hms(this.y) + ' · ' + pct(this.y, this.series.options.total || 1); } },
+      tooltip: { formatter: aviso },
       plotOptions: { bar: { borderWidth: 0, borderRadius: 3, groupPadding: 0.12, pointPadding: 0.04,
-        dataLabels: { enabled: true, color: texto, style: { textOutline: '2px ' + tarjeta, fontSize: '11px', fontWeight: '600' }, align: 'left', inside: true, formatter: etiqueta } } },
+        // padding 0 + allowOverlap: al comparar dos días hay dos barras por tramo y, con la caja por defecto, Highcharts
+        // ocultaba la mitad de las etiquetas por "solaparse" aunque el texto cabe
+        dataLabels: { enabled: true, color: texto, style: { textOutline: 'none', fontSize: '13px', fontWeight: '600' }, inside: false, crop: false, overflow: 'allow',
+                      padding: 0, x: 5, allowOverlap: true, formatter: etiqueta } } },
       series: [{ name: 'Este día', data: [], color: color }, { name: 'Otro día', data: [], color: Highcharts.color(color).setOpacity(0.5).get(), visible: false, showInLegend: false }]
     });
+    botonAmpliar($(el));
   }
   var ch = H[clave];
   ch.series[0].update({ total: total, name: S.dia ? diaCorto(S.dia.d) : 'Este día' }, false);
@@ -1054,7 +1141,8 @@ function pintarHistograma(clave, el, titulo, categorias, bins, total, binsOtro, 
     ch.series[1].update({ visible: false, showInLegend: false }, false);
     ch.series[1].setData([], false);
   }
-  ch.update({ legend: { enabled: !!binsOtro } }, false);
+  // Con dos días hay dos barras por tramo: la etiqueta baja de tamaño para que no se toquen
+  ch.update({ legend: { enabled: !!binsOtro }, plotOptions: { bar: { dataLabels: { style: { fontSize: binsOtro ? '11px' : '13px' } } } } }, false);
   ch.redraw();
 }
 
@@ -1062,11 +1150,12 @@ function pintarHistograma(clave, el, titulo, categorias, bins, total, binsOtro, 
    Ambiente (Netatmo)
    ════════════════════════════════════════════════════════════════════════ */
 var AMB = [
-  { id: 'temp',  el: 'a-temp',  titulo: 'Temperatura', unidad: ' °C',   dentro: 'in_temp',  fuera: 'out_temp', color: 'temp',  colorFuera: 'tempExt', etiquetas: true },
-  { id: 'hum',   el: 'a-hum',   titulo: 'Humedad',     unidad: ' %',    dentro: 'in_hum',   fuera: 'out_hum',  color: 'hum',   colorFuera: 'humExt' },
-  { id: 'pres',  el: 'a-pres',  titulo: 'Presión',     unidad: ' mbar', dentro: 'in_pres',  fuera: 'out_pres', color: 'pres',  colorFuera: 'presExt' },
-  { id: 'ruido', el: 'a-ruido', titulo: 'Ruido',       unidad: ' dB',   dentro: 'in_ruido', fuera: null,       color: 'ruido' },
-  { id: 'co2',   el: 'a-co2',   titulo: 'CO2',         unidad: ' ppm',  dentro: 'in_co2',   fuera: null,       color: 'co2' }
+  // media7: campo de "ant7" con la media durante el sueño de las 7 noches anteriores; dec: decimales con que se muestra
+  { id: 'temp',  el: 'a-temp',  titulo: 'Temperatura', unidad: ' °C',   dentro: 'in_temp',  fuera: 'out_temp', color: 'temp',  colorFuera: 'tempExt', etiquetas: true, media7: 'temp_avg', dec: 1 },
+  { id: 'hum',   el: 'a-hum',   titulo: 'Humedad',     unidad: ' %',    dentro: 'in_hum',   fuera: 'out_hum',  color: 'hum',   colorFuera: 'humExt', media7: 'hum_avg', dec: 0 },
+  { id: 'pres',  el: 'a-pres',  titulo: 'Presión',     unidad: ' mbar', dentro: 'in_pres',  fuera: 'out_pres', color: 'pres',  colorFuera: 'presExt', media7: 'pres_avg', dec: 0 },
+  { id: 'ruido', el: 'a-ruido', titulo: 'Ruido',       unidad: ' dB',   dentro: 'in_ruido', fuera: null,       color: 'ruido', media7: 'ruido_avg', dec: 0 },
+  { id: 'co2',   el: 'a-co2',   titulo: 'CO2',         unidad: ' ppm',  dentro: 'in_co2',   fuera: null,       color: 'co2', media7: 'co2_avg', dec: 0 }
 ];
 var A = {};     // id -> chart
 
@@ -1082,18 +1171,23 @@ function crearAmbiente() {
     if (def.fuera) series.push({ id: 'out', name: def.titulo + ' exterior', color: cf, lineWidth: 2, marker: { enabled: false }, visible: false, zIndex: 3, data: [] });
     series.push({ id: 'in2', name: def.titulo + ' interior (ayer)', color: c, opacity: P.otroOpacidad, lineWidth: 1.75, dashStyle: 'ShortDash', marker: { enabled: false }, zIndex: 2, data: [] });
     if (def.fuera) series.push({ id: 'out2', name: def.titulo + ' exterior (ayer)', color: cf, opacity: P.otroOpacidad, lineWidth: 1.5, dashStyle: 'ShortDash', marker: { enabled: false }, visible: false, zIndex: 1, data: [] });
+    // Media del interior en los 7 días anteriores, a cada media hora: punteada y en gris, para que no se confunda
+    // con hoy (continua) ni con ayer (discontinua). "durmiendo" (la media de esas noches durante el sueño) solo sale en la leyenda.
+    series.push({ id: 'in7', name: 'Media 7 días', color: css('--tenue'), lineWidth: 1.75, dashStyle: 'Dot', marker: { enabled: false }, zIndex: 2, showInLegend: false, durmiendo: '', data: [] });
     A[def.id] = Highcharts.chart(def.el, {
       chart: { type: 'line', zooming: { type: 'x', pinchType: 'x', singleTouch: false, mouseWheel: { enabled: false } }, spacingTop: 8 },
       title: { text: def.titulo, style: { fontSize: '13px' } },
       xAxis: { type: 'datetime', labels: { style: { fontSize: '10px' } }, crosshair: true },
       yAxis: { title: { text: def.unidad.trim() }, allowDecimals: true },
-      legend: { enabled: true, itemStyle: { fontSize: '11px' } },
+      legend: { enabled: true, itemStyle: { fontSize: '11px' },
+                labelFormatter: function () { return this.name + (this.options.durmiendo ? ' · durmiendo ' + this.options.durmiendo : ''); } },
       exporting: { enabled: false },
       tooltip: { shared: true, valueSuffix: def.unidad, xDateFormat: '%A %e %b, %H:%M', style: { fontSize: '12px' } },
       series: series
     });
     ruedaConTecla(A[def.id]);
     gestosTactiles(A[def.id]);
+    botonAmpliar($(def.el));
   });
 }
 
@@ -1101,6 +1195,14 @@ function filasAmb(dia, filas, columna, desp) {
   var i = dia.ambCols[columna], out = [];
   if (i == null) return out;
   filas.forEach(function (f) { if (f[i] != null) out.push([dia.t0 + f[0] * 1000 + (desp || 0), f[i]]); });
+  return out;
+}
+
+/* Curva "Media 7 días": filas [dt, valores...] con dt en segundos desde el inicio de la ventana del día */
+function filasM7(dia, columna) {
+  var i = dia.ambCols7[columna], out = [];
+  if (i == null) return out;
+  dia.ambM7.forEach(function (f) { if (f[i] != null) out.push([dia.t0 + f[0] * 1000, f[i]]); });
   return out;
 }
 
@@ -1121,11 +1223,17 @@ function pintarAmbiente(dia, otro) {
       ch.get('out2').update({ name: def.titulo + ' exterior (' + etq + ')' }, false);
       ch.get('out2').setData(otro ? filasAmb(otro, otro.ambDia, def.fuera, desp) : filasAmb(dia, dia.ambAyer, def.fuera, DIA_MS), false);
     }
+    // Media de los 7 días anteriores (si el paquete la trae)
+    var m7 = filasM7(dia, def.dentro), media = dia.ant7 ? dia.ant7[def.media7] : null;
+    ch.get('in7').update({ showInLegend: m7.length > 0, durmiendo: m7.length && media != null ? num(media, def.dec) + def.unidad : '' }, false);
+    ch.get('in7').setData(m7, false);
     ch.xAxis[0].update({ min: dia.t0, max: dia.t0 + DIA_MS, plotBands: banda }, false);
     ch.xAxis[0].setExtremes(null, null, false);      // cada día empieza sin zoom
     ch.redraw();
   });
-  $('amb-nota').textContent = dia.ambDia.length ? '· línea discontinua: ' + (otro ? diaCorto(otro.d) : 'las 24 h anteriores') : '· sin datos de ambiente';
+  $('amb-nota').textContent = dia.ambDia.length
+    ? '· línea discontinua: ' + (otro ? diaCorto(otro.d) : 'las 24 h anteriores') + (dia.ambM7.length ? ' · punteada: media de los 7 días anteriores' : '')
+    : '· sin datos de ambiente';
 }
 
 /* El cursor del gráfico principal se refleja en los de ambiente */
@@ -1312,6 +1420,64 @@ function abrirCalendario() {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
+   Ampliar una caja a toda la pantalla (gráficos de ambiente, histogramas, tarjetas y gráfica principal)
+   La caja ampliada es la misma del documento con la clase "ampliado": los gráficos no se rehacen, solo
+   cambian de tamaño. Al ampliar se añade una entrada al historial, así que el gesto "atrás" del móvil
+   cierra la ampliación en vez de cambiar de día (ver el "popstate" de iniciar).
+   ════════════════════════════════════════════════════════════════════════ */
+var AMP = null;     // { caja, y } de lo que está ampliado ahora, o null
+var ICONO_AMPLIAR = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M21 3l-7 7M9 21H3v-6M3 21l7-7"/></svg>';
+var ICONO_CERRAR = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+function graficosDe(caja) {
+  return Highcharts.charts.filter(function (c) { return c && c.renderTo && caja.contains(c.renderTo); });
+}
+function pintarBotonAmpliar(caja) {
+  var b = caja.querySelector(':scope > .b-ampliar'), abierto = caja.classList.contains('ampliado');
+  if (!b) return;
+  b.innerHTML = abierto ? ICONO_CERRAR : ICONO_AMPLIAR;
+  b.title = abierto ? 'Volver al tamaño normal (Esc)' : 'Ampliar a toda la pantalla';
+  b.setAttribute('aria-label', b.title);
+}
+/* Pone el botón en la caja y hace que tocar el título de sus gráficos también amplíe.
+   Highcharts vacía la caja al crear un gráfico, así que se llama después de crear cada uno. */
+function botonAmpliar(caja) {
+  caja.classList.add('ampliable');
+  if (!caja.querySelector(':scope > .b-ampliar')) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'b-ampliar';
+    b.onclick = function () { alternarAmpliado(caja); };
+    caja.appendChild(b);
+  }
+  pintarBotonAmpliar(caja);
+  graficosDe(caja).forEach(function (ch) {
+    if (!ch.title || !ch.title.element) return;
+    ch.title.css({ cursor: 'pointer' });
+    ch.title.on('click', function () { alternarAmpliado(caja); });
+  });
+}
+function ajustarAmpliado(caja) {
+  pintarBotonAmpliar(caja);
+  graficosDe(caja).forEach(function (ch) { ch.reflow(); });
+}
+function alternarAmpliado(caja) {
+  if (AMP) { history.back(); return; }          // cerrar pasa siempre por el historial (popstate)
+  AMP = { caja: caja, y: window.scrollY };
+  caja.classList.add('ampliado');
+  document.documentElement.classList.add('con-ampliado');
+  history.pushState({ ampliado: true }, '');
+  ajustarAmpliado(caja);
+}
+function cerrarAmpliado() {
+  if (!AMP) return;
+  var a = AMP; AMP = null;
+  a.caja.classList.remove('ampliado');
+  document.documentElement.classList.remove('con-ampliado');
+  window.scrollTo(0, a.y);
+  ajustarAmpliado(a.caja);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
    Arranque y eventos
    ════════════════════════════════════════════════════════════════════════ */
 /* Rehace todos los gráficos (al arrancar y al cambiar de modo día/noche) */
@@ -1329,6 +1495,12 @@ function iniciar() {
     return;
   }
   iniciarContador();
+  // En el móvil la barra de fecha va fija abajo. Su altura cambia (fecha en dos líneas al comparar, aviso del reloj),
+  // así que se mide y se guarda en --alto-barra: con ella se reserva el hueco del final de la página.
+  var barra = document.querySelector('.barra');
+  var medirBarra = function () { document.documentElement.style.setProperty('--alto-barra', barra.offsetHeight + 'px'); };
+  medirBarra();
+  if (window.ResizeObserver) new ResizeObserver(medirBarra).observe(barra);
   leerURL();
   construirGraficos();
   $('pista').textContent = window.matchMedia('(pointer: coarse)').matches
@@ -1379,16 +1551,21 @@ function iniciar() {
     else if (S.d) comparar(sumaDias(S.d, +v));
   });
 
+  botonAmpliar($('resumen'));
   document.addEventListener('keydown', function (e) {
+    // Con algo ampliado, Esc lo cierra y las flechas no cambian de día
+    if (AMP) { if (e.key === 'Escape') { e.preventDefault(); history.back(); } return; }
     if (e.target.matches('input, select, textarea') || e.altKey || e.ctrlKey || e.metaKey) return;
     if (document.querySelector('[popover]:popover-open')) return;
     if (e.key === 'ArrowLeft') { e.preventDefault(); $('b-ant').click(); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); $('b-sig').click(); }
   });
-  window.addEventListener('popstate', function () { leerURL(); mostrar(); });
+  window.addEventListener('popstate', function () {
+    if (AMP) { cerrarAmpliado(); return; }      // «atrás» con algo ampliado: solo lo cierra
+    leerURL(); mostrar();
+  });
 
-  // En el móvil el ambiente empieza plegado
-  if (window.innerWidth <= 768) $('sec-amb').open = false;
+  // El ambiente empieza desplegado (lo dice el HTML); al volver a abrirlo los gráficos toman su ancho
   $('sec-amb').addEventListener('toggle', function () { if ($('sec-amb').open) AMB.forEach(function (d) { if (A[d.id]) A[d.id].reflow(); }); });
 
   mostrar();
