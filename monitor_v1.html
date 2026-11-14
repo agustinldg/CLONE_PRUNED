@@ -283,7 +283,10 @@ var CFG = {
   diasEnCache: 15,          // días que se guardan en memoria
   avisoRelojS: 120,         // desfase del reloj a partir del cual se avisa
   horaInicio: 18,           // se actualiza con lo que diga la API
-  ruedaZoom: false          // casilla "Rueda = zoom": la rueda amplía los gráficos en vez de desplazar la página
+  ruedaZoom: false,         // casilla "Rueda = zoom": la rueda amplía los gráficos en vez de desplazar la página
+  // Versión de los datos que entiende esta página. Va en la dirección de cada petición, así que al
+  // cambiarla el navegador deja de usar los días que tenía guardados con el formato anterior.
+  formato: 3
 };
 var DIA_MS = 86400000;
 
@@ -471,7 +474,7 @@ function obtenerDia(d, senal, forzar) {
     var enCache = store.tomar(d);
     if (enCache) return Promise.resolve(enCache);
   }
-  return pedir('day/' + d, { signal: senal, cache: forzar ? 'reload' : 'default' }).then(function (j) {
+  return pedir('day/' + d + '?f=' + CFG.formato, { signal: senal, cache: forzar ? 'reload' : 'default' }).then(function (j) {
     var dia = decodificar(j);
     CFG.horaInicio = dia.h || CFG.horaInicio;
     store.guardar(dia);
@@ -1262,7 +1265,7 @@ function refrescar() {
     return mostrar({ forzar: true });
   }
   var boton = $('b-refrescar'); boton.disabled = true;
-  pedir('day/' + dia.d + '?tras=' + encodeURIComponent(dia.cur), { cache: 'no-store' }).then(function (j) {
+  pedir('day/' + dia.d + '?f=' + CFG.formato + '&tras=' + encodeURIComponent(dia.cur), { cache: 'no-store' }).then(function (j) {
     var nuevos = fusionar(dia, decodificar(j));
     if (S.dia !== dia) return;
     if (nuevos) { pintarBarra(); pintarTodo(true); }
