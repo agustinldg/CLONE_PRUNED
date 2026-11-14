@@ -3,8 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark light">
 <title>Monitor · oxígeno y ambiente</title>
+<script>
+/* Modo noche por defecto; el modo día se recuerda en este navegador */
+(function () {
+  var t = 'oscuro';
+  try { if (localStorage.getItem('monitor.tema') === 'claro') t = 'claro'; } catch (e) {}
+  document.documentElement.dataset.tema = t;
+})();
+</script>
 <style>
 /* ── Colores: tema oscuro (el de dash3) y tema claro ───────────────────── */
 :root {
@@ -20,20 +27,20 @@
   --aviso: #ffcf70;
   --sombra: 0 4px 18px rgba(0, 0, 0, .35);
 }
-@media (prefers-color-scheme: light) {
-  :root {
-    --fondo: #f1f4f9;
-    --tarjeta: #ffffff;
-    --borde: #cfd6e3;
-    --texto: #1c2333;
-    --tenue: #566074;
-    --rejilla: #e1e6ef;
-    --acento: #4b36c9;
-    --acento-fuerte: #4b36c9;
-    --boton: #eef1f7;
-    --aviso: #8a5a00;
-    --sombra: 0 2px 10px rgba(20, 30, 60, .10);
-  }
+:root { color-scheme: dark; }
+:root[data-tema="claro"] {
+  color-scheme: light;
+  --fondo: #f1f4f9;
+  --tarjeta: #ffffff;
+  --borde: #cfd6e3;
+  --texto: #1c2333;
+  --tenue: #566074;
+  --rejilla: #e1e6ef;
+  --acento: #4b36c9;
+  --acento-fuerte: #4b36c9;
+  --boton: #eef1f7;
+  --aviso: #8a5a00;
+  --sombra: 0 2px 10px rgba(20, 30, 60, .10);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -102,9 +109,14 @@ main { max-width: 1500px; margin: 0 auto; padding: 12px 12px 32px; display: grid
 .tile .valor { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .tile .valor small { font-size: 13px; font-weight: 400; color: var(--tenue); }
 .tile .linea { font-size: 13px; color: var(--tenue); font-variant-numeric: tabular-nums; }
-.tile .otro { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--borde); font-size: 13px; font-variant-numeric: tabular-nums; }
-.tile .otro b { font-weight: 600; }
-.tile .dif { color: var(--tenue); }
+.tile .otro { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--borde); font-variant-numeric: tabular-nums; }
+.tile .otro .cual { display: block; font-size: 11px; color: var(--tenue); text-transform: uppercase; letter-spacing: .03em; }
+.tile .otro .dato { font-size: 17px; font-weight: 650; }
+.tile .otro .dato small { font-size: 12px; font-weight: 400; color: var(--tenue); }
+.tile .dif { font-size: 12px; font-weight: 400; color: var(--tenue); }
+.pista { font-size: 12px; color: var(--tenue); padding: 6px 4px 0; }
+#info-grupo { color: var(--texto); font-weight: 600; }
+#contador { font-variant-numeric: tabular-nums; margin-top: 6px; }
 .alcance { font-size: 12px; color: var(--tenue); padding: 0 4px; }
 
 .dos { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
@@ -172,6 +184,7 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
   <button id="b-ultima" title="Ir a la última noche con datos">Última</button>
   <button id="b-refrescar" title="Descargar solo las lecturas nuevas" aria-label="Refrescar" style="font-size:19px;line-height:1">↻</button>
   <button id="b-comparar" popovertarget="menu-comparar" title="Comparar con otro día">Comparar</button>
+  <button id="b-tema" title="Cambiar entre modo noche y modo día" aria-label="Modo día o noche" style="font-size:17px;line-height:1">☀</button>
   <div id="aviso-reloj" hidden></div>
 </nav>
 
@@ -196,12 +209,20 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
   <section class="tarjeta">
     <div class="controles">
       <label>Agrupación
-        <select id="sel-grupo" title="Cuántos píxeles agrupa cada punto del gráfico">
-          <option value="">Sin agrupar (1 s)</option>
-          <option value="5">5 px</option><option value="10">10 px</option><option value="25">25 px</option>
-          <option value="50" selected>50 px</option><option value="100">100 px</option><option value="200">200 px</option>
+        <select id="sel-grupo" title="Cuánto abarca cada punto del gráfico">
+          <optgroup label="Automática: se adapta al zoom">
+            <option value="px:5">5 px</option><option value="px:10">10 px</option><option value="px:25">25 px</option>
+            <option value="px:50" selected>50 px</option><option value="px:100">100 px</option><option value="px:200">200 px</option>
+          </optgroup>
+          <optgroup label="Fija: siempre el mismo tiempo">
+            <option value="no">1 s (sin agrupar)</option>
+            <option value="t:second:5">5 s</option><option value="t:second:10">10 s</option><option value="t:second:30">30 s</option>
+            <option value="t:minute:1">1 min</option><option value="t:minute:5">5 min</option><option value="t:minute:10">10 min</option>
+            <option value="t:minute:15">15 min</option><option value="t:minute:30">30 min</option><option value="t:hour:1">1 h</option>
+          </optgroup>
         </select>
       </label>
+      <span id="info-grupo" title="Tiempo que resume cada punto ahora mismo"></span>
       <label title="Desmarcado: escala fija 60–105 y PI 0–5 (se amplía si los datos se salen)">
         <input type="checkbox" id="chk-auto"> Eje Y automático
       </label>
@@ -211,6 +232,7 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
     <div id="estado" class="estado" role="status"></div>
     <div id="g-principal"></div>
     <div id="g-comparado" hidden></div>
+    <div class="pista" id="pista"></div>
   </section>
 
   <div class="alcance" id="alcance"></div>
@@ -229,7 +251,9 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
   </details>
 </main>
 
-<footer>Pulsioxímetro Masimo · ambiente Netatmo · las horas son las del reloj del pulsioxímetro</footer>
+<footer>Pulsioxímetro Masimo · ambiente Netatmo · las horas son las del reloj del pulsioxímetro
+  <div id="contador">Llamadas a Oracle: 0</div>
+</footer>
 <div id="toast" role="status"></div>
 
 <!-- Highcharts Stock 12.6.0 desde CDN, con versión fija y huella de integridad.
@@ -259,7 +283,7 @@ var CFG = {
 };
 var DIA_MS = 86400000;
 
-/* Colores de las series. Oscuro: los de dash3. Claro: validados aparte. */
+/* Colores de las series. Noche: los de dash3. Día: validados aparte. */
 var PALETAS = {
   oscuro: {
     spo2Banda: '#2b908f', spo2: '#90ee7e', bpm: '#f45b5b', pi: '#aaeeee', pvi: '#f7a35c', piBajo: '#ff4d4d',
@@ -272,8 +296,8 @@ var PALETAS = {
     ruido: '#1a8fa3', co2: '#7b4fd1', otroOpacidad: 0.9
   }
 };
-var mqClaro = window.matchMedia('(prefers-color-scheme: light)');
-function paleta() { return mqClaro.matches ? PALETAS.claro : PALETAS.oscuro; }
+function esClaro() { return document.documentElement.dataset.tema === 'claro'; }
+function paleta() { return esClaro() ? PALETAS.claro : PALETAS.oscuro; }
 function css(nombre) { return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim(); }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -326,6 +350,49 @@ function toast(texto) {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
+   Contador de llamadas a Oracle y de lo descargado (pie de página)
+   El tamaño es el que viaja por la red: cabeceras + cuerpo comprimido.
+   ════════════════════════════════════════════════════════════════════════ */
+var CONT = { llamadas: 0, sinCambios: 0, bytes: 0, cache: 0, canceladas: 0, ultima: null };
+function kb(bytes) { return num(bytes / 1024, bytes < 10240 ? 1 : 0) + ' KB'; }
+function pintarContador() {
+  var t = 'Llamadas a Oracle desde que se abrió la página: ' + CONT.llamadas +
+          (CONT.sinCambios ? ' (' + CONT.sinCambios + ' respondidas «sin cambios», sin datos)' : '') +
+          ' · total descargado: ' + kb(CONT.bytes);
+  if (CONT.ultima) t += ' · última: ' + CONT.ultima.ruta + ' → ' + CONT.ultima.texto;
+  if (CONT.cache) t += ' · servidas por la caché del navegador, sin llamar a Oracle: ' + CONT.cache;
+  if (CONT.canceladas) t += ' · canceladas: ' + CONT.canceladas;
+  $('contador').textContent = t;
+}
+function iniciarContador() {
+  if (!window.PerformanceObserver) { $('contador').textContent = ''; return; }
+  try {
+    new PerformanceObserver(function (lista) {
+      lista.getEntries().forEach(function (e) {
+        if (e.name.indexOf(CFG.apiBase) !== 0) return;
+        var ruta = e.name.slice(CFG.apiBase.length);
+        if (e.transferSize > 0) {                                   // viajó por la red y se pudo medir
+          // Con deliveryType "cache" Oracle solo contestó "sin cambios": cabeceras y ningún dato
+          var sinCambios = e.deliveryType === 'cache';
+          CONT.llamadas++; CONT.bytes += e.transferSize;
+          if (sinCambios) CONT.sinCambios++;
+          CONT.ultima = { ruta: ruta, texto: kb(e.transferSize) + (sinCambios ? ' (sin cambios)' : '') };
+        } else if (e.responseStatus === 304) {
+          CONT.llamadas++; CONT.sinCambios++;
+          CONT.ultima = { ruta: ruta, texto: 'sin cambios (0 KB de datos)' };
+        } else if (e.responseStatus === 0) {
+          CONT.canceladas++;
+        } else {
+          // Sin tráfico de red: la tenía guardada el navegador
+          CONT.cache++;
+        }
+      });
+      pintarContador();
+    }).observe({ type: 'resource', buffered: true });
+  } catch (err) { $('contador').textContent = ''; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
    API y caché en memoria
    ════════════════════════════════════════════════════════════════════════ */
 var store = {
@@ -368,6 +435,7 @@ function decodificar(j) {
     d: j.d, t0: Date.parse(j.t0 + 'Z'), h: j.h, cerrado: j.cerrado, cur: j.cur, offset_s: j.offset_s,
     dt: dt, spo2: j.spo2 || [], bpm: j.bpm || [], pi100: j.pi100 || [], pvi: j.pvi || [],
     ambCols: cols, ambDia: (j.amb && j.amb.dia) || [], ambAyer: (j.amb && j.amb.ayer) || [],
+    ant: j.ant || null,       // resumen de la noche anterior con datos (noche completa)
     bajado: Date.now()
   };
 }
@@ -486,7 +554,7 @@ function aplicarTemaHC() {
     tooltip: { backgroundColor: tarjeta, borderColor: borde, style: { color: texto, fontSize: '13px' } },
     navigator: {
       handles: { backgroundColor: tenue, borderColor: texto }, outlineColor: tenue,
-      maskFill: mqClaro.matches ? 'rgba(75,54,201,0.12)' : 'rgba(255,255,255,0.1)',
+      maskFill: esClaro() ? 'rgba(75,54,201,0.12)' : 'rgba(255,255,255,0.1)',
       series: { color: '#7798BF', lineColor: '#A6C7ED' }, xAxis: { gridLineColor: rejilla, labels: { style: { color: tenue } } }
     },
     scrollbar: { barBackgroundColor: tenue, barBorderColor: tenue, buttonBackgroundColor: boton, buttonBorderColor: borde, trackBackgroundColor: boton, trackBorderColor: borde },
@@ -502,9 +570,138 @@ function aplicarTemaHC() {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
+   Zoom y desplazamiento: reglas comunes para rueda y gestos táctiles
+   ════════════════════════════════════════════════════════════════════════ */
+/* Encaja [min, max] dentro de [lmin, lmax] con un rango mínimo de 20 s */
+function encajar(min, max, lmin, lmax) {
+  var r = max - min, MIN = 20000;
+  if (r < MIN) { var c = (min + max) / 2; min = c - MIN / 2; max = c + MIN / 2; r = MIN; }
+  if (r >= lmax - lmin) return { min: lmin, max: lmax, todo: true };
+  if (min < lmin) { min = lmin; max = lmin + r; }
+  if (max > lmax) { max = lmax; min = lmax - r; }
+  return { min: min, max: max, todo: false };
+}
+function limitesDe(chart) {
+  var ax = chart.xAxis[0], e = ax.getExtremes(), o = ax.options;
+  return { min: o.min != null ? o.min : e.dataMin, max: o.max != null ? o.max : e.dataMax, fijos: o.min != null };
+}
+/* Aplica el rango como mucho una vez por fotograma (los gestos generan muchos eventos) */
+function aplicadorDeRango(chart) {
+  var pend = null, programado = false;
+  return function (r) {
+    pend = r;
+    if (programado) return;
+    programado = true;
+    requestAnimationFrame(function () {
+      programado = false;
+      var q = pend, L = limitesDe(chart); pend = null;
+      if (!chart.xAxis) return;                       // gráfico destruido entre tanto
+      if (q.todo && L.fijos) chart.xAxis[0].setExtremes(null, null, true, false);
+      else chart.xAxis[0].setExtremes(q.min, q.max, true, false, { trigger: 'gesto' });
+    });
+  };
+}
+
+/* Rueda del ratón: sola, desplaza la página; con Ctrl o ⌘, amplía y reduce el gráfico.
+   (El gesto de pellizco de un trackpad llega al navegador como rueda + Ctrl, así que también amplía.) */
+function ruedaConTecla(chart) {
+  var aplicar = aplicadorDeRango(chart), base = null, tBase = 0;
+  chart.container.addEventListener('wheel', function (ev) {
+    if (!(ev.ctrlKey || ev.metaKey)) return;
+    var ax = chart.xAxis[0], e = ax.getExtremes();
+    if (e.min == null || e.max == null) return;
+    var p = chart.pointer.normalize(ev);
+    if (p.chartX < chart.plotLeft || p.chartX > chart.plotLeft + chart.plotWidth) return;
+    ev.preventDefault();
+    var ahora = Date.now();
+    if (!base || ahora - tBase > 250) base = [e.min, e.max];   // encadena eventos seguidos sin esperar al redibujado
+    tBase = ahora;
+    var L = limitesDe(chart), dy = ev.deltaMode === 1 ? ev.deltaY * 33 : ev.deltaY;
+    var f = Math.min(2, Math.max(0.5, Math.exp(dy * 0.002)));
+    var x = base[0] + (p.chartX - chart.plotLeft) / chart.plotWidth * (base[1] - base[0]);
+    var r = encajar(x - (x - base[0]) * f, x + (base[1] - x) * f, L.min, L.max);
+    base = [r.min, r.max];
+    aplicar(r);
+  }, { passive: false });
+}
+
+/* Gestos táctiles del gráfico principal: dos dedos amplían y desplazan; con el gráfico ampliado,
+   un dedo en horizontal lo desplaza. El movimiento vertical de un dedo sigue desplazando la página.
+   Sustituye al gesto propio de Highcharts, que redibuja en cada movimiento y con tantos puntos va a tirones. */
+function gestosTactiles(chart) {
+  var cont = chart.container, g = null, aplicar = aplicadorDeRango(chart);
+  Highcharts.addEvent(chart, 'touchpan', function (e) { e.preventDefault(); });
+  function px(t) { return t.clientX - cont.getBoundingClientRect().left - chart.plotLeft; }
+  cont.addEventListener('touchstart', function (ev) {
+    var e = chart.xAxis[0].getExtremes();
+    g = null;
+    if (e.min == null || e.dataMin == null) return;
+    var esc = (e.max - e.min) / chart.plotWidth, L = limitesDe(chart);
+    if (ev.touches.length === 2) {
+      var a = px(ev.touches[0]), b = px(ev.touches[1]);
+      g = { modo: 'pellizco', v1: e.min + a * esc, v2: e.min + b * esc, L: L };
+    } else if (ev.touches.length === 1 && (e.max - e.min) < (L.max - L.min) - 1000) {
+      g = { modo: 'indeciso', x0: ev.touches[0].clientX, y0: ev.touches[0].clientY, min0: e.min, max0: e.max, esc: esc, L: L };
+    }
+  }, { passive: true });
+  cont.addEventListener('touchmove', function (ev) {
+    if (!g) return;
+    if (g.modo === 'pellizco' && ev.touches.length === 2) {
+      ev.preventDefault();
+      var a = px(ev.touches[0]), b = px(ev.touches[1]);
+      if (Math.abs(b - a) < 12) return;
+      var esc = (g.v2 - g.v1) / (b - a);
+      if (!(esc > 0)) return;                        // los dedos se han cruzado
+      var min = g.v1 - a * esc;
+      aplicar(encajar(min, min + chart.plotWidth * esc, g.L.min, g.L.max));
+    } else if (ev.touches.length === 1 && g.modo !== 'pellizco') {
+      var dx = ev.touches[0].clientX - g.x0, dy = ev.touches[0].clientY - g.y0;
+      if (g.modo === 'indeciso') {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (Math.abs(dy) > Math.abs(dx)) { g = null; return; }     // vertical: lo gestiona la página
+        g.modo = 'arrastre';
+      }
+      ev.preventDefault();
+      aplicar(encajar(g.min0 - dx * g.esc, g.max0 - dx * g.esc, g.L.min, g.L.max));
+    }
+  }, { passive: false });
+  function fin() { g = null; }
+  cont.addEventListener('touchend', fin, { passive: true });
+  cont.addEventListener('touchcancel', fin, { passive: true });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Agrupación de puntos
+   "px": Highcharts elige el intervalo según el zoom (cada punto ocupa al menos N píxeles) y lo
+         redondea a un intervalo "redondo" de la lista UNIDADES; por eso dos valores de px pueden dar lo mismo.
+   "t":  intervalo fijo, sea cual sea el zoom.
+   Todas las series del eje deben llevar la misma configuración: Highcharts usa el mayor ancho de todas.
+   ════════════════════════════════════════════════════════════════════════ */
+var UNIDADES = [['second', [1, 2, 5, 10, 15, 30]], ['minute', [1, 2, 5, 10, 15, 30]], ['hour', [1, 2, 3, 4, 6, 8, 12]], ['day', [1]]];
+function agrupacion() {
+  var v = $('sel-grupo').value, m;
+  if (v === 'no') return { enabled: false, forced: false, groupPixelWidth: 2, units: UNIDADES };
+  if ((m = /^px:(\d+)$/.exec(v))) return { enabled: true, forced: false, groupPixelWidth: +m[1], units: UNIDADES };
+  m = /^t:(\w+):(\d+)$/.exec(v);
+  return { enabled: true, forced: true, groupPixelWidth: 2, units: [[m[1], [+m[2]]]] };
+}
+/* Texto "Cada punto = 5 min": lo que Highcharts está aplicando de verdad en este momento */
+function infoGrupo(chart) {
+  var s = null, txt = '1 s';
+  ['spo2', 'bpm', 'spo2r', 'pvi', 'pi', 'bpm_stats'].some(function (id) { var x = chart.get(id); if (x && x.visible) { s = x; return true; } return false; });
+  var g = s && s.hasGroupedData && s.currentDataGrouping;
+  if (g) txt = g.count + ' ' + ({ millisecond: 'ms', second: 's', minute: 'min', hour: 'h', day: 'día', week: 'semana' }[g.unitName] || g.unitName);
+  $('info-grupo').textContent = s ? 'Cada punto = ' + txt : '';
+}
+
+/* ════════════════════════════════════════════════════════════════════════
    Gráfica principal (misma disposición que dash3)
+   Se construye de nuevo en cada cambio de día o de comparación: así no hereda
+   rangos, zoom ni estado del navegador inferior del día anterior.
    ════════════════════════════════════════════════════════════════════════ */
 var G = { principal: null, comparado: null, sincronizando: false };
+/* Series visibles: se recuerda lo que el usuario activa o desactiva en la leyenda */
+var VIS = { spo2r: true, spo2: true, bpm: true, bpm_stats: false, pi: false, pvi: false, c_spo2: true, c_bpm: true, c_pi: false, c_pvi: false };
 
 /* Vela estadística del pulso: cuerpo = media ± desviación media, mechas = mínimo y máximo */
 function aproximacionVela(valores) {
@@ -516,97 +713,11 @@ function aproximacionVela(valores) {
   var desv = dif / valores.length;
   return [media + desv, max, min, media - desv];
 }
-
-function agrupacion(valor) {
-  return valor ? { enabled: true, groupPixelWidth: valor } : { enabled: false };
-}
-
-function opcionesPrincipal(esSecundaria, titulo) {
-  var P = paleta(), gpw = +$('sel-grupo').value || null, estrecho = window.innerWidth < 700;
-  var otro = { dashStyle: 'ShortDash', lineWidth: 1.75, opacity: P.otroOpacidad, showInLegend: false, showInNavigator: false, turboThreshold: 0, pointPlacement: 'between', data: [] };
-  var series = [
-    { type: 'columnrange', name: 'O2%', id: 'spo2r', color: P.spo2Banda, zIndex: 1, opacity: 0.95, turboThreshold: 0, pointPlacement: 'between' },
-    { type: 'spline', name: 'O2%', id: 'spo2', color: P.spo2, lineWidth: 2.25, zIndex: 2, turboThreshold: 0, pointPlacement: 'between' },
-    { type: 'spline', name: 'BPM', id: 'bpm', color: P.bpm, lineWidth: 2.25, zIndex: 3, turboThreshold: 0, pointPlacement: 'between' },
-    { type: 'candlestick', name: 'bpm stats', id: 'bpm_stats', zIndex: 0, color: Highcharts.color(P.bpm).setOpacity(0.7).get(), upColor: Highcharts.color(P.bpm).setOpacity(0.7).get(),
-      lineColor: P.bpm, upLineColor: P.bpm, turboThreshold: 0, pointPlacement: 'between', visible: false,
-      dataGrouping: { enabled: !!gpw, groupPixelWidth: gpw || 50, approximation: aproximacionVela } },
-    { type: 'spline', yAxis: 1, name: 'PI', id: 'pi', color: P.pi, lineWidth: 2, zIndex: 4, turboThreshold: 0, pointPlacement: 'between', visible: false, negativeColor: P.piBajo, threshold: 1 },
-    { type: 'spline', yAxis: 2, name: 'PVI', id: 'pvi', color: P.pvi, lineWidth: 2, zIndex: 5, turboThreshold: 0, pointPlacement: 'between', tooltip: { valueDecimals: 0 } }
-  ];
-  // Serie invisible con dos puntos sin valor: solo sirve para que el eje de tiempo abarque también el otro día
-  series.push({ type: 'line', id: 'c_rango', name: 'rango', lineWidth: 0, showInLegend: false, showInNavigator: false, enableMouseTracking: false,
-                marker: { enabled: false }, dataGrouping: { enabled: false }, data: [] });
-  if (!esSecundaria) {
-    // Series del día comparado (superpuestas): mismo color, discontinuas
-    series.push(
-      Highcharts.merge(otro, { type: 'spline', name: 'O2% (otro día)', id: 'c_spo2', color: P.spo2, zIndex: 2 }),
-      Highcharts.merge(otro, { type: 'spline', name: 'BPM (otro día)', id: 'c_bpm', color: P.bpm, zIndex: 3 }),
-      Highcharts.merge(otro, { type: 'spline', yAxis: 1, name: 'PI (otro día)', id: 'c_pi', color: P.pi, zIndex: 4, visible: false }),
-      Highcharts.merge(otro, { type: 'spline', yAxis: 2, name: 'PVI (otro día)', id: 'c_pvi', color: P.pvi, zIndex: 5, visible: false, tooltip: { valueDecimals: 0 } })
-    );
-  }
-  return {
-    chart: {
-      zooming: { type: 'x', pinchType: 'x', singleTouch: false },   // un dedo desplaza la página; dos dedos amplían
-      panning: { enabled: true, type: 'x' },
-      panKey: 'shift',
-      spacingRight: 6, spacingLeft: 6
-    },
-    navigator: { enabled: !esSecundaria, adaptToUpdatedData: true, baseSeries: 'bpm', series: { pointPlacement: 'between' } },
-    scrollbar: { enabled: !esSecundaria, liveRedraw: false },
-    title: { text: titulo || 'Oxígeno y pulso', style: { fontSize: '15px' } },
-    xAxis: { type: 'datetime', events: { afterSetExtremes: function (e) { alCambiarRango(this.chart, e); } } },
-    yAxis: [
-      { labels: { align: 'right', x: -4 }, title: { text: estrecho ? '' : 'SpO2 y pulso' }, endOnTick: false, startOnTick: false, showLastLabel: true, showEmpty: false },
-      { labels: { align: 'left', x: 8 }, title: { text: estrecho ? '' : 'P.I.' }, top: '75%', height: '25%', offset: 0, showEmpty: false, endOnTick: false, startOnTick: false },
-      { opposite: false, labels: { align: 'left', x: 4, style: { fontSize: '10px' } }, title: { text: estrecho ? '' : 'PVI' }, gridLineWidth: 0, lineWidth: 0, tickLength: 0, offset: 0, showEmpty: false, tickAmount: 4 }
-    ],
-    legend: { enabled: true },
-    plotOptions: {
-      series: { gapSize: 60, dataGrouping: agrupacion(gpw), states: { inactive: { opacity: 0.6 } } },
-      line: { connectNulls: false },
-      columnrange: { pointPadding: -0.25, minPointLength: 5 }
-    },
-    tooltip: { valueDecimals: 2, style: { fontSize: '13px' } },
-    rangeSelector: esSecundaria ? { enabled: false } : {
-      buttons: [
-        { type: 'minute', count: 1, text: '1M' }, { type: 'minute', count: 10, text: '10M' },
-        { type: 'hour', count: 1, text: '1H' }, { type: 'all', text: 'Todo' }
-      ],
-      selected: 3, inputEnabled: !estrecho
-    },
-    series: series
-  };
-}
-
-function crearPrincipal() {
-  G.principal = Highcharts.stockChart('g-principal', opcionesPrincipal(false));
-  aplicarEjeY(G.principal);
-  var cont = G.principal.container;
-  cont.addEventListener('mousemove', moverCursorAmbiente);
-  cont.addEventListener('touchmove', moverCursorAmbiente, { passive: true });
-  cont.addEventListener('mouseleave', quitarCursorAmbiente);
-}
-
-/* Eje fijo: 60–105 y PI 0–5 como en dash3, pero se amplía si los datos se salen (nada se corta) */
-function aplicarEjeY(chart) {
-  var auto = $('chk-auto').checked;
-  chart.yAxis[0].update(auto ? { softMin: null, softMax: null, min: null, max: null } : { softMin: 60, softMax: 105, min: null, max: null }, false);
-  chart.yAxis[1].update(auto ? { softMin: null, softMax: null } : { softMin: 0, softMax: 5 }, false);
-  chart.redraw();
-}
-
-function aplicarAgrupacion() {
-  var v = +$('sel-grupo').value || null;
-  [G.principal, G.comparado].forEach(function (chart) {
-    if (!chart) return;
-    chart.series.forEach(function (s) {
-      if (s.options.id === 'c_rango' || /^highcharts-navigator/.test(String(s.options.id))) return;
-      s.update({ dataGrouping: agrupacion(v) }, false);
-    });
-    chart.redraw();
-  });
+function tooltipVela() {
+  var media = (this.open + this.close) / 2, desv = (this.open - this.close) / 2;
+  return '<span style="color:' + this.series.options.lineColor + '">●</span> <b>Pulso: estadística del tramo</b><br/>' +
+         'Media: <b>' + num(media, 1) + '</b> lpm<br/>Desviación media: ± ' + num(desv, 1) + '<br/>' +
+         'Máximo: ' + num(this.high, 0) + ' · Mínimo: ' + num(this.low, 0) + '<br/>';
 }
 
 /* Arrays [t, valor] de un día, desplazados "desp" milisegundos */
@@ -620,62 +731,141 @@ function seriesDe(dia, desp) {
     if (p != null) Pi.push([t, p / 100]);
     if (v != null) V.push([t, v]);
   }
-  return { rango: R, spo2: Sp, bpm: B, vela: O, pi: Pi, pvi: V };
+  return { rango: R, spo2: Sp, bpm: B, vela: O, pi: Pi, pvi: V, ini: n ? t0 + dia.dt[0] * 1000 : null, fin: n ? t0 + dia.dt[n - 1] * 1000 : null };
 }
 
-function pintarPrincipal(dia, otro, conservarRango) {
-  var chart = G.principal, d = seriesDe(dia, 0);
-  var ext = conservarRango ? chart.xAxis[0].getExtremes() : null;
-  var estabaAlFinal = ext && ext.dataMax != null && ext.max >= ext.dataMax - 1000;
-  chart.get('spo2r').setData(d.rango, false);
-  chart.get('spo2').setData(d.spo2, false);
-  chart.get('bpm').setData(d.bpm, false);
-  chart.get('bpm_stats').setData(d.vela, false);
-  chart.get('pi').setData(d.pi, false);
-  chart.get('pvi').setData(d.pvi, false);
-
-  var superpuesto = otro && !S.apilado, desp = otro ? dia.t0 - otro.t0 : 0;
-  var o = superpuesto ? seriesDe(otro, desp) : null, etiqueta = otro ? ' (' + diaCorto(otro.d) + ')' : '';
-  [['c_spo2', 'O2%', 'spo2'], ['c_bpm', 'BPM', 'bpm'], ['c_pi', 'PI', 'pi'], ['c_pvi', 'PVI', 'pvi']].forEach(function (x) {
-    var s = chart.get(x[0]);
-    s.update({ name: x[1] + etiqueta, showInLegend: !!superpuesto }, false);
-    s.setData(o ? o[x[2]] : [], false);
-  });
-  chart.get('c_rango').setData(otro && S.apilado && otro.dt.length
-    ? [[otro.t0 + desp + otro.dt[0] * 1000, null], [otro.t0 + desp + otro.dt[otro.dt.length - 1] * 1000, null]] : [], false);
-  chart.setTitle({ text: 'Oxígeno y pulso' + (otro ? ' · ' + diaCorto(dia.d) + (superpuesto ? ' y ' + diaCorto(otro.d) + ' (discontinua)' : '') : '') }, null, false);
-
-  if (ext && ext.min != null && ext.userMin != null && !estabaAlFinal) {
-    chart.xAxis[0].setExtremes(ext.min, ext.max, false);
-  } else if (!conservarRango) {
-    chart.xAxis[0].setExtremes(null, null, false);
+/* o: { secundaria, datos, otros, etiquetaOtro, titulo, aux: [ini, fin] | null, todo } */
+function opcionesPrincipal(o) {
+  var P = paleta(), agr = agrupacion(), estrecho = window.innerWidth < 700, auto = $('chk-auto').checked, M = Highcharts.merge;
+  function linea(id, nombre, color, extra) {
+    return M({ type: 'spline', id: id, name: nombre, color: color, lineWidth: 2.25, turboThreshold: 0, pointPlacement: 'between',
+               dataGrouping: agr, visible: VIS[id] !== false }, extra);
   }
-  chart.redraw();
-  if (!conservarRango && chart.rangeSelector) chart.rangeSelector.clickButton(3, false);
+  var d = o.datos, velaColor = Highcharts.color(P.bpm).setOpacity(0.7).get();
+  var series = [
+    { type: 'columnrange', name: 'O2%', id: 'spo2r', color: P.spo2Banda, zIndex: 1, opacity: 0.95, turboThreshold: 0, pointPlacement: 'between',
+      dataGrouping: agr, visible: VIS.spo2r !== false, data: d.rango },
+    linea('spo2', 'O2%', P.spo2, { zIndex: 2, data: d.spo2 }),
+    linea('bpm', 'BPM', P.bpm, { zIndex: 3, data: d.bpm }),
+    { type: 'candlestick', name: 'bpm stats', id: 'bpm_stats', zIndex: 0, color: velaColor, upColor: velaColor, lineColor: P.bpm, upLineColor: P.bpm,
+      turboThreshold: 0, pointPlacement: 'between', visible: VIS.bpm_stats !== false, data: d.vela,
+      dataGrouping: M(agr, { approximation: aproximacionVela }), tooltip: { pointFormatter: tooltipVela } },
+    linea('pi', 'PI', P.pi, { yAxis: 1, lineWidth: 2, zIndex: 4, negativeColor: P.piBajo, threshold: 1, data: d.pi }),
+    linea('pvi', 'PVI', P.pvi, { yAxis: 2, lineWidth: 2, zIndex: 5, tooltip: { valueDecimals: 0 }, data: d.pvi }),
+    // Serie invisible con dos puntos sin valor: solo hace que el eje de tiempo abarque también el otro día
+    { type: 'line', id: 'c_rango', name: 'rango', lineWidth: 0, showInLegend: false, showInNavigator: false, enableMouseTracking: false,
+      marker: { enabled: false }, dataGrouping: M(agr, { enabled: false }), data: o.aux ? [[o.aux[0], null], [o.aux[1], null]] : [] }
+  ];
+  if (o.otros) {
+    // Día comparado, superpuesto: mismo color, línea discontinua
+    var x = o.otros, e = ' (' + o.etiquetaOtro + ')';
+    var otro = { dashStyle: 'ShortDash', lineWidth: 1.75, opacity: P.otroOpacidad, showInNavigator: false };
+    series.push(
+      linea('c_spo2', 'O2%' + e, P.spo2, M(otro, { zIndex: 2, data: x.spo2 })),
+      linea('c_bpm', 'BPM' + e, P.bpm, M(otro, { zIndex: 3, data: x.bpm })),
+      linea('c_pi', 'PI' + e, P.pi, M(otro, { yAxis: 1, zIndex: 4, data: x.pi })),
+      linea('c_pvi', 'PVI' + e, P.pvi, M(otro, { yAxis: 2, zIndex: 5, tooltip: { valueDecimals: 0 }, data: x.pvi }))
+    );
+  }
+  return {
+    chart: {
+      // La rueda y los gestos táctiles los gestiona esta página (ver ruedaConTecla y gestosTactiles)
+      zooming: { type: 'x', pinchType: 'x', singleTouch: false, mouseWheel: { enabled: false } },
+      panning: { enabled: true, type: 'x' },
+      panKey: 'shift',
+      spacingRight: 6, spacingLeft: 6,
+      events: { redraw: function () { if (!o.secundaria) infoGrupo(this); }, load: function () { if (!o.secundaria) infoGrupo(this); } }
+    },
+    navigator: { enabled: !o.secundaria, adaptToUpdatedData: true, baseSeries: 'bpm', series: { pointPlacement: 'between' } },
+    scrollbar: { enabled: !o.secundaria, liveRedraw: false },
+    title: { text: o.titulo, style: { fontSize: '15px' } },
+    xAxis: { type: 'datetime', events: { afterSetExtremes: function (e) { alCambiarRango(this.chart, e); } } },
+    yAxis: [
+      // Eje fijo 60–105 y PI 0–5 como en dash3, pero se amplía si los datos se salen (nada se corta)
+      M({ labels: { align: 'right', x: -4 }, title: { text: estrecho ? '' : 'SpO2 y pulso' }, endOnTick: false, startOnTick: false, showLastLabel: true, showEmpty: false },
+        auto ? {} : { softMin: 60, softMax: 105 }),
+      M({ labels: { align: 'left', x: 8 }, title: { text: estrecho ? '' : 'P.I.' }, top: '75%', height: '25%', offset: 0, showEmpty: false, endOnTick: false, startOnTick: false },
+        auto ? {} : { softMin: 0, softMax: 5 }),
+      { opposite: false, labels: { align: 'left', x: 4, style: { fontSize: '10px' } }, title: { text: estrecho ? '' : 'PVI' }, gridLineWidth: 0, lineWidth: 0, tickLength: 0, offset: 0, showEmpty: false, tickAmount: 4 }
+    ],
+    legend: { enabled: true },
+    plotOptions: {
+      series: {
+        gapSize: 60, states: { inactive: { opacity: 0.6 } },
+        events: {
+          show: function () { if (this.options.id in VIS) VIS[this.options.id] = true; },
+          hide: function () { if (this.options.id in VIS) VIS[this.options.id] = false; }
+        }
+      },
+      line: { connectNulls: false },
+      columnrange: { pointPadding: -0.25, minPointLength: 5 }
+    },
+    tooltip: { valueDecimals: 2, style: { fontSize: '13px' } },
+    rangeSelector: o.secundaria ? { enabled: false } : {
+      buttons: [
+        { type: 'minute', count: 1, text: '1M' }, { type: 'minute', count: 10, text: '10M' },
+        { type: 'hour', count: 1, text: '1H' }, { type: 'all', text: 'Todo' }
+      ],
+      selected: o.todo ? 3 : undefined, inputEnabled: !estrecho
+    },
+    series: series
+  };
+}
 
-  // Gráfica apilada del día comparado
+function destruirPrincipal() {
+  quitarCursorAmbiente();
+  if (G.principal) { G.principal.destroy(); G.principal = null; }
+  if (G.comparado) { G.comparado.destroy(); G.comparado = null; }
+}
+
+/* Pinta el día (y el comparado). conservarRango: mantiene el tramo ampliado (mismo día, otro ajuste). */
+function pintarPrincipal(dia, otro, conservarRango) {
+  var rango = null;
+  if (conservarRango && G.principal) {
+    var e = G.principal.xAxis[0].getExtremes();
+    if (e.dataMin != null && e.min != null && (e.min > e.dataMin + 1000 || e.max < e.dataMax - 1000)) rango = { min: e.min, max: e.max };
+  }
+  destruirPrincipal();
+
+  var desp = otro ? dia.t0 - otro.t0 : 0, d = seriesDe(dia, 0), c = otro ? seriesDe(otro, desp) : null;
+  var superpuesto = otro && !S.apilado, apilado = otro && S.apilado;
+  G.principal = Highcharts.stockChart('g-principal', opcionesPrincipal({
+    secundaria: false, datos: d, otros: superpuesto ? c : null, etiquetaOtro: otro ? diaCorto(otro.d) : '',
+    titulo: 'Oxígeno y pulso' + (otro ? ' · ' + diaCorto(dia.d) + (superpuesto ? ' y ' + diaCorto(otro.d) + ' (discontinua)' : '') : ''),
+    aux: apilado && c.ini != null ? [c.ini, c.fin] : null, todo: !rango
+  }));
+  prepararInteraccion(G.principal, true);
+
   var caja = $('g-comparado');
-  if (otro && S.apilado) {
-    caja.hidden = false;
-    if (!G.comparado) G.comparado = Highcharts.stockChart('g-comparado', opcionesPrincipal(true));
-    aplicarEjeY(G.comparado);
-    var c = seriesDe(otro, desp), g = G.comparado;
-    g.get('spo2r').setData(c.rango, false); g.get('spo2').setData(c.spo2, false); g.get('bpm').setData(c.bpm, false);
-    g.get('bpm_stats').setData(c.vela, false); g.get('pi').setData(c.pi, false); g.get('pvi').setData(c.pvi, false);
-    g.get('c_rango').setData(dia.dt.length ? [[dia.t0 + dia.dt[0] * 1000, null], [dia.t0 + dia.dt[dia.dt.length - 1] * 1000, null]] : [], false);
-    g.setTitle({ text: 'Oxígeno y pulso · ' + diaCorto(otro.d) + ' (a la misma hora)' }, null, false);
-    var e = chart.xAxis[0].getExtremes();
-    g.xAxis[0].setExtremes(e.min, e.max, false);
-    g.redraw();
-  } else {
-    caja.hidden = true;
-    if (G.comparado) { G.comparado.destroy(); G.comparado = null; }
+  caja.hidden = !apilado;
+  if (apilado) {
+    G.comparado = Highcharts.stockChart('g-comparado', opcionesPrincipal({
+      secundaria: true, datos: c, otros: null, titulo: 'Oxígeno y pulso · ' + diaCorto(otro.d) + ' (a la misma hora)',
+      aux: d.ini != null ? [d.ini, d.fin] : null, todo: true
+    }));
+    prepararInteraccion(G.comparado, false);
+    var ex = G.principal.xAxis[0].getExtremes();
+    G.sincronizando = true;
+    G.comparado.xAxis[0].setExtremes(ex.min, ex.max, true, false);
+    G.sincronizando = false;
+  }
+  if (rango) G.principal.xAxis[0].setExtremes(rango.min, rango.max, true, false);
+}
+
+function prepararInteraccion(chart, conCursor) {
+  ruedaConTecla(chart);
+  gestosTactiles(chart);
+  if (conCursor) {
+    var cont = chart.container;
+    cont.addEventListener('mousemove', moverCursorAmbiente);
+    cont.addEventListener('touchmove', moverCursorAmbiente, { passive: true });
+    cont.addEventListener('mouseleave', quitarCursorAmbiente);
   }
 }
 
 function alCambiarRango(chart, e) {
   // Las dos gráficas apiladas comparten el rango de tiempo
-  if (!G.sincronizando && G.comparado && G.principal) {
+  if (!G.sincronizando && G.comparado && G.principal && (chart === G.principal || chart === G.comparado)) {
     var otra = chart === G.principal ? G.comparado : G.principal;
     G.sincronizando = true;
     otra.xAxis[0].setExtremes(e.min, e.max, true, false);
@@ -748,7 +938,7 @@ function estadisticas(dia, a, b) {
 }
 
 var _resumenT = null;
-function programarResumen() { clearTimeout(_resumenT); _resumenT = setTimeout(pintarResumen, 60); }
+function programarResumen() { clearTimeout(_resumenT); _resumenT = setTimeout(pintarResumen, 80); }
 
 function pintarResumen() {
   if (!S.dia || !G.principal) return;
@@ -756,49 +946,60 @@ function pintarResumen() {
   var a = e.min != null ? e.min : S.dia.t0, b = e.max != null ? e.max : S.dia.t0 + DIA_MS;
   var x = estadisticas(S.dia, a, b);
   var desp = S.otro ? S.dia.t0 - S.otro.t0 : 0;
-  var y = S.otro ? estadisticas(S.otro, a - desp, b - desp) : null;
-  var etq = S.otro ? diaCorto(S.otro.d) : '';
+  var y = S.otro ? estadisticas(S.otro, a - desp, b - desp) : null;   // día comparado, mismo tramo horario
+  var ant = !S.otro ? S.dia.ant : null;                                // noche anterior, completa (agregados de Oracle)
+  var todo = e.dataMin != null && a <= e.dataMin + 1000 && b >= e.dataMax - 1000;
+  var cual = S.otro ? diaCorto(S.otro.d) + ' · mismo tramo' : (ant ? 'Noche anterior · ' + diaCorto(ant.d) : '');
 
-  function dif(v1, v2, dec, unidad) {
+  function dif(v1, v2, dec) {
     if (v1 == null || v2 == null) return '';
     var d = v1 - v2;
-    return ' <span class="dif">(' + (d > 0 ? '+' : d < 0 ? '−' : '') + num(Math.abs(d), dec) + (unidad || '') + ')</span>';
+    return ' <span class="dif">(' + (d > 0 ? '+' : d < 0 ? '−' : '') + num(Math.abs(d), dec) + ')</span>';
   }
-  function tile(color, titulo, valor, lineas, otroHtml) {
+  // otro: html del dato del otro día (o '' si no hay)
+  function tile(color, titulo, valor, lineas, otro) {
     return '<div class="tile"><h3>' + (color ? '<i style="background:' + color + '"></i>' : '') + titulo + '</h3>' +
       '<div class="valor">' + valor + '</div>' + (lineas || []).map(function (l) { return '<div class="linea">' + l + '</div>'; }).join('') +
-      (otroHtml ? '<div class="otro"><b>' + etq + '</b> ' + otroHtml + '</div>' : '') + '</div>';
+      (otro ? '<div class="otro"><span class="cual">' + cual + '</span><span class="dato">' + otro + '</span></div>' : '') + '</div>';
   }
   function tiempo(seg, total) { return hms(seg) + ' <small>' + pct(seg, total) + '</small>'; }
+  function hora(iso) { return iso.slice(11, 16); }
 
   var lt90 = x.binsSpo2[0] + x.binsSpo2[1], lt85 = x.binsSpo2[0];
   var ge80 = x.binsBpm[3] + x.binsBpm[4] + x.binsBpm[5] + x.binsBpm[6] + x.binsBpm[7], ge90 = ge80 - x.binsBpm[3], ge100 = ge90 - x.binsBpm[4];
+  var yge80 = y ? y.binsBpm[3] + y.binsBpm[4] + y.binsBpm[5] + y.binsBpm[6] + y.binsBpm[7] : 0;
+  // La diferencia con la noche anterior solo tiene sentido si se está viendo la noche completa
+  var conDif = !!y || todo;
   var html = '';
   html += tile(null, 'Duración', x.n ? hms(x.dur) : '–',
     x.n ? [horaDe(x.ini) + ' → ' + horaDe(x.fin), 'Cobertura ' + pct(x.n, x.dur + 1) + ' · ' + hms(Math.max(x.dur + 1 - x.n, 0)) + ' sin lectura'] : ['Sin lecturas en este rango'],
-    y ? (y.n ? hms(y.dur) + ' · ' + horaDe(y.ini) + ' → ' + horaDe(y.fin) : 'sin lecturas') : '');
+    y ? (y.n ? hms(y.dur) + ' <small>' + horaDe(y.ini) + ' → ' + horaDe(y.fin) + '</small>' : 'sin lecturas')
+      : ant ? hms(ant.dur_s) + ' <small>' + hora(ant.t_ini) + ' → ' + hora(ant.t_fin) + '</small>' : '');
   html += tile(P.spo2, 'SpO2 media', num(x.spo2Media, 2) + ' <small>± ' + num(x.spo2Desv, 2) + ' %</small>',
     ['Mínimo ' + (x.spo2Min == null ? '–' : x.spo2Min + ' %')],
-    y ? num(y.spo2Media, 2) + ' ± ' + num(y.spo2Desv, 2) + dif(x.spo2Media, y.spo2Media, 2) : '');
+    y ? num(y.spo2Media, 2) + ' <small>± ' + num(y.spo2Desv, 2) + '</small>' + dif(x.spo2Media, y.spo2Media, 2)
+      : ant ? num(ant.spo2_avg, 2) + ' <small>± ' + num(ant.spo2_mad, 2) + ' · mín. ' + ant.spo2_min + '</small>' + (conDif ? dif(x.spo2Media, ant.spo2_avg, 2) : '') : '');
   html += tile(P.spo2, 'Tiempo con SpO2 bajo 90 %', tiempo(lt90, x.spo2n),
     ['Bajo 85 %: ' + hms(lt85) + ' · ' + pct(lt85, x.spo2n)],
-    y ? hms(y.binsSpo2[0] + y.binsSpo2[1]) + ' · ' + pct(y.binsSpo2[0] + y.binsSpo2[1], y.spo2n) : '');
+    y ? tiempo(y.binsSpo2[0] + y.binsSpo2[1], y.spo2n) : ant ? tiempo(ant.s_lt90, ant.spo2_n) : '');
   html += tile(P.bpm, 'Pulso medio', num(x.bpmMedia, 1) + ' <small>± ' + num(x.bpmDesv, 1) + ' lpm</small>',
     ['Máximo ' + (x.bpmMax == null ? '–' : x.bpmMax + ' lpm')],
-    y ? num(y.bpmMedia, 1) + ' ± ' + num(y.bpmDesv, 1) + dif(x.bpmMedia, y.bpmMedia, 1) : '');
+    y ? num(y.bpmMedia, 1) + ' <small>± ' + num(y.bpmDesv, 1) + '</small>' + dif(x.bpmMedia, y.bpmMedia, 1)
+      : ant ? num(ant.bpm_avg, 1) + ' <small>± ' + num(ant.bpm_mad, 1) + ' · máx. ' + ant.bpm_max + '</small>' + (conDif ? dif(x.bpmMedia, ant.bpm_avg, 1) : '') : '');
   html += tile(P.bpm, 'Tiempo con pulso de 80 o más', tiempo(ge80, x.bpmn),
     ['90 o más: ' + hms(ge90) + ' · ' + pct(ge90, x.bpmn), '100 o más: ' + hms(ge100) + ' · ' + pct(ge100, x.bpmn)],
-    y ? hms(y.binsBpm[3] + y.binsBpm[4] + y.binsBpm[5] + y.binsBpm[6] + y.binsBpm[7]) + ' · ' +
-        pct(y.binsBpm[3] + y.binsBpm[4] + y.binsBpm[5] + y.binsBpm[6] + y.binsBpm[7], y.bpmn) : '');
+    y ? tiempo(yge80, y.bpmn) : ant ? tiempo(ant.s_ge80, ant.bpm_n) : '');
   html += tile(P.temp, 'Temperatura de la habitación', num(x.temp, 1) + ' <small>± ' + num(x.tempDesv, 1) + ' °C</small>', [],
-    y ? num(y.temp, 1) + ' ± ' + num(y.tempDesv, 1) + ' °C' + dif(x.temp, y.temp, 1) : '');
+    y ? num(y.temp, 1) + ' <small>± ' + num(y.tempDesv, 1) + ' °C</small>' + dif(x.temp, y.temp, 1)
+      : ant && ant.temp_avg != null ? num(ant.temp_avg, 1) + ' <small>°C</small>' + (conDif ? dif(x.temp, ant.temp_avg, 1) : '') : '');
   $('tiles').innerHTML = html;
 
-  var todo = e.dataMin != null && a <= e.dataMin + 1000 && b >= e.dataMax - 1000;
-  $('alcance').textContent = x.n ? (todo ? 'Resumen de la noche completa.' : 'Resumen del tramo visible: ' + horaDe(Math.max(a, x.ini)) + ' → ' + horaDe(Math.min(b, x.fin)) + '. Amplía o reduce el gráfico para cambiarlo.') : '';
+  $('alcance').textContent = !x.n ? '' :
+    (todo ? 'Resumen de la noche completa.' : 'Resumen del tramo visible: ' + horaDe(Math.max(a, x.ini)) + ' → ' + horaDe(Math.min(b, x.fin)) + '.') +
+    (ant ? ' La noche anterior se resume siempre completa.' : '');
 
-  pintarHistograma('spo2', 'h-spo2', 'Distribución de SpO2', CAT_SPO2, x.binsSpo2, x.spo2n, y && y.binsSpo2, y && y.spo2n, P.spo2, etq);
-  pintarHistograma('bpm', 'h-bpm', 'Distribución del pulso', CAT_BPM, x.binsBpm, x.bpmn, y && y.binsBpm, y && y.bpmn, P.bpm, etq);
+  pintarHistograma('spo2', 'h-spo2', 'Distribución de SpO2', CAT_SPO2, x.binsSpo2, x.spo2n, y && y.binsSpo2, y && y.spo2n, P.spo2, S.otro ? diaCorto(S.otro.d) : '');
+  pintarHistograma('bpm', 'h-bpm', 'Distribución del pulso', CAT_BPM, x.binsBpm, x.bpmn, y && y.binsBpm, y && y.bpmn, P.bpm, S.otro ? diaCorto(S.otro.d) : '');
 }
 
 function pintarHistograma(clave, el, titulo, categorias, bins, total, binsOtro, totalOtro, color, etq) {
@@ -860,7 +1061,7 @@ function crearAmbiente() {
     series.push({ id: 'in2', name: def.titulo + ' interior (ayer)', color: c, opacity: P.otroOpacidad, lineWidth: 1.75, dashStyle: 'ShortDash', marker: { enabled: false }, zIndex: 2, data: [] });
     if (def.fuera) series.push({ id: 'out2', name: def.titulo + ' exterior (ayer)', color: cf, opacity: P.otroOpacidad, lineWidth: 1.5, dashStyle: 'ShortDash', marker: { enabled: false }, visible: false, zIndex: 1, data: [] });
     A[def.id] = Highcharts.chart(def.el, {
-      chart: { type: 'line', zooming: { type: 'x', pinchType: 'x', singleTouch: false }, spacingTop: 8 },
+      chart: { type: 'line', zooming: { type: 'x', pinchType: 'x', singleTouch: false, mouseWheel: { enabled: false } }, spacingTop: 8 },
       title: { text: def.titulo, style: { fontSize: '13px' } },
       xAxis: { type: 'datetime', labels: { style: { fontSize: '10px' } }, crosshair: true },
       yAxis: { title: { text: def.unidad.trim() }, allowDecimals: true },
@@ -869,6 +1070,7 @@ function crearAmbiente() {
       tooltip: { shared: true, valueSuffix: def.unidad, xDateFormat: '%A %e %b, %H:%M', style: { fontSize: '12px' } },
       series: series
     });
+    ruedaConTecla(A[def.id]);
   });
 }
 
@@ -882,7 +1084,7 @@ function filasAmb(dia, filas, columna, desp) {
 function pintarAmbiente(dia, otro) {
   var desp = otro ? dia.t0 - otro.t0 : DIA_MS, etq = otro ? diaCorto(otro.d) : 'ayer';
   var banda = dia.dt.length ? [{ id: 'sesion', from: dia.t0 + dia.dt[0] * 1000, to: dia.t0 + dia.dt[dia.dt.length - 1] * 1000,
-    color: mqClaro.matches ? 'rgba(75,54,201,0.08)' : 'rgba(255,255,255,0.07)', zIndex: 0,
+    color: esClaro() ? 'rgba(75,54,201,0.08)' : 'rgba(255,255,255,0.07)', zIndex: 0,
     label: { text: 'sesión', style: { color: css('--tenue'), fontSize: '10px' }, y: 12 } }] : [];
   AMB.forEach(function (def) {
     var ch = A[def.id];
@@ -897,6 +1099,7 @@ function pintarAmbiente(dia, otro) {
       ch.get('out2').setData(otro ? filasAmb(otro, otro.ambDia, def.fuera, desp) : filasAmb(dia, dia.ambAyer, def.fuera, DIA_MS), false);
     }
     ch.xAxis[0].update({ min: dia.t0, max: dia.t0 + DIA_MS, plotBands: banda }, false);
+    ch.xAxis[0].setExtremes(null, null, false);      // cada día empieza sin zoom
     ch.redraw();
   });
   $('amb-nota').textContent = dia.ambDia.length ? '· línea discontinua: ' + (otro ? diaCorto(otro.d) : 'las 24 h anteriores') : '· sin datos de ambiente';
@@ -909,11 +1112,12 @@ function moverCursorAmbiente(ev) {
   _cursorPend = requestAnimationFrame(function () {
     _cursorPend = null;
     var ch = G.principal;
-    if (!ch || !$('sec-amb').open) return;
+    if (!ch || !ch.pointer || !$('sec-amb').open) return;
     var e = ch.pointer.normalize(ev.touches ? ev.touches[0] : ev);
     if (e.chartX < ch.plotLeft || e.chartX > ch.plotLeft + ch.plotWidth) return quitarCursorAmbiente();
     var x = ch.xAxis[0].toValue(e.chartX), color = css('--texto');
     AMB.forEach(function (def) {
+      if (!A[def.id]) return;
       var ax = A[def.id].xAxis[0];
       ax.removePlotLine('cursor');
       ax.addPlotLine({ id: 'cursor', value: x, width: 1, color: color, dashStyle: 'Dot', zIndex: 6 });
@@ -921,7 +1125,7 @@ function moverCursorAmbiente(ev) {
   });
 }
 function quitarCursorAmbiente() {
-  AMB.forEach(function (def) { if (A[def.id]) A[def.id].xAxis[0].removePlotLine('cursor'); });
+  AMB.forEach(function (def) { if (A[def.id] && A[def.id].xAxis) A[def.id].xAxis[0].removePlotLine('cursor'); });
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -932,6 +1136,7 @@ function estado(tipo, html) {
   caja.className = 'estado' + (tipo ? ' visible' : '');
   caja.innerHTML = html || '';
   $('g-principal').style.display = (tipo === 'vacio' || tipo === 'error') ? 'none' : '';
+  if (tipo === 'vacio' || tipo === 'error') $('g-comparado').hidden = true;
 }
 
 function pintarBarra() {
@@ -942,6 +1147,7 @@ function pintarBarra() {
   $('b-comparar').textContent = S.c ? 'Comparando' : 'Comparar';
   $('b-apilar').hidden = !S.c;
   $('b-apilar').textContent = S.apilado ? 'Ver superpuestas' : 'Ver apiladas';
+  $('b-tema').textContent = esClaro() ? '☾' : '☀';
   document.title = (S.d ? nombreNoche(S.d) + ' · ' : '') + 'Monitor';
   var aviso = $('aviso-reloj'), off = S.dia && S.dia.d === S.d ? S.dia.offset_s : null;
   if (off != null && Math.abs(off) > CFG.avisoRelojS) {
@@ -954,6 +1160,22 @@ function pintarBarra() {
   }
 }
 
+function pintarTodo(conservarRango) {
+  if (!S.dia) return;
+  if (!S.dia.dt.length) {
+    destruirPrincipal();
+    estado('vacio', 'No hay lecturas esta noche.<br><button id="b-ir-anterior">Ir a la anterior con datos</button>');
+    $('b-ir-anterior').onclick = irAnteriorConDatos;
+    $('tiles').innerHTML = ''; $('alcance').textContent = ''; $('info-grupo').textContent = '';
+    pintarAmbiente(S.dia, S.otro);
+    return;
+  }
+  estado(null);
+  pintarPrincipal(S.dia, S.otro, conservarRango);
+  pintarAmbiente(S.dia, S.otro);
+  pintarResumen();
+}
+
 function mostrar(opciones) {
   opciones = opciones || {};
   var seq = ++S.seq;
@@ -961,8 +1183,8 @@ function mostrar(opciones) {
   S.ctrl = new AbortController();
   var senal = S.ctrl.signal;
   pintarBarra();
-  estado(null);
-  if (G.principal) G.principal.showLoading('Cargando…');
+  if (G.principal) { estado(null); G.principal.showLoading('Cargando…'); }
+  else estado('cargando', 'Cargando…');
 
   // Si el día no está en memoria se espera un instante antes de pedirlo:
   // pulsar ◀ varias veces seguidas solo descarga el último día.
@@ -978,18 +1200,8 @@ function mostrar(opciones) {
   }).then(function (par) {
     if (!par || seq !== S.seq) return;
     S.dia = par[0]; S.otro = par[1];
-    if (G.principal) G.principal.hideLoading();
     pintarBarra();
-    if (!S.dia.dt.length) {
-      estado('vacio', 'No hay lecturas esta noche.<br><button id="b-ir-anterior">Ir a la anterior con datos</button>');
-      $('b-ir-anterior').onclick = irAnteriorConDatos;
-      $('tiles').innerHTML = ''; $('alcance').textContent = '';
-      pintarAmbiente(S.dia, S.otro);
-      return;
-    }
-    pintarPrincipal(S.dia, S.otro, false);
-    pintarAmbiente(S.dia, S.otro);
-    pintarResumen();
+    pintarTodo(false);
   }).catch(function (e) {
     if (e && e.name === 'AbortError') return;
     if (seq !== S.seq) return;
@@ -999,13 +1211,18 @@ function mostrar(opciones) {
   });
 }
 
-function ir(d, opciones) {
-  opciones = opciones || {};
+/* delta: días que se ha movido con ◀ ▶; el día comparado se mueve lo mismo (la comparación es relativa) */
+function ir(d, delta) {
   var hoy = diaDeHoy();
   if (d && d > hoy) d = hoy;
+  if (S.c && delta && S.d) {
+    var c = sumaDias(S.c, delta);
+    S.c = c > hoy ? null : c;
+  }
   S.d = d;
   if (S.c && S.c === S.d) S.c = null;
-  escribirURL(opciones.reemplazar);
+  if (!S.c) S.apilado = false;
+  escribirURL();
   mostrar();
 }
 
@@ -1028,15 +1245,12 @@ function refrescar() {
   pedir('day/' + dia.d + '?tras=' + encodeURIComponent(dia.cur), { cache: 'no-store' }).then(function (j) {
     var nuevos = fusionar(dia, decodificar(j));
     if (S.dia !== dia) return;
-    if (nuevos) { pintarPrincipal(dia, S.otro, true); pintarAmbiente(dia, S.otro); pintarResumen(); pintarBarra(); }
+    if (nuevos) { pintarBarra(); pintarTodo(true); }
     toast(nuevos ? nuevos + ' lecturas nuevas' : 'Sin lecturas nuevas');
   }).catch(function () { toast('No se ha podido refrescar'); })
     .then(function () { boton.disabled = false; });
 }
 
-/* ════════════════════════════════════════════════════════════════════════
-   Comparación
-   ════════════════════════════════════════════════════════════════════════ */
 function comparar(c) {
   S.c = c && c !== S.d ? c : null;
   if (!S.c) S.apilado = false;
@@ -1077,11 +1291,12 @@ function abrirCalendario() {
 /* ════════════════════════════════════════════════════════════════════════
    Arranque y eventos
    ════════════════════════════════════════════════════════════════════════ */
+/* Rehace todos los gráficos (al arrancar y al cambiar de modo día/noche) */
 function construirGraficos() {
-  [G.principal, G.comparado, H.spo2, H.bpm].concat(AMB.map(function (d) { return A[d.id]; })).forEach(function (c) { if (c && c.destroy) c.destroy(); });
-  G.principal = G.comparado = H.spo2 = H.bpm = null; A = {};
+  destruirPrincipal();
+  [H.spo2, H.bpm].concat(AMB.map(function (d) { return A[d.id]; })).forEach(function (c) { if (c && c.destroy) c.destroy(); });
+  H.spo2 = H.bpm = null; A = {};
   aplicarTemaHC();
-  crearPrincipal();
   crearAmbiente();
 }
 
@@ -1090,16 +1305,28 @@ function iniciar() {
     estado('error', 'No se ha podido cargar la librería de gráficos. Comprueba la conexión y recarga la página.');
     return;
   }
+  iniciarContador();
   leerURL();
   construirGraficos();
+  $('pista').textContent = window.matchMedia('(pointer: coarse)').matches
+    ? 'Dos dedos para ampliar o reducir. Con el gráfico ampliado, arrastra con un dedo para desplazarlo. La franja inferior muestra el pulso de toda la noche y también sirve para moverse.'
+    : 'Arrastra sobre el gráfico para ampliar un tramo. Ctrl (o ⌘) + rueda amplía y reduce; Mayús + arrastrar desplaza. La franja inferior muestra el pulso de toda la noche.';
 
-  $('b-ant').onclick = function () { if (S.d) ir(sumaDias(S.d, -1)); };
-  $('b-sig').onclick = function () { if (S.d && S.d < diaDeHoy()) ir(sumaDias(S.d, 1)); };
+  $('b-ant').onclick = function () { if (S.d) ir(sumaDias(S.d, -1), -1); };
+  $('b-sig').onclick = function () { if (S.d && S.d < diaDeHoy()) ir(sumaDias(S.d, 1), 1); };
   $('b-ultima').onclick = function () { S.d = null; S.c = null; S.apilado = false; history.pushState(null, '', location.pathname); mostrar(); };
   $('b-refrescar').onclick = refrescar;
-  $('b-apilar').onclick = function () { S.apilado = !S.apilado; escribirURL(); pintarBarra(); if (S.dia) { pintarPrincipal(S.dia, S.otro, true); pintarResumen(); } };
-  $('sel-grupo').onchange = aplicarAgrupacion;
-  $('chk-auto').onchange = function () { [G.principal, G.comparado].forEach(function (c) { if (c) aplicarEjeY(c); }); };
+  $('b-apilar').onclick = function () { S.apilado = !S.apilado; escribirURL(); pintarBarra(); pintarTodo(true); };
+  $('sel-grupo').onchange = function () { if (S.dia && S.dia.dt.length) { pintarPrincipal(S.dia, S.otro, true); pintarResumen(); } };
+  $('chk-auto').onchange = function () { if (S.dia && S.dia.dt.length) { pintarPrincipal(S.dia, S.otro, true); pintarResumen(); } };
+  $('b-tema').onclick = function () {
+    var claro = !esClaro();
+    document.documentElement.dataset.tema = claro ? 'claro' : 'oscuro';
+    try { localStorage.setItem('monitor.tema', claro ? 'claro' : 'oscuro'); } catch (e) {}
+    construirGraficos();
+    pintarBarra();
+    pintarTodo(true);
+  };
 
   $('calendario').addEventListener('toggle', function (e) {
     if (e.newState === 'open') abrirCalendario(); else S.eligiendoComparado = false;
@@ -1131,11 +1358,6 @@ function iniciar() {
   });
   window.addEventListener('popstate', function () { leerURL(); mostrar(); });
 
-  // Cambio de tema del sistema: se rehacen los gráficos con los colores nuevos
-  mqClaro.addEventListener('change', function () {
-    construirGraficos();
-    if (S.dia && S.dia.dt.length) { pintarPrincipal(S.dia, S.otro, false); pintarAmbiente(S.dia, S.otro); pintarResumen(); }
-  });
   // En el móvil el ambiente empieza plegado
   if (window.innerWidth <= 768) $('sec-amb').open = false;
   $('sec-amb').addEventListener('toggle', function () { if ($('sec-amb').open) AMB.forEach(function (d) { if (A[d.id]) A[d.id].reflow(); }); });
