@@ -223,7 +223,7 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
         </select>
       </label>
       <span id="info-grupo" title="Tiempo que resume cada punto ahora mismo"></span>
-      <label title="Desmarcado: escala fija 60–105 y PI 0–5 (se amplía si los datos se salen)">
+      <label title="Desmarcado: escala fija 60–105 y PI 0–5; lo que se salga no se ve. Marcado: la escala se ajusta a los datos.">
         <input type="checkbox" id="chk-auto"> Eje Y automático
       </label>
       <span class="hueco"></span>
@@ -557,7 +557,6 @@ function aplicarTemaHC() {
       maskFill: esClaro() ? 'rgba(75,54,201,0.12)' : 'rgba(255,255,255,0.1)',
       series: { color: '#7798BF', lineColor: '#A6C7ED' }, xAxis: { gridLineColor: rejilla, labels: { style: { color: tenue } } }
     },
-    scrollbar: { barBackgroundColor: tenue, barBorderColor: tenue, buttonBackgroundColor: boton, buttonBorderColor: borde, trackBackgroundColor: boton, trackBorderColor: borde },
     rangeSelector: {
       buttonTheme: {
         fill: boton, stroke: borde, style: { color: texto },
@@ -776,16 +775,21 @@ function opcionesPrincipal(o) {
       spacingRight: 6, spacingLeft: 6,
       events: { redraw: function () { if (!o.secundaria) infoGrupo(this); }, load: function () { if (!o.secundaria) infoGrupo(this); } }
     },
-    navigator: { enabled: !o.secundaria, adaptToUpdatedData: true, baseSeries: 'bpm', series: { pointPlacement: 'between' } },
-    scrollbar: { enabled: !o.secundaria, liveRedraw: false },
+    // El navegador muestra siempre el pulso de toda la noche a 1 minuto por punto, sea cual sea la agrupación
+    // de arriba y aunque la serie BPM esté desactivada en la leyenda: lleva sus propios datos y se apoya en la
+    // serie auxiliar "c_rango", que el usuario no puede ocultar (si se apoyara en BPM, Highcharts lo ocultaría con ella).
+    navigator: { enabled: !o.secundaria, baseSeries: 'c_rango',
+                 series: { data: d.bpm.slice(), pointPlacement: 'between', dataGrouping: { enabled: true, forced: true, units: [['minute', [1]]] } } },
+    scrollbar: { enabled: false },      // la ventana del navegador ya permite moverse; la barra era redundante
     title: { text: o.titulo, style: { fontSize: '15px' } },
     xAxis: { type: 'datetime', events: { afterSetExtremes: function (e) { alCambiarRango(this.chart, e); } } },
     yAxis: [
-      // Eje fijo 60–105 y PI 0–5 como en dash3, pero se amplía si los datos se salen (nada se corta)
+      // Eje fijo como en dash3: 60–105 y PI 0–5, pase lo que pase con los datos o con las series activas.
+      // Lo que se salga de ese rango no se ve; para verlo, "Eje Y automático".
       M({ labels: { align: 'right', x: -4 }, title: { text: estrecho ? '' : 'SpO2 y pulso' }, endOnTick: false, startOnTick: false, showLastLabel: true, showEmpty: false },
-        auto ? {} : { softMin: 60, softMax: 105 }),
+        auto ? {} : { min: 60, max: 105 }),
       M({ labels: { align: 'left', x: 8 }, title: { text: estrecho ? '' : 'P.I.' }, top: '75%', height: '25%', offset: 0, showEmpty: false, endOnTick: false, startOnTick: false },
-        auto ? {} : { softMin: 0, softMax: 5 }),
+        auto ? {} : { min: 0, max: 5 }),
       { opposite: false, labels: { align: 'left', x: 4, style: { fontSize: '10px' } }, title: { text: estrecho ? '' : 'PVI' }, gridLineWidth: 0, lineWidth: 0, tickLength: 0, offset: 0, showEmpty: false, tickAmount: 4 }
     ],
     legend: { enabled: true },
@@ -812,6 +816,14 @@ function opcionesPrincipal(o) {
   };
 }
 
+/* Highcharts calcula la agrupación del primer dibujo antes de tener el eje asentado, y a veces elige un
+   intervalo distinto del que usará en cualquier redibujado posterior. Un segundo pase deja desde el
+   principio el mismo resultado que se verá después. */
+function asentar(chart) {
+  chart.series.forEach(function (s) { s.isDirty = true; });
+  chart.redraw(false);
+}
+
 function destruirPrincipal() {
   quitarCursorAmbiente();
   if (G.principal) { G.principal.destroy(); G.principal = null; }
@@ -834,6 +846,7 @@ function pintarPrincipal(dia, otro, conservarRango) {
     titulo: 'Oxígeno y pulso' + (otro ? ' · ' + diaCorto(dia.d) + (superpuesto ? ' y ' + diaCorto(otro.d) + ' (discontinua)' : '') : ''),
     aux: apilado && c.ini != null ? [c.ini, c.fin] : null, todo: !rango
   }));
+  asentar(G.principal);
   prepararInteraccion(G.principal, true);
 
   var caja = $('g-comparado');
@@ -843,6 +856,7 @@ function pintarPrincipal(dia, otro, conservarRango) {
       secundaria: true, datos: c, otros: null, titulo: 'Oxígeno y pulso · ' + diaCorto(otro.d) + ' (a la misma hora)',
       aux: d.ini != null ? [d.ini, d.fin] : null, todo: true
     }));
+    asentar(G.comparado);
     prepararInteraccion(G.comparado, false);
     var ex = G.principal.xAxis[0].getExtremes();
     G.sincronizando = true;
