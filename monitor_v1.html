@@ -588,7 +588,7 @@ function obtenerLista(forzar) {
   return pedir('days', { cache: 'no-cache' }).then(function (j) {
     var ix = {}; j.cols.forEach(function (c, i) { ix[c] = i; });
     var mapa = new Map();
-    j.dias.forEach(function (f) { mapa.set(f[ix.d], { n_seg: f[ix.n_seg], dur_s: f[ix.dur_s], spo2_avg: f[ix.spo2_avg], spo2_min: f[ix.spo2_min], s_lt90: f[ix.s_lt90] }); });
+    j.dias.forEach(function (f) { mapa.set(f[ix.d], { dur_s: f[ix.dur_s], spo2_avg: f[ix.spo2_avg], bpm_avg: f[ix.bpm_avg] }); });
     store.lista = { mapa: mapa, orden: j.dias.map(function (f) { return f[ix.d]; }) };
     store.listaHora = Date.now();
     return store.lista;
@@ -1514,7 +1514,9 @@ function pintarCalendario() {
     var clases = (info ? 'con-datos' : '') + (d === S.d ? ' sel' : '') + (d === S.c ? ' cmp' : '');
     // Intensidad del fondo: de 0,12 a 0,42. Con más, el número del día se leía mal (contraste por debajo de 4,5)
     var nivel = info ? 0.12 + 0.30 * Math.min(info.dur_s / 36000, 1) : 0;
-    var titulo = info ? hms(info.dur_s) + ' grabadas · SpO2 media ' + num(info.spo2_avg, 1) : (futuro ? '' : 'Sin lecturas');
+    var titulo = info ? hms(info.dur_s) + ' grabadas · SpO2 media ' + num(info.spo2_avg, 1) +
+                        (info.bpm_avg != null ? ' · pulso medio ' + num(info.bpm_avg, 1) + ' lpm' : '')
+                      : (futuro ? '' : 'Sin lecturas');
     var desactivado = futuro || (lista && !info) || (S.eligiendoComparado && d === S.d);
     html += '<button data-d="' + d + '" class="' + clases + '" style="--nivel:' + nivel + '" title="' + titulo + '"' +
             ' aria-label="Día ' + n + (titulo ? ': ' + titulo : '') + '"' + (d === S.d ? ' aria-current="date"' : '') +
