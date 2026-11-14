@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Monitor · oxígeno y ambiente</title>
+<style>
+/* ── Colores: tema oscuro (el de dash3) y tema claro ───────────────────── */
+:root {
+  --fondo: #101a33;
+  --tarjeta: #16213e;
+  --borde: #0f3460;
+  --texto: #e0e0e0;
+  --tenue: #a3aabb;
+  --rejilla: #1e3a5f;
+  --acento: #a5b4fc;
+  --acento-fuerte: #7b2ff7;
+  --boton: #1a1a2e;
+  --aviso: #ffcf70;
+  --sombra: 0 4px 18px rgba(0, 0, 0, .35);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --fondo: #f1f4f9;
+    --tarjeta: #ffffff;
+    --borde: #cfd6e3;
+    --texto: #1c2333;
+    --tenue: #566074;
+    --rejilla: #e1e6ef;
+    --acento: #4b36c9;
+    --acento-fuerte: #4b36c9;
+    --boton: #eef1f7;
+    --aviso: #8a5a00;
+    --sombra: 0 2px 10px rgba(20, 30, 60, .10);
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+}
+button, select { font: inherit; color: inherit; }
+main { max-width: 1500px; margin: 0 auto; padding: 12px 12px 32px; display: grid; gap: 14px; }
+
+/* ── Barra de fecha: arriba en pantalla grande, abajo en el móvil ──────── */
+.barra {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;
+  padding: 8px 10px;
+  background: var(--tarjeta);
+  border-bottom: 1px solid var(--borde);
+  box-shadow: var(--sombra);
+}
+.barra button {
+  min-height: 40px; min-width: 40px; padding: 6px 12px;
+  background: var(--boton); border: 1px solid var(--borde); border-radius: 8px; cursor: pointer;
+}
+.barra button:hover:not(:disabled) { border-color: var(--acento); }
+.barra button:disabled { opacity: .4; cursor: default; }
+.barra .fecha { font-weight: 600; min-width: 15em; }
+.barra .fecha small { display: block; font-weight: 400; color: var(--tenue); font-size: 12px; }
+.barra .activo { border-color: var(--acento); color: var(--acento); }
+#aviso-reloj {
+  flex-basis: 100%; text-align: center; font-size: 13px; color: var(--aviso);
+}
+#aviso-linea { flex-basis: 100%; text-align: center; font-size: 13px; color: var(--tenue); min-height: 0; }
+
+.tarjeta {
+  background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px;
+  box-shadow: var(--sombra); padding: 10px; min-width: 0;
+}
+.controles { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 2px 4px 8px; font-size: 13px; color: var(--tenue); }
+.controles select, .controles button {
+  background: var(--boton); border: 1px solid var(--borde); border-radius: 6px; padding: 5px 8px; color: var(--texto); cursor: pointer;
+}
+.controles label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.controles .hueco { flex: 1; }
+
+/* El gráfico no secuestra el desplazamiento vertical de la página */
+.highcharts-container, .highcharts-container svg { touch-action: pan-y !important; }
+#g-principal { height: 620px; }
+#g-comparado { height: 520px; margin-top: 10px; }
+.estado {
+  display: none; padding: 26px 12px; text-align: center; color: var(--tenue);
+}
+.estado.visible { display: block; }
+.estado button {
+  margin-top: 10px; padding: 8px 14px; background: var(--boton); border: 1px solid var(--acento);
+  border-radius: 8px; color: var(--texto); cursor: pointer;
+}
+
+/* ── Indicadores ───────────────────────────────────────────────────────── */
+.tiles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.tile { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.tile h3 { margin: 0 0 4px; font-size: 12px; font-weight: 600; color: var(--tenue); display: flex; align-items: center; gap: 6px; }
+.tile h3 i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+.tile .valor { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.tile .valor small { font-size: 13px; font-weight: 400; color: var(--tenue); }
+.tile .linea { font-size: 13px; color: var(--tenue); font-variant-numeric: tabular-nums; }
+.tile .otro { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--borde); font-size: 13px; font-variant-numeric: tabular-nums; }
+.tile .otro b { font-weight: 600; }
+.tile .dif { color: var(--tenue); }
+.alcance { font-size: 12px; color: var(--tenue); padding: 0 4px; }
+
+.dos { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+details.amb > summary { cursor: pointer; font-weight: 600; padding: 4px; }
+.rejilla-amb { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; margin-top: 8px; }
+.rejilla-amb > div { min-width: 0; height: 290px; }
+.rejilla-amb > div:last-child { grid-column: 1 / -1; }
+
+/* ── Calendario y menú de comparar (popover) ───────────────────────────── */
+[popover] {
+  position: fixed; inset: auto; top: 62px; left: 50%; transform: translateX(-50%); margin: 0;
+  background: var(--tarjeta); color: var(--texto); border: 1px solid var(--borde); border-radius: 12px;
+  box-shadow: var(--sombra); padding: 12px; max-width: calc(100vw - 16px);
+}
+[popover]::backdrop { background: rgba(0, 0, 0, .25); }
+.cal-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.cal-cab button { background: var(--boton); border: 1px solid var(--borde); border-radius: 8px; min-width: 40px; min-height: 36px; cursor: pointer; }
+.cal-cab strong { text-transform: capitalize; }
+.cal-rejilla { display: grid; grid-template-columns: repeat(7, 40px); gap: 4px; justify-content: center; }
+.cal-rejilla span { font-size: 11px; color: var(--tenue); text-align: center; }
+.cal-rejilla button {
+  height: 40px; border-radius: 8px; border: 1px solid transparent; background: transparent; cursor: pointer;
+  font-variant-numeric: tabular-nums; position: relative;
+}
+.cal-rejilla button.con-datos { background: color-mix(in srgb, var(--acento) calc(var(--nivel, .4) * 100%), transparent); border-color: var(--borde); }
+.cal-rejilla button:disabled { color: var(--tenue); opacity: .45; cursor: default; }
+.cal-rejilla button.sel { outline: 2px solid var(--texto); outline-offset: 1px; font-weight: 700; }
+.cal-rejilla button.cmp { outline: 2px dashed var(--texto); outline-offset: 1px; }
+.cal-pie { margin-top: 8px; font-size: 12px; color: var(--tenue); text-align: center; max-width: 304px; }
+#menu-comparar { display: none; min-width: 230px; }
+#menu-comparar:popover-open { display: grid; gap: 6px; }
+#menu-comparar button { text-align: left; padding: 9px 12px; background: var(--boton); border: 1px solid var(--borde); border-radius: 8px; cursor: pointer; }
+#toast {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 50;
+  background: var(--texto); color: var(--tarjeta); padding: 8px 14px; border-radius: 8px; font-size: 13px;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+#toast.visible { opacity: .95; }
+footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12px 24px; }
+
+@media (max-width: 768px) {
+  body { font-size: 14px; }
+  main { padding: 8px 8px 96px; gap: 10px; }
+  .barra { position: fixed; top: auto; bottom: 0; left: 0; right: 0; border-bottom: 0; border-top: 1px solid var(--borde); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .barra .fecha { order: -1; flex-basis: 100%; min-width: 0; }
+  .barra button { flex: 1; padding: 6px 2px; font-size: 13px; min-width: 0; }
+  #g-principal { height: 470px; }
+  #g-comparado { height: 400px; }
+  .dos, .rejilla-amb { grid-template-columns: 1fr; }
+  .rejilla-amb > div { height: 250px; }
+  .tiles { grid-template-columns: 1fr 1fr; }
+  .tile .valor { font-size: 19px; }
+  .tile .valor small { display: block; }
+  [popover] { top: auto; bottom: 120px; }
+  #toast { bottom: 130px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="barra" aria-label="Elegir día">
+  <button id="b-ant" title="Día anterior (tecla ←)" aria-label="Día anterior">◀</button>
+  <button id="b-fecha" class="fecha" popovertarget="calendario" title="Abrir el calendario">Cargando…</button>
+  <button id="b-sig" title="Día siguiente (tecla →)" aria-label="Día siguiente">▶</button>
+  <button id="b-ultima" title="Ir a la última noche con datos">Última</button>
+  <button id="b-refrescar" title="Descargar solo las lecturas nuevas" aria-label="Refrescar" style="font-size:19px;line-height:1">↻</button>
+  <button id="b-comparar" popovertarget="menu-comparar" title="Comparar con otro día">Comparar</button>
+  <div id="aviso-reloj" hidden></div>
+</nav>
+
+<div id="calendario" popover>
+  <div class="cal-cab">
+    <button id="cal-ant" aria-label="Mes anterior">◀</button>
+    <strong id="cal-mes"></strong>
+    <button id="cal-sig" aria-label="Mes siguiente">▶</button>
+  </div>
+  <div class="cal-rejilla" id="cal-rejilla"></div>
+  <div class="cal-pie" id="cal-pie"></div>
+</div>
+
+<div id="menu-comparar" popover>
+  <button data-cmp="-1">Con el día anterior</button>
+  <button data-cmp="-7">Con la misma noche de la semana anterior</button>
+  <button data-cmp="elegir">Elegir el día en el calendario…</button>
+  <button data-cmp="quitar">Quitar la comparación</button>
+</div>
+
+<main>
+  <section class="tarjeta">
+    <div class="controles">
+      <label>Agrupación
+        <select id="sel-grupo" title="Cuántos píxeles agrupa cada punto del gráfico">
+          <option value="">Sin agrupar (1 s)</option>
+          <option value="5">5 px</option><option value="10">10 px</option><option value="25">25 px</option>
+          <option value="50" selected>50 px</option><option value="100">100 px</option><option value="200">200 px</option>
+        </select>
+      </label>
+      <label title="Desmarcado: escala fija 60–105 y PI 0–5 (se amplía si los datos se salen)">
+        <input type="checkbox" id="chk-auto"> Eje Y automático
+      </label>
+      <span class="hueco"></span>
+      <button id="b-apilar" hidden title="Cambiar entre gráficas superpuestas y apiladas">Ver apiladas</button>
+    </div>
+    <div id="estado" class="estado" role="status"></div>
+    <div id="g-principal"></div>
+    <div id="g-comparado" hidden></div>
+  </section>
+
+  <div class="alcance" id="alcance"></div>
+  <section class="tiles" id="tiles" aria-label="Resumen"></section>
+
+  <section class="dos">
+    <div class="tarjeta"><div id="h-spo2" style="height:290px"></div></div>
+    <div class="tarjeta"><div id="h-bpm" style="height:340px"></div></div>
+  </section>
+
+  <details class="tarjeta amb" id="sec-amb" open>
+    <summary>Ambiente de la habitación <span id="amb-nota" style="font-weight:400;color:var(--tenue)"></span></summary>
+    <div class="rejilla-amb">
+      <div id="a-temp"></div><div id="a-hum"></div><div id="a-pres"></div><div id="a-ruido"></div><div id="a-co2"></div>
+    </div>
+  </details>
+</main>
+
+<footer>Pulsioxímetro Masimo · ambiente Netatmo · las horas son las del reloj del pulsioxímetro</footer>
+<div id="toast" role="status"></div>
+
+<!-- Highcharts Stock 12.6.0 desde CDN, con versión fija y huella de integridad.
+     Hay una copia de respaldo de estos ficheros en vendor/ (ver vendor/HUELLAS.txt). -->
+<script src="https://cdn.jsdelivr.net/npm/highcharts@12.6.0/highstock.js" integrity="sha384-qtWus+qH5Dga6ez4UlOce8TRdYTMgZMhLo/ArEfuPWx9RJGG+NU41vSVsiSFJedN" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/highcharts@12.6.0/highcharts-more.js" integrity="sha384-x6/kglvEzn1s2HFbrxjVMd5brYcMbTBmMJ4v3wGouJbNZrTRQmwPlEXAuBiQvcQZ" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/highcharts@12.6.0/modules/accessibility.js" integrity="sha384-sS4HBvki1hEKWbZcSkuClp+4/vLJOuzc6ns5B+G8Yuzme2a+hYQ+DZNJMI11XefP" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/highcharts@12.6.0/modules/exporting.js" integrity="sha384-TJE9ncU0vXo5KwYXnmu7CAHlkWo/9nOhkrBOhU6kS72Ofi4FzykryDfh+eqxniIc" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/highcharts@12.6.0/modules/export-data.js" integrity="sha384-LyBxgyr7zYolp2N2sb66TW4ia0O2OQgB2LmYesJ++QzVNKqeDDKyHSwuPcTXTp15" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/highcharts@12.6.0/modules/offline-exporting.js" integrity="sha384-7a1QWsi+03U3sy2B//6IXEiCUWOnRyqVLFUZu7yKu8iodDz8hK1+OLjZIJvezWEW" crossorigin="anonymous"></script>
+
+<script>
+(function () {
+'use strict';
+
+/* ════════════════════════════════════════════════════════════════════════
+   Configuración
+   ════════════════════════════════════════════════════════════════════════ */
+var CFG = {
+  // Si la página la sirve Oracle, la API está en el mismo origen; si no, en esta dirección.
+  apiBase: /oraclecloudapps\.com$/.test(location.hostname)
+    ? location.origin + '/ords/monitor/api/v1/'
+    : 'https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/monitor/api/v1/',
+  diasEnCache: 15,          // días que se guardan en memoria
+  avisoRelojS: 120,         // desfase del reloj a partir del cual se avisa
+  horaInicio: 18            // se actualiza con lo que diga la API
+};
+var DIA_MS = 86400000;
+
+/* Colores de las series. Oscuro: los de dash3. Claro: validados aparte. */
+var PALETAS = {
+  oscuro: {
+    spo2Banda: '#2b908f', spo2: '#90ee7e', bpm: '#f45b5b', pi: '#aaeeee', pvi: '#f7a35c', piBajo: '#ff4d4d',
+    temp: '#f45b5b', tempExt: '#8085e9', hum: '#7cb5ec', humExt: '#e4d354', pres: '#90ee7e', presExt: '#ff9f7f',
+    ruido: '#aaeeee', co2: '#c9a0ff', otroOpacidad: 0.8
+  },
+  claro: {
+    spo2Banda: '#7fb6dc', spo2: '#1b7fbd', bpm: '#d0393b', pi: '#7b4fd1', pvi: '#c96a0a', piBajo: '#d0393b',
+    temp: '#d0393b', tempExt: '#4f55c8', hum: '#1b7fbd', humExt: '#b0580f', pres: '#2a8f3a', presExt: '#b0478f',
+    ruido: '#1a8fa3', co2: '#7b4fd1', otroOpacidad: 0.9
+  }
+};
+var mqClaro = window.matchMedia('(prefers-color-scheme: light)');
+function paleta() { return mqClaro.matches ? PALETAS.claro : PALETAS.oscuro; }
+function css(nombre) { return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim(); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   Utilidades de fecha y formato
+   Las horas se tratan como en dash3: la hora de reloj se pinta tal cual (como si fuera UTC).
+   ════════════════════════════════════════════════════════════════════════ */
+function $(id) { return document.getElementById(id); }
+function pad(n) { return String(n).padStart(2, '0'); }
+function parseDia(s) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+  if (!m) return null;
+  var t = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  var d = new Date(t);
+  return (d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3]) ? t : null;
+}
+function fmtDia(ms) {
+  var d = new Date(ms);
+  return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate());
+}
+function sumaDias(s, n) { return fmtDia(parseDia(s) + n * DIA_MS); }
+/* Último día que puede tener datos: la ventana que contiene "ahora" */
+function diaDeHoy() {
+  var n = new Date();
+  var ms = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
+  if (n.getHours() < CFG.horaInicio) ms -= DIA_MS;
+  return fmtDia(ms);
+}
+var fDiaSem = new Intl.DateTimeFormat('es-ES', { weekday: 'short', timeZone: 'UTC' });
+var fMes = new Intl.DateTimeFormat('es-ES', { month: 'short', timeZone: 'UTC' });
+var fMesLargo = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+function limpio(s) { return s.replace('.', ''); }
+function nombreNoche(d) {
+  var a = parseDia(d), b = a + DIA_MS, A = new Date(a), B = new Date(b);
+  var mesA = A.getUTCMonth() !== B.getUTCMonth() ? ' ' + limpio(fMes.format(A)) : '';
+  return 'Noche del ' + limpio(fDiaSem.format(A)) + ' ' + A.getUTCDate() + mesA +
+         ' al ' + limpio(fDiaSem.format(B)) + ' ' + B.getUTCDate() + ' ' + limpio(fMes.format(B)) +
+         (B.getUTCFullYear() !== new Date().getFullYear() ? ' ' + B.getUTCFullYear() : '');
+}
+function diaCorto(d) { var A = new Date(parseDia(d)); return pad(A.getUTCDate()) + '/' + pad(A.getUTCMonth() + 1); }
+function hms(seg) {
+  seg = Math.max(0, Math.round(seg));
+  return pad(Math.floor(seg / 3600)) + 'h' + pad(Math.floor(seg % 3600 / 60)) + 'm' + pad(seg % 60) + 's';
+}
+function horaDe(ms) { var d = new Date(ms); return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); }
+function num(v, dec) { return v == null || isNaN(v) ? '–' : v.toFixed(dec).replace('.', ','); }
+function pct(parte, total) { return total > 0 ? num(parte / total * 100, parte / total < 0.01 && parte > 0 ? 2 : 1) + ' %' : '–'; }
+function toast(texto) {
+  var t = $('toast'); t.textContent = texto; t.classList.add('visible');
+  clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('visible'); }, 2600);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   API y caché en memoria
+   ════════════════════════════════════════════════════════════════════════ */
+var store = {
+  dias: new Map(),          // 'YYYY-MM-DD' -> día decodificado
+  lista: null,              // respuesta de days
+  listaHora: 0,
+  guardar: function (dia) {
+    this.dias.delete(dia.d);
+    this.dias.set(dia.d, dia);
+    while (this.dias.size > CFG.diasEnCache) this.dias.delete(this.dias.keys().next().value);
+  },
+  tomar: function (d) {
+    var x = this.dias.get(d);
+    if (x) { this.dias.delete(d); this.dias.set(d, x); }   // lo más reciente al final
+    return x;
+  }
+};
+
+function pedir(ruta, opciones) {
+  return fetch(CFG.apiBase + ruta, opciones).then(function (r) {
+    if (!r.ok) { var e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+    return r.json();
+  });
+}
+
+/* Convierte el JSON compacto en arrays paralelos, un elemento por segundo */
+function decodificar(j) {
+  var dt = [];
+  if (j.seg) {
+    for (var s = 0; s < j.seg.length; s++) {
+      var ini = j.seg[s][0], n = j.seg[s][1];
+      for (var i = 0; i < n; i++) dt.push(ini + i);
+    }
+  } else if (j.dt) {
+    dt = j.dt;
+  }
+  var cols = {};
+  (j.amb && j.amb.cols || []).forEach(function (c, i) { cols[c] = i; });
+  return {
+    d: j.d, t0: Date.parse(j.t0 + 'Z'), h: j.h, cerrado: j.cerrado, cur: j.cur, offset_s: j.offset_s,
+    dt: dt, spo2: j.spo2 || [], bpm: j.bpm || [], pi100: j.pi100 || [], pvi: j.pvi || [],
+    ambCols: cols, ambDia: (j.amb && j.amb.dia) || [], ambAyer: (j.amb && j.amb.ayer) || [],
+    bajado: Date.now()
+  };
+}
+
+/* Fusiona un refresco incremental: por cada segundo recibido, sustituye o inserta */
+function fusionar(dia, inc) {
+  var nuevos = 0;
+  for (var k = 0; k < inc.dt.length; k++) {
+    var x = inc.dt[k], lo = 0, hi = dia.dt.length;
+    while (lo < hi) { var mid = (lo + hi) >> 1; if (dia.dt[mid] < x) lo = mid + 1; else hi = mid; }
+    if (dia.dt[lo] === x) {
+      dia.spo2[lo] = inc.spo2[k]; dia.bpm[lo] = inc.bpm[k]; dia.pi100[lo] = inc.pi100[k]; dia.pvi[lo] = inc.pvi[k];
+    } else {
+      dia.dt.splice(lo, 0, x); dia.spo2.splice(lo, 0, inc.spo2[k]); dia.bpm.splice(lo, 0, inc.bpm[k]);
+      dia.pi100.splice(lo, 0, inc.pi100[k]); dia.pvi.splice(lo, 0, inc.pvi[k]);
+      nuevos++;
+    }
+  }
+  if (inc.cur) dia.cur = inc.cur;
+  dia.cerrado = inc.cerrado;
+  if (inc.ambDia.length) dia.ambDia = inc.ambDia;
+  dia.bajado = Date.now();
+  return nuevos;
+}
+
+/* Un día: de la caché si está; si no, una petición */
+function obtenerDia(d, senal, forzar) {
+  if (!forzar && d !== 'ultima') {
+    var enCache = store.tomar(d);
+    if (enCache) return Promise.resolve(enCache);
+  }
+  return pedir('day/' + d, { signal: senal, cache: forzar ? 'reload' : 'default' }).then(function (j) {
+    var dia = decodificar(j);
+    CFG.horaInicio = dia.h || CFG.horaInicio;
+    store.guardar(dia);
+    return dia;
+  });
+}
+
+function obtenerLista(forzar) {
+  if (!forzar && store.lista && Date.now() - store.listaHora < 10 * 60000) return Promise.resolve(store.lista);
+  return pedir('days', { cache: 'no-cache' }).then(function (j) {
+    var ix = {}; j.cols.forEach(function (c, i) { ix[c] = i; });
+    var mapa = new Map();
+    j.dias.forEach(function (f) { mapa.set(f[ix.d], { n_seg: f[ix.n_seg], dur_s: f[ix.dur_s], spo2_avg: f[ix.spo2_avg], spo2_min: f[ix.spo2_min], s_lt90: f[ix.s_lt90] }); });
+    store.lista = { mapa: mapa, orden: j.dias.map(function (f) { return f[ix.d]; }) };
+    store.listaHora = Date.now();
+    return store.lista;
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Estado de la página
+   ════════════════════════════════════════════════════════════════════════ */
+var S = {
+  d: null,            // día mostrado
+  c: null,            // día comparado (o null)
+  apilado: false,     // comparación en dos gráficas
+  dia: null, otro: null,
+  seq: 0, ctrl: null,
+  eligiendoComparado: false,
+  calMes: null
+};
+
+function leerURL() {
+  var q = new URLSearchParams(location.search);
+  S.d = parseDia(q.get('d')) != null ? q.get('d') : null;
+  S.c = parseDia(q.get('c')) != null ? q.get('c') : null;
+  S.apilado = q.get('m') === 'ap';
+}
+function escribirURL(reemplazar) {
+  var q = new URLSearchParams();
+  if (S.d) q.set('d', S.d);
+  if (S.c) q.set('c', S.c);
+  if (S.c && S.apilado) q.set('m', 'ap');
+  var url = location.pathname + (q.toString() ? '?' + q : '');
+  if (url === location.pathname + location.search) return;
+  history[reemplazar ? 'replaceState' : 'pushState'](null, '', url);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Tema de Highcharts
+   ════════════════════════════════════════════════════════════════════════ */
+function aplicarTemaHC() {
+  var texto = css('--texto'), tenue = css('--tenue'), rejilla = css('--rejilla'), tarjeta = css('--tarjeta'),
+      borde = css('--borde'), boton = css('--boton'), acento = css('--acento'), fuerte = css('--acento-fuerte');
+  Highcharts.setOptions({
+    time: { timezone: 'UTC' },
+    lang: {
+      locale: 'es', loading: 'Cargando…', noData: 'Sin datos', rangeSelectorZoom: 'Zoom',
+      contextButtonTitle: 'Menú del gráfico', viewFullscreen: 'Pantalla completa', exitFullscreen: 'Salir de pantalla completa',
+      printChart: 'Imprimir', downloadPNG: 'Descargar PNG', downloadJPEG: 'Descargar JPEG', downloadPDF: 'Descargar PDF',
+      downloadSVG: 'Descargar SVG', downloadCSV: 'Descargar CSV', downloadXLS: 'Descargar XLS',
+      viewData: 'Ver tabla de datos', hideData: 'Ocultar tabla de datos', resetZoom: 'Quitar zoom', resetZoomTitle: 'Ver todo'
+    },
+    credits: { enabled: false },
+    accessibility: { enabled: true },
+    exporting: {
+      enabled: true,
+      // Ningún dato sale hacia el servidor de exportación de Highcharts: todo se genera en el navegador
+      fallbackToExportServer: false,
+      local: true,
+      libURL: 'https://code.highcharts.com/12.6.0/lib/',
+      buttons: { contextButton: { menuItems: ['viewFullscreen', 'printChart', 'separator', 'downloadPNG', 'downloadJPEG', 'downloadPDF', 'downloadSVG', 'separator', 'downloadCSV', 'downloadXLS', 'viewData'] } },
+      buttonOptions: { theme: { fill: 'transparent', states: { hover: { fill: borde }, select: { fill: borde } } } },
+      menuItemHoverStyle: { background: fuerte, color: '#ffffff' },
+      menuStyle: { background: tarjeta, border: '1px solid ' + borde },
+      menuItemStyle: { color: texto }
+    },
+    chart: { backgroundColor: tarjeta, style: { fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' } },
+    title: { style: { color: texto } },
+    subtitle: { style: { color: tenue } },
+    xAxis: { gridLineColor: rejilla, labels: { style: { color: tenue } }, lineColor: rejilla, tickColor: rejilla, title: { style: { color: tenue } } },
+    yAxis: { gridLineColor: rejilla, labels: { style: { color: tenue } }, lineColor: rejilla, tickColor: rejilla, title: { style: { color: tenue } } },
+    legend: { backgroundColor: 'transparent', itemStyle: { color: texto }, itemHoverStyle: { color: acento }, itemHiddenStyle: { color: tenue, opacity: 0.5 } },
+    tooltip: { backgroundColor: tarjeta, borderColor: borde, style: { color: texto, fontSize: '13px' } },
+    navigator: {
+      handles: { backgroundColor: tenue, borderColor: texto }, outlineColor: tenue,
+      maskFill: mqClaro.matches ? 'rgba(75,54,201,0.12)' : 'rgba(255,255,255,0.1)',
+      series: { color: '#7798BF', lineColor: '#A6C7ED' }, xAxis: { gridLineColor: rejilla, labels: { style: { color: tenue } } }
+    },
+    scrollbar: { barBackgroundColor: tenue, barBorderColor: tenue, buttonBackgroundColor: boton, buttonBorderColor: borde, trackBackgroundColor: boton, trackBorderColor: borde },
+    rangeSelector: {
+      buttonTheme: {
+        fill: boton, stroke: borde, style: { color: texto },
+        states: { hover: { fill: fuerte, stroke: fuerte, style: { color: '#fff' } }, select: { fill: fuerte, stroke: fuerte, style: { color: '#fff' } } }
+      },
+      inputStyle: { backgroundColor: boton, color: texto }, labelStyle: { color: tenue }
+    },
+    loading: { style: { backgroundColor: tarjeta, opacity: 0.85 }, labelStyle: { color: texto, fontSize: '16px' } }
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Gráfica principal (misma disposición que dash3)
+   ════════════════════════════════════════════════════════════════════════ */
+var G = { principal: null, comparado: null, sincronizando: false };
+
+/* Vela estadística del pulso: cuerpo = media ± desviación media, mechas = mínimo y máximo */
+function aproximacionVela(valores) {
+  if (!valores || !valores.length) return null;
+  var suma = 0, max = -Infinity, min = Infinity, i;
+  for (i = 0; i < valores.length; i++) { suma += valores[i]; if (valores[i] > max) max = valores[i]; if (valores[i] < min) min = valores[i]; }
+  var media = suma / valores.length, dif = 0;
+  for (i = 0; i < valores.length; i++) dif += Math.abs(valores[i] - media);
+  var desv = dif / valores.length;
+  return [media + desv, max, min, media - desv];
+}
+
+function agrupacion(valor) {
+  return valor ? { enabled: true, groupPixelWidth: valor } : { enabled: false };
+}
+
+function opcionesPrincipal(esSecundaria, titulo) {
+  var P = paleta(), gpw = +$('sel-grupo').value || null, estrecho = window.innerWidth < 700;
+  var otro = { dashStyle: 'ShortDash', lineWidth: 1.75, opacity: P.otroOpacidad, showInLegend: false, showInNavigator: false, turboThreshold: 0, pointPlacement: 'between', data: [] };
+  var series = [
+    { type: 'columnrange', name: 'O2%', id: 'spo2r', color: P.spo2Banda, zIndex: 1, opacity: 0.95, turboThreshold: 0, pointPlacement: 'between' },
+    { type: 'spline', name: 'O2%', id: 'spo2', color: P.spo2, lineWidth: 2.25, zIndex: 2, turboThreshold: 0, pointPlacement: 'between' },
+    { type: 'spline', name: 'BPM', id: 'bpm', color: P.bpm, lineWidth: 2.25, zIndex: 3, turboThreshold: 0, pointPlacement: 'between' },
+    { type: 'candlestick', name: 'bpm stats', id: 'bpm_stats', zIndex: 0, color: Highcharts.color(P.bpm).setOpacity(0.7).get(), upColor: Highcharts.color(P.bpm).setOpacity(0.7).get(),
+      lineColor: P.bpm, upLineColor: P.bpm, turboThreshold: 0, pointPlacement: 'between', visible: false,
+      dataGrouping: { enabled: !!gpw, groupPixelWidth: gpw || 50, approximation: aproximacionVela } },
+    { type: 'spline', yAxis: 1, name: 'PI', id: 'pi', color: P.pi, lineWidth: 2, zIndex: 4, turboThreshold: 0, pointPlacement: 'between', visible: false, negativeColor: P.piBajo, threshold: 1 },
+    { type: 'spline', yAxis: 2, name: 'PVI', id: 'pvi', color: P.pvi, lineWidth: 2, zIndex: 5, turboThreshold: 0, pointPlacement: 'between', tooltip: { valueDecimals: 0 } }
+  ];
+  // Serie invisible con dos puntos sin valor: solo sirve para que el eje de tiempo abarque también el otro día
+  series.push({ type: 'line', id: 'c_rango', name: 'rango', lineWidth: 0, showInLegend: false, showInNavigator: false, enableMouseTracking: false,
+                marker: { enabled: false }, dataGrouping: { enabled: false }, data: [] });
+  if (!esSecundaria) {
+    // Series del día comparado (superpuestas): mismo color, discontinuas
+    series.push(
+      Highcharts.merge(otro, { type: 'spline', name: 'O2% (otro día)', id: 'c_spo2', color: P.spo2, zIndex: 2 }),
+      Highcharts.merge(otro, { type: 'spline', name: 'BPM (otro día)', id: 'c_bpm', color: P.bpm, zIndex: 3 }),
+      Highcharts.merge(otro, { type: 'spline', yAxis: 1, name: 'PI (otro día)', id: 'c_pi', color: P.pi, zIndex: 4, visible: false }),
+      Highcharts.merge(otro, { type: 'spline', yAxis: 2, name: 'PVI (otro día)', id: 'c_pvi', color: P.pvi, zIndex: 5, visible: false, tooltip: { valueDecimals: 0 } })
+    );
+  }
+  return {
+    chart: {
+      zooming: { type: 'x', pinchType: 'x', singleTouch: false },   // un dedo desplaza la página; dos dedos amplían
+      panning: { enabled: true, type: 'x' },
+      panKey: 'shift',
+      spacingRight: 6, spacingLeft: 6
+    },
+    navigator: { enabled: !esSecundaria, adaptToUpdatedData: true, baseSeries: 'bpm', series: { pointPlacement: 'between' } },
+    scrollbar: { enabled: !esSecundaria, liveRedraw: false },
+    title: { text: titulo || 'Oxígeno y pulso', style: { fontSize: '15px' } },
+    xAxis: { type: 'datetime', events: { afterSetExtremes: function (e) { alCambiarRango(this.chart, e); } } },
+    yAxis: [
+      { labels: { align: 'right', x: -4 }, title: { text: estrecho ? '' : 'SpO2 y pulso' }, endOnTick: false, startOnTick: false, showLastLabel: true, showEmpty: false },
+      { labels: { align: 'left', x: 8 }, title: { text: estrecho ? '' : 'P.I.' }, top: '75%', height: '25%', offset: 0, showEmpty: false, endOnTick: false, startOnTick: false },
+      { opposite: false, labels: { align: 'left', x: 4, style: { fontSize: '10px' } }, title: { text: estrecho ? '' : 'PVI' }, gridLineWidth: 0, lineWidth: 0, tickLength: 0, offset: 0, showEmpty: false, tickAmount: 4 }
+    ],
+    legend: { enabled: true },
+    plotOptions: {
+      series: { gapSize: 60, dataGrouping: agrupacion(gpw), states: { inactive: { opacity: 0.6 } } },
+      line: { connectNulls: false },
+      columnrange: { pointPadding: -0.25, minPointLength: 5 }
+    },
+    tooltip: { valueDecimals: 2, style: { fontSize: '13px' } },
+    rangeSelector: esSecundaria ? { enabled: false } : {
+      buttons: [
+        { type: 'minute', count: 1, text: '1M' }, { type: 'minute', count: 10, text: '10M' },
+        { type: 'hour', count: 1, text: '1H' }, { type: 'all', text: 'Todo' }
+      ],
+      selected: 3, inputEnabled: !estrecho
+    },
+    series: series
+  };
+}
+
+function crearPrincipal() {
+  G.principal = Highcharts.stockChart('g-principal', opcionesPrincipal(false));
+  aplicarEjeY(G.principal);
+  var cont = G.principal.container;
+  cont.addEventListener('mousemove', moverCursorAmbiente);
+  cont.addEventListener('touchmove', moverCursorAmbiente, { passive: true });
+  cont.addEventListener('mouseleave', quitarCursorAmbiente);
+}
+
+/* Eje fijo: 60–105 y PI 0–5 como en dash3, pero se amplía si los datos se salen (nada se corta) */
+function aplicarEjeY(chart) {
+  var auto = $('chk-auto').checked;
+  chart.yAxis[0].update(auto ? { softMin: null, softMax: null, min: null, max: null } : { softMin: 60, softMax: 105, min: null, max: null }, false);
+  chart.yAxis[1].update(auto ? { softMin: null, softMax: null } : { softMin: 0, softMax: 5 }, false);
+  chart.redraw();
+}
+
+function aplicarAgrupacion() {
+  var v = +$('sel-grupo').value || null;
+  [G.principal, G.comparado].forEach(function (chart) {
+    if (!chart) return;
+    chart.series.forEach(function (s) {
+      if (s.options.id === 'c_rango' || /^highcharts-navigator/.test(String(s.options.id))) return;
+      s.update({ dataGrouping: agrupacion(v) }, false);
+    });
+    chart.redraw();
+  });
+}
+
+/* Arrays [t, valor] de un día, desplazados "desp" milisegundos */
+function seriesDe(dia, desp) {
+  var t0 = dia.t0 + (desp || 0), n = dia.dt.length;
+  var R = [], Sp = [], B = [], O = [], Pi = [], V = [];
+  for (var i = 0; i < n; i++) {
+    var t = t0 + dia.dt[i] * 1000, s = dia.spo2[i], b = dia.bpm[i], p = dia.pi100[i], v = dia.pvi[i];
+    if (s != null) { R.push([t, s, s]); Sp.push([t, s]); }
+    if (b != null) { B.push([t, b]); O.push([t, b, b, b, b]); }
+    if (p != null) Pi.push([t, p / 100]);
+    if (v != null) V.push([t, v]);
+  }
+  return { rango: R, spo2: Sp, bpm: B, vela: O, pi: Pi, pvi: V };
+}
+
+function pintarPrincipal(dia, otro, conservarRango) {
+  var chart = G.principal, d = seriesDe(dia, 0);
+  var ext = conservarRango ? chart.xAxis[0].getExtremes() : null;
+  var estabaAlFinal = ext && ext.dataMax != null && ext.max >= ext.dataMax - 1000;
+  chart.get('spo2r').setData(d.rango, false);
+  chart.get('spo2').setData(d.spo2, false);
+  chart.get('bpm').setData(d.bpm, false);
+  chart.get('bpm_stats').setData(d.vela, false);
+  chart.get('pi').setData(d.pi, false);
+  chart.get('pvi').setData(d.pvi, false);
+
+  var superpuesto = otro && !S.apilado, desp = otro ? dia.t0 - otro.t0 : 0;
+  var o = superpuesto ? seriesDe(otro, desp) : null, etiqueta = otro ? ' (' + diaCorto(otro.d) + ')' : '';
+  [['c_spo2', 'O2%', 'spo2'], ['c_bpm', 'BPM', 'bpm'], ['c_pi', 'PI', 'pi'], ['c_pvi', 'PVI', 'pvi']].forEach(function (x) {
+    var s = chart.get(x[0]);
+    s.update({ name: x[1] + etiqueta, showInLegend: !!superpuesto }, false);
+    s.setData(o ? o[x[2]] : [], false);
+  });
+  chart.get('c_rango').setData(otro && S.apilado && otro.dt.length
+    ? [[otro.t0 + desp + otro.dt[0] * 1000, null], [otro.t0 + desp + otro.dt[otro.dt.length - 1] * 1000, null]] : [], false);
+  chart.setTitle({ text: 'Oxígeno y pulso' + (otro ? ' · ' + diaCorto(dia.d) + (superpuesto ? ' y ' + diaCorto(otro.d) + ' (discontinua)' : '') : '') }, null, false);
+
+  if (ext && ext.min != null && ext.userMin != null && !estabaAlFinal) {
+    chart.xAxis[0].setExtremes(ext.min, ext.max, false);
+  } else if (!conservarRango) {
+    chart.xAxis[0].setExtremes(null, null, false);
+  }
+  chart.redraw();
+  if (!conservarRango && chart.rangeSelector) chart.rangeSelector.clickButton(3, false);
+
+  // Gráfica apilada del día comparado
+  var caja = $('g-comparado');
+  if (otro && S.apilado) {
+    caja.hidden = false;
+    if (!G.comparado) G.comparado = Highcharts.stockChart('g-comparado', opcionesPrincipal(true));
+    aplicarEjeY(G.comparado);
+    var c = seriesDe(otro, desp), g = G.comparado;
+    g.get('spo2r').setData(c.rango, false); g.get('spo2').setData(c.spo2, false); g.get('bpm').setData(c.bpm, false);
+    g.get('bpm_stats').setData(c.vela, false); g.get('pi').setData(c.pi, false); g.get('pvi').setData(c.pvi, false);
+    g.get('c_rango').setData(dia.dt.length ? [[dia.t0 + dia.dt[0] * 1000, null], [dia.t0 + dia.dt[dia.dt.length - 1] * 1000, null]] : [], false);
+    g.setTitle({ text: 'Oxígeno y pulso · ' + diaCorto(otro.d) + ' (a la misma hora)' }, null, false);
+    var e = chart.xAxis[0].getExtremes();
+    g.xAxis[0].setExtremes(e.min, e.max, false);
+    g.redraw();
+  } else {
+    caja.hidden = true;
+    if (G.comparado) { G.comparado.destroy(); G.comparado = null; }
+  }
+}
+
+function alCambiarRango(chart, e) {
+  // Las dos gráficas apiladas comparten el rango de tiempo
+  if (!G.sincronizando && G.comparado && G.principal) {
+    var otra = chart === G.principal ? G.comparado : G.principal;
+    G.sincronizando = true;
+    otra.xAxis[0].setExtremes(e.min, e.max, true, false);
+    G.sincronizando = false;
+  }
+  if (chart === G.principal) programarResumen();
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Resumen (indicadores) e histogramas, para el rango visible
+   Un único denominador: los segundos con lectura.
+   ════════════════════════════════════════════════════════════════════════ */
+var H = { spo2: null, bpm: null };
+var CAT_SPO2 = ['96-100', '90-95', '85-89', '<85'];
+var CAT_BPM = ['≥120', '110-119', '100-109', '90-99', '80-89', '70-79', '60-69', '<60'];
+
+function cota(arr, x) {       // primer índice con arr[i] >= x
+  var lo = 0, hi = arr.length;
+  while (lo < hi) { var m = (lo + hi) >> 1; if (arr[m] < x) lo = m + 1; else hi = m; }
+  return lo;
+}
+
+/* Estadísticas de un día entre a y b (milisegundos, en la hora de ese día) */
+function estadisticas(dia, a, b) {
+  var r = { n: 0, ini: null, fin: null, dur: 0, spo2n: 0, spo2Media: null, spo2Desv: null, spo2Min: null, binsSpo2: [0, 0, 0, 0],
+            bpmn: 0, bpmMedia: null, bpmDesv: null, bpmMax: null, binsBpm: [0, 0, 0, 0, 0, 0, 0, 0], temp: null, tempDesv: null };
+  if (!dia || !dia.dt.length) return r;
+  var lo = cota(dia.dt, Math.ceil((a - dia.t0) / 1000)), hi = cota(dia.dt, Math.floor((b - dia.t0) / 1000) + 1), i, v;
+  if (hi <= lo) return r;
+  r.n = hi - lo; r.ini = dia.t0 + dia.dt[lo] * 1000; r.fin = dia.t0 + dia.dt[hi - 1] * 1000; r.dur = dia.dt[hi - 1] - dia.dt[lo];
+  var sS = 0, sB = 0, mn = Infinity, mx = -Infinity;
+  for (i = lo; i < hi; i++) {
+    v = dia.spo2[i];
+    if (v != null) {
+      r.spo2n++; sS += v; if (v < mn) mn = v;
+      if (v < 85) r.binsSpo2[0]++; else if (v <= 89) r.binsSpo2[1]++; else if (v <= 95) r.binsSpo2[2]++; else r.binsSpo2[3]++;
+    }
+    v = dia.bpm[i];
+    if (v != null) {
+      r.bpmn++; sB += v; if (v > mx) mx = v;
+      if (v < 60) r.binsBpm[0]++; else if (v <= 69) r.binsBpm[1]++; else if (v <= 79) r.binsBpm[2]++; else if (v <= 89) r.binsBpm[3]++;
+      else if (v <= 99) r.binsBpm[4]++; else if (v <= 109) r.binsBpm[5]++; else if (v <= 119) r.binsBpm[6]++; else r.binsBpm[7]++;
+    }
+  }
+  if (r.spo2n) {
+    r.spo2Media = sS / r.spo2n; r.spo2Min = mn; var dS = 0;
+    for (i = lo; i < hi; i++) if (dia.spo2[i] != null) dS += Math.abs(dia.spo2[i] - r.spo2Media);
+    r.spo2Desv = dS / r.spo2n;
+  }
+  if (r.bpmn) {
+    r.bpmMedia = sB / r.bpmn; r.bpmMax = mx; var dB = 0;
+    for (i = lo; i < hi; i++) if (dia.bpm[i] != null) dB += Math.abs(dia.bpm[i] - r.bpmMedia);
+    r.bpmDesv = dB / r.bpmn;
+  }
+  // Temperatura de la habitación durante lo que se ve de la sesión
+  var ct = dia.ambCols.in_temp, tv = [], ultimo = null;
+  if (ct != null) {
+    dia.ambDia.forEach(function (f) {
+      var t = dia.t0 + f[0] * 1000;
+      if (f[ct] == null) return;
+      if (t >= r.ini && t <= r.fin) tv.push(f[ct]); else if (t < r.ini) ultimo = f[ct];
+    });
+    if (!tv.length && ultimo != null) tv.push(ultimo);      // rango más estrecho que 30 min: último valor anterior
+    if (tv.length) {
+      var m = tv.reduce(function (x, y) { return x + y; }, 0) / tv.length;
+      r.temp = m; r.tempDesv = tv.reduce(function (x, y) { return x + Math.abs(y - m); }, 0) / tv.length;
+    }
+  }
+  return r;
+}
+
+var _resumenT = null;
+function programarResumen() { clearTimeout(_resumenT); _resumenT = setTimeout(pintarResumen, 60); }
+
+function pintarResumen() {
+  if (!S.dia || !G.principal) return;
+  var P = paleta(), e = G.principal.xAxis[0].getExtremes();
+  var a = e.min != null ? e.min : S.dia.t0, b = e.max != null ? e.max : S.dia.t0 + DIA_MS;
+  var x = estadisticas(S.dia, a, b);
+  var desp = S.otro ? S.dia.t0 - S.otro.t0 : 0;
+  var y = S.otro ? estadisticas(S.otro, a - desp, b - desp) : null;
+  var etq = S.otro ? diaCorto(S.otro.d) : '';
+
+  function dif(v1, v2, dec, unidad) {
+    if (v1 == null || v2 == null) return '';
+    var d = v1 - v2;
+    return ' <span class="dif">(' + (d > 0 ? '+' : d < 0 ? '−' : '') + num(Math.abs(d), dec) + (unidad || '') + ')</span>';
+  }
+  function tile(color, titulo, valor, lineas, otroHtml) {
+    return '<div class="tile"><h3>' + (color ? '<i style="background:' + color + '"></i>' : '') + titulo + '</h3>' +
+      '<div class="valor">' + valor + '</div>' + (lineas || []).map(function (l) { return '<div class="linea">' + l + '</div>'; }).join('') +
+      (otroHtml ? '<div class="otro"><b>' + etq + '</b> ' + otroHtml + '</div>' : '') + '</div>';
+  }
+  function tiempo(seg, total) { return hms(seg) + ' <small>' + pct(seg, total) + '</small>'; }
+
+  var lt90 = x.binsSpo2[0] + x.binsSpo2[1], lt85 = x.binsSpo2[0];
+  var ge80 = x.binsBpm[3] + x.binsBpm[4] + x.binsBpm[5] + x.binsBpm[6] + x.binsBpm[7], ge90 = ge80 - x.binsBpm[3], ge100 = ge90 - x.binsBpm[4];
+  var html = '';
+  html += tile(null, 'Duración', x.n ? hms(x.dur) : '–',
+    x.n ? [horaDe(x.ini) + ' → ' + horaDe(x.fin), 'Cobertura ' + pct(x.n, x.dur + 1) + ' · ' + hms(Math.max(x.dur + 1 - x.n, 0)) + ' sin lectura'] : ['Sin lecturas en este rango'],
+    y ? (y.n ? hms(y.dur) + ' · ' + horaDe(y.ini) + ' → ' + horaDe(y.fin) : 'sin lecturas') : '');
+  html += tile(P.spo2, 'SpO2 media', num(x.spo2Media, 2) + ' <small>± ' + num(x.spo2Desv, 2) + ' %</small>',
+    ['Mínimo ' + (x.spo2Min == null ? '–' : x.spo2Min + ' %')],
+    y ? num(y.spo2Media, 2) + ' ± ' + num(y.spo2Desv, 2) + dif(x.spo2Media, y.spo2Media, 2) : '');
+  html += tile(P.spo2, 'Tiempo con SpO2 bajo 90 %', tiempo(lt90, x.spo2n),
+    ['Bajo 85 %: ' + hms(lt85) + ' · ' + pct(lt85, x.spo2n)],
+    y ? hms(y.binsSpo2[0] + y.binsSpo2[1]) + ' · ' + pct(y.binsSpo2[0] + y.binsSpo2[1], y.spo2n) : '');
+  html += tile(P.bpm, 'Pulso medio', num(x.bpmMedia, 1) + ' <small>± ' + num(x.bpmDesv, 1) + ' lpm</small>',
+    ['Máximo ' + (x.bpmMax == null ? '–' : x.bpmMax + ' lpm')],
+    y ? num(y.bpmMedia, 1) + ' ± ' + num(y.bpmDesv, 1) + dif(x.bpmMedia, y.bpmMedia, 1) : '');
+  html += tile(P.bpm, 'Tiempo con pulso de 80 o más', tiempo(ge80, x.bpmn),
+    ['90 o más: ' + hms(ge90) + ' · ' + pct(ge90, x.bpmn), '100 o más: ' + hms(ge100) + ' · ' + pct(ge100, x.bpmn)],
+    y ? hms(y.binsBpm[3] + y.binsBpm[4] + y.binsBpm[5] + y.binsBpm[6] + y.binsBpm[7]) + ' · ' +
+        pct(y.binsBpm[3] + y.binsBpm[4] + y.binsBpm[5] + y.binsBpm[6] + y.binsBpm[7], y.bpmn) : '');
+  html += tile(P.temp, 'Temperatura de la habitación', num(x.temp, 1) + ' <small>± ' + num(x.tempDesv, 1) + ' °C</small>', [],
+    y ? num(y.temp, 1) + ' ± ' + num(y.tempDesv, 1) + ' °C' + dif(x.temp, y.temp, 1) : '');
+  $('tiles').innerHTML = html;
+
+  var todo = e.dataMin != null && a <= e.dataMin + 1000 && b >= e.dataMax - 1000;
+  $('alcance').textContent = x.n ? (todo ? 'Resumen de la noche completa.' : 'Resumen del tramo visible: ' + horaDe(Math.max(a, x.ini)) + ' → ' + horaDe(Math.min(b, x.fin)) + '. Amplía o reduce el gráfico para cambiarlo.') : '';
+
+  pintarHistograma('spo2', 'h-spo2', 'Distribución de SpO2', CAT_SPO2, x.binsSpo2, x.spo2n, y && y.binsSpo2, y && y.spo2n, P.spo2, etq);
+  pintarHistograma('bpm', 'h-bpm', 'Distribución del pulso', CAT_BPM, x.binsBpm, x.bpmn, y && y.binsBpm, y && y.bpmn, P.bpm, etq);
+}
+
+function pintarHistograma(clave, el, titulo, categorias, bins, total, binsOtro, totalOtro, color, etq) {
+  var texto = css('--texto'), tenue = css('--tenue'), rejilla = css('--rejilla'), tarjeta = css('--tarjeta');
+  function etiqueta() {
+    if (!this.y) return null;
+    return hms(this.y) + ' | ' + pct(this.y, this.series.options.total || 1);
+  }
+  if (!H[clave]) {
+    H[clave] = Highcharts.chart(el, {
+      chart: { type: 'bar' },
+      title: { text: titulo, style: { fontSize: '13px' } },
+      xAxis: { categories: categorias, labels: { style: { color: tenue, fontSize: '11px' } }, lineColor: rejilla, tickColor: rejilla },
+      yAxis: { title: { text: null }, labels: { enabled: false }, gridLineWidth: 0 },
+      legend: { enabled: false, itemStyle: { fontSize: '11px' } },
+      exporting: { enabled: false },
+      tooltip: { formatter: function () { return '<b>' + this.series.name + ' · ' + this.x + '</b><br/>' + hms(this.y) + ' · ' + pct(this.y, this.series.options.total || 1); } },
+      plotOptions: { bar: { borderWidth: 0, borderRadius: 3, groupPadding: 0.12, pointPadding: 0.04,
+        dataLabels: { enabled: true, color: texto, style: { textOutline: '2px ' + tarjeta, fontSize: '11px', fontWeight: '600' }, align: 'left', inside: true, formatter: etiqueta } } },
+      series: [{ name: 'Este día', data: [], color: color }, { name: 'Otro día', data: [], color: Highcharts.color(color).setOpacity(0.5).get(), visible: false, showInLegend: false }]
+    });
+  }
+  var ch = H[clave];
+  ch.series[0].update({ total: total, name: S.dia ? diaCorto(S.dia.d) : 'Este día' }, false);
+  ch.series[0].setData(bins.slice().reverse(), false);
+  if (binsOtro) {
+    ch.series[1].update({ total: totalOtro, name: etq, visible: true, showInLegend: true }, false);
+    ch.series[1].setData(binsOtro.slice().reverse(), false);
+  } else {
+    ch.series[1].update({ visible: false, showInLegend: false }, false);
+    ch.series[1].setData([], false);
+  }
+  ch.update({ legend: { enabled: !!binsOtro } }, false);
+  ch.redraw();
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Ambiente (Netatmo)
+   ════════════════════════════════════════════════════════════════════════ */
+var AMB = [
+  { id: 'temp',  el: 'a-temp',  titulo: 'Temperatura', unidad: ' °C',   dentro: 'in_temp',  fuera: 'out_temp', color: 'temp',  colorFuera: 'tempExt', etiquetas: true },
+  { id: 'hum',   el: 'a-hum',   titulo: 'Humedad',     unidad: ' %',    dentro: 'in_hum',   fuera: 'out_hum',  color: 'hum',   colorFuera: 'humExt' },
+  { id: 'pres',  el: 'a-pres',  titulo: 'Presión',     unidad: ' mbar', dentro: 'in_pres',  fuera: 'out_pres', color: 'pres',  colorFuera: 'presExt' },
+  { id: 'ruido', el: 'a-ruido', titulo: 'Ruido',       unidad: ' dB',   dentro: 'in_ruido', fuera: null,       color: 'ruido' },
+  { id: 'co2',   el: 'a-co2',   titulo: 'CO2',         unidad: ' ppm',  dentro: 'in_co2',   fuera: null,       color: 'co2' }
+];
+var A = {};     // id -> chart
+
+function crearAmbiente() {
+  var P = paleta(), tarjeta = css('--tarjeta');
+  AMB.forEach(function (def) {
+    var c = P[def.color], cf = def.fuera ? P[def.colorFuera] : null;
+    var series = [{ id: 'in', name: def.titulo + ' interior', color: c, lineWidth: 2.5, marker: { enabled: false }, zIndex: 4, data: [] }];
+    if (def.etiquetas) {
+      series[0].dataLabels = { enabled: true, formatter: function () { return this.point.index % 5 === 0 ? num(this.y, 1) + '°' : null; },
+                               style: { fontSize: '10px', color: css('--texto'), textOutline: '2px ' + tarjeta, fontWeight: '500' } };
+    }
+    if (def.fuera) series.push({ id: 'out', name: def.titulo + ' exterior', color: cf, lineWidth: 2, marker: { enabled: false }, visible: false, zIndex: 3, data: [] });
+    series.push({ id: 'in2', name: def.titulo + ' interior (ayer)', color: c, opacity: P.otroOpacidad, lineWidth: 1.75, dashStyle: 'ShortDash', marker: { enabled: false }, zIndex: 2, data: [] });
+    if (def.fuera) series.push({ id: 'out2', name: def.titulo + ' exterior (ayer)', color: cf, opacity: P.otroOpacidad, lineWidth: 1.5, dashStyle: 'ShortDash', marker: { enabled: false }, visible: false, zIndex: 1, data: [] });
+    A[def.id] = Highcharts.chart(def.el, {
+      chart: { type: 'line', zooming: { type: 'x', pinchType: 'x', singleTouch: false }, spacingTop: 8 },
+      title: { text: def.titulo, style: { fontSize: '13px' } },
+      xAxis: { type: 'datetime', labels: { style: { fontSize: '10px' } }, crosshair: true },
+      yAxis: { title: { text: def.unidad.trim() }, allowDecimals: true },
+      legend: { enabled: true, itemStyle: { fontSize: '11px' } },
+      exporting: { enabled: false },
+      tooltip: { shared: true, valueSuffix: def.unidad, xDateFormat: '%A %e %b, %H:%M', style: { fontSize: '12px' } },
+      series: series
+    });
+  });
+}
+
+function filasAmb(dia, filas, columna, desp) {
+  var i = dia.ambCols[columna], out = [];
+  if (i == null) return out;
+  filas.forEach(function (f) { if (f[i] != null) out.push([dia.t0 + f[0] * 1000 + (desp || 0), f[i]]); });
+  return out;
+}
+
+function pintarAmbiente(dia, otro) {
+  var desp = otro ? dia.t0 - otro.t0 : DIA_MS, etq = otro ? diaCorto(otro.d) : 'ayer';
+  var banda = dia.dt.length ? [{ id: 'sesion', from: dia.t0 + dia.dt[0] * 1000, to: dia.t0 + dia.dt[dia.dt.length - 1] * 1000,
+    color: mqClaro.matches ? 'rgba(75,54,201,0.08)' : 'rgba(255,255,255,0.07)', zIndex: 0,
+    label: { text: 'sesión', style: { color: css('--tenue'), fontSize: '10px' }, y: 12 } }] : [];
+  AMB.forEach(function (def) {
+    var ch = A[def.id];
+    ch.get('in').setData(filasAmb(dia, dia.ambDia, def.dentro, 0), false);
+    // Sin comparar: las 24 h anteriores (vienen en el mismo paquete). Comparando: el día comparado.
+    var otras = otro ? filasAmb(otro, otro.ambDia, def.dentro, desp) : filasAmb(dia, dia.ambAyer, def.dentro, DIA_MS);
+    ch.get('in2').update({ name: def.titulo + ' interior (' + etq + ')' }, false);
+    ch.get('in2').setData(otras, false);
+    if (def.fuera) {
+      ch.get('out').setData(filasAmb(dia, dia.ambDia, def.fuera, 0), false);
+      ch.get('out2').update({ name: def.titulo + ' exterior (' + etq + ')' }, false);
+      ch.get('out2').setData(otro ? filasAmb(otro, otro.ambDia, def.fuera, desp) : filasAmb(dia, dia.ambAyer, def.fuera, DIA_MS), false);
+    }
+    ch.xAxis[0].update({ min: dia.t0, max: dia.t0 + DIA_MS, plotBands: banda }, false);
+    ch.redraw();
+  });
+  $('amb-nota').textContent = dia.ambDia.length ? '· línea discontinua: ' + (otro ? diaCorto(otro.d) : 'las 24 h anteriores') : '· sin datos de ambiente';
+}
+
+/* El cursor del gráfico principal se refleja en los de ambiente */
+var _cursorPend = null;
+function moverCursorAmbiente(ev) {
+  if (_cursorPend) return;
+  _cursorPend = requestAnimationFrame(function () {
+    _cursorPend = null;
+    var ch = G.principal;
+    if (!ch || !$('sec-amb').open) return;
+    var e = ch.pointer.normalize(ev.touches ? ev.touches[0] : ev);
+    if (e.chartX < ch.plotLeft || e.chartX > ch.plotLeft + ch.plotWidth) return quitarCursorAmbiente();
+    var x = ch.xAxis[0].toValue(e.chartX), color = css('--texto');
+    AMB.forEach(function (def) {
+      var ax = A[def.id].xAxis[0];
+      ax.removePlotLine('cursor');
+      ax.addPlotLine({ id: 'cursor', value: x, width: 1, color: color, dashStyle: 'Dot', zIndex: 6 });
+    });
+  });
+}
+function quitarCursorAmbiente() {
+  AMB.forEach(function (def) { if (A[def.id]) A[def.id].xAxis[0].removePlotLine('cursor'); });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Carga y pintado de un día
+   ════════════════════════════════════════════════════════════════════════ */
+function estado(tipo, html) {
+  var caja = $('estado');
+  caja.className = 'estado' + (tipo ? ' visible' : '');
+  caja.innerHTML = html || '';
+  $('g-principal').style.display = (tipo === 'vacio' || tipo === 'error') ? 'none' : '';
+}
+
+function pintarBarra() {
+  var hoy = diaDeHoy();
+  $('b-fecha').innerHTML = S.d ? nombreNoche(S.d) + (S.c ? '<small>comparada con ' + nombreNoche(S.c).replace('Noche del', 'la del') + '</small>' : '') : 'Cargando…';
+  $('b-sig').disabled = !S.d || S.d >= hoy;
+  $('b-comparar').classList.toggle('activo', !!S.c);
+  $('b-comparar').textContent = S.c ? 'Comparando' : 'Comparar';
+  $('b-apilar').hidden = !S.c;
+  $('b-apilar').textContent = S.apilado ? 'Ver superpuestas' : 'Ver apiladas';
+  document.title = (S.d ? nombreNoche(S.d) + ' · ' : '') + 'Monitor';
+  var aviso = $('aviso-reloj'), off = S.dia && S.dia.d === S.d ? S.dia.offset_s : null;
+  if (off != null && Math.abs(off) > CFG.avisoRelojS) {
+    var m = Math.round(Math.abs(off) / 60);
+    aviso.textContent = 'Reloj del pulsioxímetro ' + (off > 0 ? 'adelantado ' : 'atrasado ') +
+      (m >= 60 ? Math.floor(m / 60) + ' h ' + pad(m % 60) + ' min' : m + ' min') + ' esta noche: las horas de las lecturas no coinciden con las del ambiente.';
+    aviso.hidden = false;
+  } else {
+    aviso.hidden = true;
+  }
+}
+
+function mostrar(opciones) {
+  opciones = opciones || {};
+  var seq = ++S.seq;
+  if (S.ctrl) S.ctrl.abort();                 // cancela la carga anterior: clics rápidos no mezclan noches
+  S.ctrl = new AbortController();
+  var senal = S.ctrl.signal;
+  pintarBarra();
+  estado(null);
+  if (G.principal) G.principal.showLoading('Cargando…');
+
+  // Si el día no está en memoria se espera un instante antes de pedirlo:
+  // pulsar ◀ varias veces seguidas solo descarga el último día.
+  var pausa = (S.d && !store.dias.has(S.d) && !opciones.forzar) ? 250 : 0;
+  new Promise(function (ok) { setTimeout(ok, pausa); }).then(function () {
+    if (seq !== S.seq) return null;
+    return obtenerDia(S.d || 'ultima', senal, opciones.forzar);
+  }).then(function (dia) {
+    if (!dia || seq !== S.seq) return null;
+    if (!S.d) { S.d = dia.d; }
+    if (!S.c) return [dia, null];
+    return obtenerDia(S.c, senal, false).then(function (otro) { return [dia, otro]; });
+  }).then(function (par) {
+    if (!par || seq !== S.seq) return;
+    S.dia = par[0]; S.otro = par[1];
+    if (G.principal) G.principal.hideLoading();
+    pintarBarra();
+    if (!S.dia.dt.length) {
+      estado('vacio', 'No hay lecturas esta noche.<br><button id="b-ir-anterior">Ir a la anterior con datos</button>');
+      $('b-ir-anterior').onclick = irAnteriorConDatos;
+      $('tiles').innerHTML = ''; $('alcance').textContent = '';
+      pintarAmbiente(S.dia, S.otro);
+      return;
+    }
+    pintarPrincipal(S.dia, S.otro, false);
+    pintarAmbiente(S.dia, S.otro);
+    pintarResumen();
+  }).catch(function (e) {
+    if (e && e.name === 'AbortError') return;
+    if (seq !== S.seq) return;
+    if (G.principal) G.principal.hideLoading();
+    estado('error', 'No se han podido cargar los datos' + (e && e.status ? ' (error ' + e.status + ')' : '') + '.<br><button id="b-reintentar">Reintentar</button>');
+    $('b-reintentar').onclick = function () { mostrar(); };
+  });
+}
+
+function ir(d, opciones) {
+  opciones = opciones || {};
+  var hoy = diaDeHoy();
+  if (d && d > hoy) d = hoy;
+  S.d = d;
+  if (S.c && S.c === S.d) S.c = null;
+  escribirURL(opciones.reemplazar);
+  mostrar();
+}
+
+function irAnteriorConDatos() {
+  obtenerLista().then(function (l) {
+    var previo = null;
+    for (var i = 0; i < l.orden.length; i++) { if (l.orden[i] < S.d) previo = l.orden[i]; else break; }
+    if (previo) ir(previo); else toast('No hay noches anteriores con datos');
+  }).catch(function () { toast('No se ha podido leer la lista de días'); });
+}
+
+function refrescar() {
+  var dia = S.dia;
+  if (!dia || dia.d !== S.d) return mostrar({ forzar: true });
+  if (dia.cerrado || !dia.cur) {              // día cerrado: recarga completa, sin usar la caché
+    store.dias.delete(dia.d);
+    return mostrar({ forzar: true });
+  }
+  var boton = $('b-refrescar'); boton.disabled = true;
+  pedir('day/' + dia.d + '?tras=' + encodeURIComponent(dia.cur), { cache: 'no-store' }).then(function (j) {
+    var nuevos = fusionar(dia, decodificar(j));
+    if (S.dia !== dia) return;
+    if (nuevos) { pintarPrincipal(dia, S.otro, true); pintarAmbiente(dia, S.otro); pintarResumen(); pintarBarra(); }
+    toast(nuevos ? nuevos + ' lecturas nuevas' : 'Sin lecturas nuevas');
+  }).catch(function () { toast('No se ha podido refrescar'); })
+    .then(function () { boton.disabled = false; });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Comparación
+   ════════════════════════════════════════════════════════════════════════ */
+function comparar(c) {
+  S.c = c && c !== S.d ? c : null;
+  if (!S.c) S.apilado = false;
+  escribirURL();
+  mostrar();
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Calendario
+   ════════════════════════════════════════════════════════════════════════ */
+function pintarCalendario() {
+  var base = S.calMes != null ? S.calMes : parseDia((S.eligiendoComparado && S.c) || S.d || diaDeHoy());
+  var B = new Date(base), anio = B.getUTCFullYear(), mes = B.getUTCMonth();
+  S.calMes = Date.UTC(anio, mes, 1);
+  $('cal-mes').textContent = fMesLargo.format(new Date(S.calMes));
+  var rej = $('cal-rejilla'), hoy = diaDeHoy(), lista = store.lista;
+  var html = ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
+  var primero = (new Date(S.calMes).getUTCDay() + 6) % 7, dias = new Date(Date.UTC(anio, mes + 1, 0)).getUTCDate();
+  for (var k = 0; k < primero; k++) html += '<span></span>';
+  for (var n = 1; n <= dias; n++) {
+    var d = fmtDia(Date.UTC(anio, mes, n)), info = lista && lista.mapa.get(d), futuro = d > hoy;
+    var clases = (info ? 'con-datos' : '') + (d === S.d ? ' sel' : '') + (d === S.c ? ' cmp' : '');
+    var nivel = info ? Math.min(0.75, 0.25 + 0.5 * Math.min(info.dur_s / 36000, 1)) : 0;
+    var titulo = info ? hms(info.dur_s) + ' grabadas · SpO2 media ' + num(info.spo2_avg, 1) : (futuro ? '' : 'Sin lecturas');
+    var desactivado = futuro || (lista && !info) || (S.eligiendoComparado && d === S.d);
+    html += '<button data-d="' + d + '" class="' + clases + '" style="--nivel:' + nivel + '" title="' + titulo + '"' + (desactivado ? ' disabled' : '') + '>' + n + '</button>';
+  }
+  rej.innerHTML = html;
+  $('cal-pie').textContent = S.eligiendoComparado ? 'Elige el día con el que comparar.' : (lista ? 'Más oscuro = más horas grabadas. La fecha es el día en que empieza la noche.' : 'Cargando los días con datos…');
+}
+
+function abrirCalendario() {
+  S.calMes = null;
+  pintarCalendario();
+  obtenerLista().then(pintarCalendario).catch(function () { $('cal-pie').textContent = 'No se ha podido leer la lista de días.'; });
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Arranque y eventos
+   ════════════════════════════════════════════════════════════════════════ */
+function construirGraficos() {
+  [G.principal, G.comparado, H.spo2, H.bpm].concat(AMB.map(function (d) { return A[d.id]; })).forEach(function (c) { if (c && c.destroy) c.destroy(); });
+  G.principal = G.comparado = H.spo2 = H.bpm = null; A = {};
+  aplicarTemaHC();
+  crearPrincipal();
+  crearAmbiente();
+}
+
+function iniciar() {
+  if (!window.Highcharts) {
+    estado('error', 'No se ha podido cargar la librería de gráficos. Comprueba la conexión y recarga la página.');
+    return;
+  }
+  leerURL();
+  construirGraficos();
+
+  $('b-ant').onclick = function () { if (S.d) ir(sumaDias(S.d, -1)); };
+  $('b-sig').onclick = function () { if (S.d && S.d < diaDeHoy()) ir(sumaDias(S.d, 1)); };
+  $('b-ultima').onclick = function () { S.d = null; S.c = null; S.apilado = false; history.pushState(null, '', location.pathname); mostrar(); };
+  $('b-refrescar').onclick = refrescar;
+  $('b-apilar').onclick = function () { S.apilado = !S.apilado; escribirURL(); pintarBarra(); if (S.dia) { pintarPrincipal(S.dia, S.otro, true); pintarResumen(); } };
+  $('sel-grupo').onchange = aplicarAgrupacion;
+  $('chk-auto').onchange = function () { [G.principal, G.comparado].forEach(function (c) { if (c) aplicarEjeY(c); }); };
+
+  $('calendario').addEventListener('toggle', function (e) {
+    if (e.newState === 'open') abrirCalendario(); else S.eligiendoComparado = false;
+  });
+  $('cal-ant').onclick = function () { var B = new Date(S.calMes); S.calMes = Date.UTC(B.getUTCFullYear(), B.getUTCMonth() - 1, 1); pintarCalendario(); };
+  $('cal-sig').onclick = function () { var B = new Date(S.calMes); S.calMes = Date.UTC(B.getUTCFullYear(), B.getUTCMonth() + 1, 1); pintarCalendario(); };
+  $('cal-rejilla').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-d]');
+    if (!b || b.disabled) return;
+    var eligiendo = S.eligiendoComparado;
+    $('calendario').hidePopover();
+    if (eligiendo) comparar(b.dataset.d); else ir(b.dataset.d);
+  });
+  $('menu-comparar').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-cmp]');
+    if (!b) return;
+    $('menu-comparar').hidePopover();
+    var v = b.dataset.cmp;
+    if (v === 'quitar') comparar(null);
+    else if (v === 'elegir') { S.eligiendoComparado = true; $('calendario').showPopover(); }
+    else if (S.d) comparar(sumaDias(S.d, +v));
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.target.matches('input, select, textarea') || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (document.querySelector('[popover]:popover-open')) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); $('b-ant').click(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); $('b-sig').click(); }
+  });
+  window.addEventListener('popstate', function () { leerURL(); mostrar(); });
+
+  // Cambio de tema del sistema: se rehacen los gráficos con los colores nuevos
+  mqClaro.addEventListener('change', function () {
+    construirGraficos();
+    if (S.dia && S.dia.dt.length) { pintarPrincipal(S.dia, S.otro, false); pintarAmbiente(S.dia, S.otro); pintarResumen(); }
+  });
+  // En el móvil el ambiente empieza plegado
+  if (window.innerWidth <= 768) $('sec-amb').open = false;
+  $('sec-amb').addEventListener('toggle', function () { if ($('sec-amb').open) AMB.forEach(function (d) { if (A[d.id]) A[d.id].reflow(); }); });
+
+  mostrar();
+}
+
+iniciar();
+})();
+</script>
+</body>
+</html>
