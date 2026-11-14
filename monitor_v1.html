@@ -341,7 +341,7 @@ var CFG = {
   ruedaZoom: false,         // casilla "Rueda = zoom": la rueda amplía los gráficos en vez de desplazar la página
   // Versión de los datos que entiende esta página. Va en la dirección de cada petición, así que al
   // cambiarla el navegador deja de usar los días que tenía guardados con el formato anterior.
-  formato: 4
+  formato: 5
 };
 var DIA_MS = 86400000;
 
@@ -399,9 +399,13 @@ function nombreNoche(d) {
          (B.getUTCFullYear() !== new Date().getFullYear() ? ' ' + B.getUTCFullYear() : '');
 }
 function diaCorto(d) { var A = new Date(parseDia(d)); return pad(A.getUTCDate()) + '/' + pad(A.getUTCMonth() + 1); }
+/* Duración legible, sin las partes vacías del principio ni el cero inicial:
+     con horas, sin segundos y redondeada al minuto ("11h16m", "2h05m"); sin horas, "20m02s"; sin minutos, "6s". */
 function hms(seg) {
   seg = Math.max(0, Math.round(seg));
-  return pad(Math.floor(seg / 3600)) + 'h' + pad(Math.floor(seg % 3600 / 60)) + 'm' + pad(seg % 60) + 's';
+  if (seg >= 3600) { var min = Math.round(seg / 60); return Math.floor(min / 60) + 'h' + pad(min % 60) + 'm'; }
+  var m = Math.floor(seg / 60), s = seg % 60;
+  return m ? m + 'm' + pad(s) + 's' : s + 's';
 }
 function horaDe(ms) { var d = new Date(ms); return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); }
 function num(v, dec) { return v == null || isNaN(v) ? '–' : v.toFixed(dec).replace('.', ','); }
@@ -1054,7 +1058,29 @@ function pintarResumen() {
   function tiempo(seg, total) { return hms(seg) + ' <small>' + pct(seg, total) + '</small>'; }
   // En la media de 7 noches los tiempos llegan sumados: se muestra el tiempo medio por noche y el porcentaje sobre el total
   function tiempo7(seg, total) { return hms(Math.round(seg / a7.n)) + ' <small>' + pct(seg, total) + '</small>'; }
+  // "± desviación" de la media de 7 noches: la media de las desviaciones medias de cada noche (cuánto varía dentro de una
+  // noche normal). Si el paquete no la trae, solo la unidad.
+  function mas7(desv, dec, unidad) {
+    var t = (desv != null ? '± ' + num(desv, dec) : '') + (unidad ? ' ' + unidad : '');
+    return t.trim() ? ' <small>' + t.trim() + '</small>' : '';
+  }
   function hora(iso) { return iso.slice(11, 16); }
+  // Desviación media de la temperatura de la noche anterior. Oracle solo manda su media, pero las medidas de las
+  // 24 h anteriores ya vienen en el paquete (ambAyer): se calcula aquí con las de su sesión (de su primera a su
+  // última lectura, como hace Oracle). Solo es posible si esa noche es la del día de antes; si no, devuelve null.
+  function desvTempAnterior() {
+    var ct = S.dia.ambCols.in_temp;
+    if (!ant || ct == null || ant.d !== sumaDias(S.dia.d, -1)) return null;
+    var ini = Date.parse(ant.t_ini + 'Z'), fin = Date.parse(ant.t_fin + 'Z'), v = [];
+    S.dia.ambAyer.forEach(function (f) {
+      var t = S.dia.t0 + f[0] * 1000;
+      if (f[ct] != null && t >= ini && t <= fin) v.push(f[ct]);
+    });
+    if (!v.length) return null;
+    var m = v.reduce(function (p, q) { return p + q; }, 0) / v.length;
+    return v.reduce(function (p, q) { return p + Math.abs(q - m); }, 0) / v.length;
+  }
+  var antDesvTemp = desvTempAnterior();
 
   var lt90 = x.binsSpo2[0] + x.binsSpo2[1], lt85 = x.binsSpo2[0];
   var ge80 = x.binsBpm[3] + x.binsBpm[4] + x.binsBpm[5] + x.binsBpm[6] + x.binsBpm[7], ge90 = ge80 - x.binsBpm[3], ge100 = ge90 - x.binsBpm[4];
@@ -1071,7 +1097,7 @@ function pintarResumen() {
     ['Mínimo ' + (x.spo2Min == null ? '–' : x.spo2Min + ' %')],
     y ? num(y.spo2Media, 2) + ' <small>± ' + num(y.spo2Desv, 2) + '</small>' + dif(x.spo2Media, y.spo2Media, 2)
       : ant ? num(ant.spo2_avg, 2) + ' <small>± ' + num(ant.spo2_mad, 2) + ' · mín. ' + ant.spo2_min + '</small>' + (conDif ? dif(x.spo2Media, ant.spo2_avg, 2) : '') : '',
-    a7 && a7.spo2_avg != null ? num(a7.spo2_avg, 2) + ' <small>· mín. medio ' + num(a7.spo2_min, 1) + '</small>' + (conDif ? dif(x.spo2Media, a7.spo2_avg, 2) : '') : '');
+    a7 && a7.spo2_avg != null ? num(a7.spo2_avg, 2) + mas7(a7.spo2_mad, 2, '') + (conDif ? dif(x.spo2Media, a7.spo2_avg, 2) : '') : '');
   html += tile(P.spo2, 'Tiempo con SpO2 bajo 90 %', tiempo(lt90, x.spo2n),
     ['Bajo 85 %: ' + hms(lt85) + ' · ' + pct(lt85, x.spo2n)],
     y ? tiempo(y.binsSpo2[0] + y.binsSpo2[1], y.spo2n) : ant ? tiempo(ant.s_lt90, ant.spo2_n) : '',
@@ -1080,15 +1106,16 @@ function pintarResumen() {
     ['Máximo ' + (x.bpmMax == null ? '–' : x.bpmMax + ' lpm')],
     y ? num(y.bpmMedia, 1) + ' <small>± ' + num(y.bpmDesv, 1) + '</small>' + dif(x.bpmMedia, y.bpmMedia, 1)
       : ant ? num(ant.bpm_avg, 1) + ' <small>± ' + num(ant.bpm_mad, 1) + ' · máx. ' + ant.bpm_max + '</small>' + (conDif ? dif(x.bpmMedia, ant.bpm_avg, 1) : '') : '',
-    a7 && a7.bpm_avg != null ? num(a7.bpm_avg, 1) + ' <small>· máx. medio ' + num(a7.bpm_max, 0) + '</small>' + (conDif ? dif(x.bpmMedia, a7.bpm_avg, 1) : '') : '');
+    a7 && a7.bpm_avg != null ? num(a7.bpm_avg, 1) + mas7(a7.bpm_mad, 1, '') + (conDif ? dif(x.bpmMedia, a7.bpm_avg, 1) : '') : '');
   html += tile(P.bpm, 'Tiempo con pulso de 80 o más', tiempo(ge80, x.bpmn),
     ['90 o más: ' + hms(ge90) + ' · ' + pct(ge90, x.bpmn), '100 o más: ' + hms(ge100) + ' · ' + pct(ge100, x.bpmn)],
     y ? tiempo(yge80, y.bpmn) : ant ? tiempo(ant.s_ge80, ant.bpm_n) : '',
     a7 ? tiempo7(a7.s_ge80, a7.bpm_n) : '');
   html += tile(P.temp, 'Temperatura de la habitación', num(x.temp, 1) + ' <small>± ' + num(x.tempDesv, 1) + ' °C</small>', [],
     y ? num(y.temp, 1) + ' <small>± ' + num(y.tempDesv, 1) + ' °C</small>' + dif(x.temp, y.temp, 1)
-      : ant && ant.temp_avg != null ? num(ant.temp_avg, 1) + ' <small>°C</small>' + (conDif ? dif(x.temp, ant.temp_avg, 1) : '') : '',
-    a7 && a7.temp_avg != null ? num(a7.temp_avg, 1) + ' <small>°C</small>' + (conDif ? dif(x.temp, a7.temp_avg, 1) : '') : '');
+      : ant && ant.temp_avg != null ? num(ant.temp_avg, 1) + ' <small>' + (antDesvTemp != null ? '± ' + num(antDesvTemp, 1) + ' ' : '') + '°C</small>'
+                                      + (conDif ? dif(x.temp, ant.temp_avg, 1) : '') : '',
+    a7 && a7.temp_avg != null ? num(a7.temp_avg, 1) + mas7(a7.temp_mad, 1, '°C') + (conDif ? dif(x.temp, a7.temp_avg, 1) : '') : '');
   $('tiles').innerHTML = html;
 
   $('alcance').textContent = !x.n ? '' :
@@ -1101,16 +1128,20 @@ function pintarResumen() {
 
 function pintarHistograma(clave, el, titulo, categorias, bins, total, binsOtro, totalOtro, color, etq) {
   var texto = css('--texto'), tenue = css('--tenue'), rejilla = css('--rejilla');
+  // La longitud de cada barra es el porcentaje del tiempo de SU noche (no los segundos): así, con dos días de
+  // distinta duración, las barras se pueden comparar entre sí y cuadran con su etiqueta. Los segundos van en "seg".
+  function puntos(b, tot) { return b.slice().reverse().map(function (s) { return { y: tot > 0 ? s / tot * 100 : 0, seg: s }; }); }
+  function segundos(p) { var q = p.point || p; return (q.options && q.options.seg) || 0; }
   // En la barra, solo el porcentaje, fuera de ella (sobre el fondo se lee siempre). El tiempo va en el aviso.
   function etiqueta() {
-    if (!this.y) return null;
-    return pct(this.y, this.series.options.total || 1);
+    var s = segundos(this);
+    return s ? pct(s, this.series.options.total || 1) : null;
   }
   // Aviso: tramo con su unidad, día, tiempo y porcentaje. El tramo es this.category: this.x es solo su posición (0, 1, 2…).
   function aviso() {
-    var tramo = String(this.category).replace('<', '&lt;');
+    var tramo = String(this.category).replace('<', '&lt;'), s = segundos(this);
     return '<b>' + (clave === 'spo2' ? 'SpO2 ' + tramo + ' %' : 'Pulso ' + tramo + ' lpm') + '</b><br/>' +
-           this.series.name + ': ' + hms(this.y) + ' · ' + pct(this.y, this.series.options.total || 1);
+           this.series.name + ': ' + hms(s) + ' · ' + pct(s, this.series.options.total || 1);
   }
   if (!H[clave]) {
     H[clave] = Highcharts.chart(el, {
@@ -1133,10 +1164,10 @@ function pintarHistograma(clave, el, titulo, categorias, bins, total, binsOtro, 
   }
   var ch = H[clave];
   ch.series[0].update({ total: total, name: S.dia ? diaCorto(S.dia.d) : 'Este día' }, false);
-  ch.series[0].setData(bins.slice().reverse(), false);
+  ch.series[0].setData(puntos(bins, total), false);
   if (binsOtro) {
     ch.series[1].update({ total: totalOtro, name: etq, visible: true, showInLegend: true }, false);
-    ch.series[1].setData(binsOtro.slice().reverse(), false);
+    ch.series[1].setData(puntos(binsOtro, totalOtro), false);
   } else {
     ch.series[1].update({ visible: false, showInLegend: false }, false);
     ch.series[1].setData([], false);
