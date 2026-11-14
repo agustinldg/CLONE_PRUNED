@@ -89,6 +89,7 @@ main { max-width: 1500px; margin: 0 auto; padding: 12px 12px 32px; display: grid
 .controles .hueco { flex: 1; }
 /* Textos de los controles: versión larga en pantalla grande y corta en el móvil */
 .corto { display: none; }
+.solo-estrecho { display: none; }      /* trozos de texto que solo salen en el móvil (su pareja es .solo-ancho) */
 /* «Rueda = zoom» solo tiene sentido si hay ratón o trackpad */
 @media not all and (any-pointer: fine) { .solo-raton { display: none !important; } }
 
@@ -124,6 +125,7 @@ main { max-width: 1500px; margin: 0 auto; padding: 12px 12px 32px; display: grid
 .alcance { font-size: 12px; color: var(--tenue); padding: 0 4px; }
 
 .dos { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+.dos[hidden] { display: none; }       /* sin lecturas no hay histogramas que enseñar */
 details.amb > summary { cursor: pointer; font-weight: 600; padding: 4px; }
 .rejilla-amb { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; margin-top: 8px; }
 .rejilla-amb > div { min-width: 0; height: 290px; }
@@ -174,11 +176,12 @@ html.con-ampliado, html.con-ampliado body { overflow: hidden; }
   position: fixed; inset: auto; top: 62px; left: 50%; transform: translateX(-50%); margin: 0;
   background: var(--tarjeta); color: var(--texto); border: 1px solid var(--borde); border-radius: 12px;
   box-shadow: var(--sombra); padding: 12px; max-width: calc(100vw - 16px);
+  /* En una pantalla baja (móvil en horizontal) el calendario no cabe entero: se desplaza por dentro */
+  max-height: calc(100vh - 74px); max-height: calc(100dvh - 74px); overflow: auto;
 }
 [popover]::backdrop { background: rgba(0, 0, 0, .25); }
 .cal-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .cal-cab button { background: var(--boton); border: 1px solid var(--borde); border-radius: 8px; min-width: 40px; min-height: 36px; cursor: pointer; }
-.cal-cab strong { text-transform: capitalize; }
 .cal-rejilla { display: grid; grid-template-columns: repeat(7, 40px); gap: 4px; justify-content: center; }
 .cal-rejilla span { font-size: 11px; color: var(--tenue); text-align: center; }
 .cal-rejilla button {
@@ -207,7 +210,11 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
   main { padding: 8px 8px 16px; gap: 10px; }
   .barra { position: fixed; top: auto; bottom: 0; left: 0; right: 0; border-bottom: 0; border-top: 1px solid var(--borde); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
   .barra .fecha { order: -1; flex-basis: 100%; min-width: 0; }
-  .barra button { flex: 1; padding: 6px 2px; font-size: 13px; min-width: 0; }
+  /* Cada botón parte del ancho de su texto (40 px como poco) y se reparte el sobrante, con más parte para
+     ◀ y ▶, que son los que más se tocan. Antes eran todos iguales y «Comparar» salía cortado. */
+  .barra button { flex: 1 1 auto; padding: 6px 4px; font-size: 13px; min-width: 40px; }
+  .barra #b-ant, .barra #b-sig { flex-grow: 2; }
+  .solo-estrecho { display: inline; }
   /* Controles en una sola línea: desplegable, «Punto = 5 min» y, a la derecha, el eje Y */
   .controles { gap: 8px 10px; }
   .controles .largo { display: none; }
@@ -223,8 +230,22 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
   .tiles { grid-template-columns: 1fr 1fr; }
   .tile .valor { font-size: 19px; }
   .tile .valor small { display: block; }
-  [popover] { top: auto; bottom: calc(var(--alto-barra, 108px) + 12px); }
+  [popover] {
+    top: auto; bottom: calc(var(--alto-barra, 108px) + 12px);
+    max-height: calc(100vh - var(--alto-barra, 108px) - 24px); max-height: calc(100dvh - var(--alto-barra, 108px) - 24px);
+  }
   #toast { bottom: calc(var(--alto-barra, 108px) + 22px); }
+  /* El aviso del reloj, en una línea: el detalle queda en el texto emergente */
+  .solo-ancho { display: none; }
+}
+/* Pantalla baja (móvil en horizontal): la gráfica cabe entera en lo que deja libre la barra de fecha */
+@media (min-width: 769px) and (max-height: 540px) {
+  #g-principal { height: max(260px, calc(100vh - 76px)); height: max(260px, calc(100dvh - 76px)); }
+  #g-comparado { height: max(240px, calc(100vh - 96px)); height: max(240px, calc(100dvh - 96px)); }
+}
+@media (max-width: 768px) and (max-height: 540px) {
+  #g-principal { height: max(240px, calc(100vh - var(--alto-barra, 108px) - 12px)); height: max(240px, calc(100dvh - var(--alto-barra, 108px) - 12px)); }
+  #g-comparado { height: max(220px, calc(100vh - var(--alto-barra, 108px) - 32px)); height: max(220px, calc(100dvh - var(--alto-barra, 108px) - 32px)); }
 }
 </style>
 </head>
@@ -409,7 +430,12 @@ function hms(seg) {
 }
 function horaDe(ms) { var d = new Date(ms); return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); }
 function num(v, dec) { return v == null || isNaN(v) ? '–' : v.toFixed(dec).replace('.', ','); }
-function pct(parte, total) { return total > 0 ? num(parte / total * 100, parte / total < 0.01 && parte > 0 ? 2 : 1) + ' %' : '–'; }
+/* Porcentaje con un decimal; con dos cuando un decimal lo dejaría en "0,0 %" o en "100,0 %" sin serlo */
+function pct(parte, total) {
+  if (!(total > 0)) return '–';
+  var r = parte / total, fino = (r < 0.01 && parte > 0) || (r > 0.99 && parte < total);
+  return num(r * 100, fino ? 2 : 1) + ' %';
+}
 function toast(texto) {
   var t = $('toast'); t.textContent = texto; t.classList.add('visible');
   clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('visible'); }, 2600);
@@ -530,18 +556,31 @@ function fusionar(dia, inc) {
   return nuevos;
 }
 
-/* Un día: de la caché si está; si no, una petición */
+/* Un día: de la memoria si está; si no, una petición.
+   forzar: vuelve a preguntar a Oracle, pero revalidando ("no-cache"): si el día no ha cambiado, Oracle
+   contesta «sin cambios» y no se descarga nada. Se pregunta por la misma dirección con la que se bajó
+   ("ultima" o la fecha), para que el navegador revalide su copia en vez de bajar la noche otra vez
+   por una dirección distinta. */
 function obtenerDia(d, senal, forzar) {
-  if (!forzar && d !== 'ultima') {
-    var enCache = store.tomar(d);
-    if (enCache) return Promise.resolve(enCache);
-  }
-  return pedir('day/' + d + '?f=' + CFG.formato, { signal: senal, cache: forzar ? 'reload' : 'default' }).then(function (j) {
+  var previo = d !== 'ultima' ? store.dias.get(d) : null;
+  if (!forzar && previo) return Promise.resolve(store.tomar(d));
+  var ruta = forzar && previo && previo.ruta ? previo.ruta : d;
+  return pedir('day/' + ruta + '?f=' + CFG.formato, { signal: senal, cache: forzar ? 'no-cache' : 'default' }).then(function (j) {
+    if (j.v != null && j.v !== CFG.formato) avisarFormato(j.v);
     var dia = decodificar(j);
+    dia.ruta = ruta;
     CFG.horaInicio = dia.h || CFG.horaInicio;
     store.guardar(dia);
+    // "ultima" ya apunta a otra noche: la que se pedía se baja por su fecha
+    if (d !== 'ultima' && dia.d !== d) { if (previo) previo.ruta = d; return obtenerDia(d, senal, true); }
     return dia;
   });
+}
+/* La página y Oracle deben hablar el mismo formato (primero se despliega el paquete y luego la página) */
+function avisarFormato(v) {
+  if (avisarFormato.hecho) return;
+  avisarFormato.hecho = true;
+  toast('Oracle envía el formato ' + v + ' y esta página espera el ' + CFG.formato + ': puede faltar algún dato.');
 }
 
 function obtenerLista(forzar) {
@@ -573,7 +612,8 @@ function leerURL() {
   var q = new URLSearchParams(location.search);
   S.d = parseDia(q.get('d')) != null ? q.get('d') : null;
   S.c = parseDia(q.get('c')) != null ? q.get('c') : null;
-  S.apilado = q.get('m') === 'ap';
+  if (S.c && S.c === S.d) S.c = null;          // una noche no se compara consigo misma
+  S.apilado = !!S.c && q.get('m') === 'ap';
 }
 function escribirURL(reemplazar) {
   var q = new URLSearchParams();
@@ -666,8 +706,9 @@ function aplicadorDeRango(chart) {
     programado = true;
     requestAnimationFrame(function () {
       programado = false;
-      var q = pend, L = limitesDe(chart); pend = null;
+      var q = pend; pend = null;
       if (!chart.xAxis) return;                       // gráfico destruido entre tanto
+      var L = limitesDe(chart);
       if (q.todo && L.fijos) chart.xAxis[0].setExtremes(null, null, true, false);
       else chart.xAxis[0].setExtremes(q.min, q.max, true, false, { trigger: 'gesto' });
     });
@@ -852,11 +893,14 @@ function opcionesPrincipal(o) {
     // El navegador muestra siempre el pulso de toda la noche a 1 minuto por punto, sea cual sea la agrupación
     // de arriba y aunque la serie BPM esté desactivada en la leyenda: lleva sus propios datos y se apoya en la
     // serie auxiliar "c_rango", que el usuario no puede ocultar (si se apoyara en BPM, Highcharts lo ocultaría con ella).
-    navigator: { enabled: !o.secundaria, baseSeries: 'c_rango',
+    navigator: { enabled: !o.secundaria, baseSeries: 'c_rango', xAxis: { ordinal: false },
                  series: { data: d.bpm.slice(), pointPlacement: 'between', dataGrouping: { enabled: true, forced: true, units: [['minute', [1]]] } } },
     scrollbar: { enabled: false },      // la ventana del navegador ya permite moverse; la barra era redundante
     title: { text: o.titulo, style: { fontSize: '15px' } },
-    xAxis: { type: 'datetime', events: { afterSetExtremes: function (e) { alCambiarRango(this.chart, e); } } },
+    // Eje de tiempo lineal ("ordinal: false"): cada minuto ocupa el mismo ancho y las pausas sin lectura se ven
+    // como huecos. Por defecto Highcharts Stock las comprime (eje "ordinal"): las horas dejaban de ir a intervalos
+    // iguales y, en las gráficas apiladas, la misma hora no caía en el mismo sitio (medido: hasta 12 minutos).
+    xAxis: { type: 'datetime', ordinal: false, events: { afterSetExtremes: function (e) { alCambiarRango(this.chart, e); } } },
     yAxis: [
       // Eje fijo como en dash3: 60–105 y PI 0–5, pase lo que pase con los datos o con las series activas.
       // Lo que se salga de ese rango no se ve; para verlo, "Eje Y automático".
@@ -904,20 +948,26 @@ function destruirPrincipal() {
   if (G.comparado) { G.comparado.destroy(); G.comparado = null; }
 }
 
-/* Pinta el día (y el comparado). conservarRango: mantiene el tramo ampliado (mismo día, otro ajuste). */
+/* Tramo ampliado de la gráfica principal ({ min, max }), o null si se ve la noche entera */
+function rangoVisible() {
+  if (!G.principal || !G.principal.xAxis) return null;
+  var e = G.principal.xAxis[0].getExtremes();
+  return (e.dataMin != null && e.min != null && (e.min > e.dataMin + 1000 || e.max < e.dataMax - 1000)) ? { min: e.min, max: e.max } : null;
+}
+
+/* Pinta el día (y el comparado). conservarRango: mantiene el tramo ampliado (mismo día, otro ajuste);
+   puede ser true (lo lee del gráfico actual) o un tramo { min, max } leído antes de destruir los gráficos. */
 function pintarPrincipal(dia, otro, conservarRango) {
-  var rango = null;
-  if (conservarRango && G.principal) {
-    var e = G.principal.xAxis[0].getExtremes();
-    if (e.dataMin != null && e.min != null && (e.min > e.dataMin + 1000 || e.max < e.dataMax - 1000)) rango = { min: e.min, max: e.max };
-  }
+  var rango = conservarRango === true ? rangoVisible() : (conservarRango || null);
   destruirPrincipal();
 
   var desp = otro ? dia.t0 - otro.t0 : 0, d = seriesDe(dia, 0), c = otro ? seriesDe(otro, desp) : null;
   var superpuesto = otro && !S.apilado, apilado = otro && S.apilado;
+  // En pantalla estrecha, al comparar, el título se queda en las fechas: entero lo tapaba el botón de cerrar
+  var cabecera = otro && window.innerWidth < 700 ? '' : 'Oxígeno y pulso' + (otro ? ' · ' : '');
   G.principal = Highcharts.stockChart('g-principal', opcionesPrincipal({
     secundaria: false, datos: d, otros: superpuesto ? c : null, etiquetaOtro: otro ? diaCorto(otro.d) : '',
-    titulo: 'Oxígeno y pulso' + (otro ? ' · ' + diaCorto(dia.d) + (superpuesto ? ' y ' + diaCorto(otro.d) + ' (discontinua)' : '') : ''),
+    titulo: cabecera + (otro ? diaCorto(dia.d) + (superpuesto ? ' y ' + diaCorto(otro.d) + ' (discontinua)' : '') : ''),
     aux: apilado && c.ini != null ? [c.ini, c.fin] : null, todo: !rango
   }));
   asentar(G.principal);
@@ -927,7 +977,7 @@ function pintarPrincipal(dia, otro, conservarRango) {
   caja.hidden = !apilado;
   if (apilado) {
     G.comparado = Highcharts.stockChart('g-comparado', opcionesPrincipal({
-      secundaria: true, datos: c, otros: null, titulo: 'Oxígeno y pulso · ' + diaCorto(otro.d) + ' (a la misma hora)',
+      secundaria: true, datos: c, otros: null, titulo: cabecera + diaCorto(otro.d) + ' (a la misma hora)',
       aux: d.ini != null ? [d.ini, d.fin] : null, todo: true
     }));
     asentar(G.comparado);
@@ -1045,7 +1095,7 @@ function pintarResumen() {
 
   function dif(v1, v2, dec) {
     if (v1 == null || v2 == null) return '';
-    var d = v1 - v2;
+    var d = +(v1 - v2).toFixed(dec);          // el signo se decide con la cifra ya redondeada: nunca «−0,0»
     return ' <span class="dif">(' + (d > 0 ? '+' : d < 0 ? '−' : '') + num(Math.abs(d), dec) + ')</span>';
   }
   // otro: html del dato del otro día; siete: html de la media de 7 noches ('' si no hay)
@@ -1064,7 +1114,7 @@ function pintarResumen() {
     var t = (desv != null ? '± ' + num(desv, dec) : '') + (unidad ? ' ' + unidad : '');
     return t.trim() ? ' <small>' + t.trim() + '</small>' : '';
   }
-  function hora(iso) { return iso.slice(11, 16); }
+  function hora(iso) { return iso ? String(iso).slice(11, 16) : '–'; }
   // Desviación media de la temperatura de la noche anterior. Oracle solo manda su media, pero las medidas de las
   // 24 h anteriores ya vienen en el paquete (ambAyer): se calcula aquí con las de su sesión (de su primera a su
   // última lectura, como hace Oracle). Solo es posible si esa noche es la del día de antes; si no, devuelve null.
@@ -1096,7 +1146,7 @@ function pintarResumen() {
   html += tile(P.spo2, 'SpO2 media', num(x.spo2Media, 2) + ' <small>± ' + num(x.spo2Desv, 2) + ' %</small>',
     ['Mínimo ' + (x.spo2Min == null ? '–' : x.spo2Min + ' %')],
     y ? num(y.spo2Media, 2) + ' <small>± ' + num(y.spo2Desv, 2) + '</small>' + dif(x.spo2Media, y.spo2Media, 2)
-      : ant ? num(ant.spo2_avg, 2) + ' <small>± ' + num(ant.spo2_mad, 2) + ' · mín. ' + ant.spo2_min + '</small>' + (conDif ? dif(x.spo2Media, ant.spo2_avg, 2) : '') : '',
+      : ant ? num(ant.spo2_avg, 2) + ' <small>± ' + num(ant.spo2_mad, 2) + ' · mín. ' + num(ant.spo2_min, 0) + '</small>' + (conDif ? dif(x.spo2Media, ant.spo2_avg, 2) : '') : '',
     a7 && a7.spo2_avg != null ? num(a7.spo2_avg, 2) + mas7(a7.spo2_mad, 2, '') + (conDif ? dif(x.spo2Media, a7.spo2_avg, 2) : '') : '');
   html += tile(P.spo2, 'Tiempo con SpO2 bajo 90 %', tiempo(lt90, x.spo2n),
     ['Bajo 85 %: ' + hms(lt85) + ' · ' + pct(lt85, x.spo2n)],
@@ -1105,7 +1155,7 @@ function pintarResumen() {
   html += tile(P.bpm, 'Pulso medio', num(x.bpmMedia, 1) + ' <small>± ' + num(x.bpmDesv, 1) + ' lpm</small>',
     ['Máximo ' + (x.bpmMax == null ? '–' : x.bpmMax + ' lpm')],
     y ? num(y.bpmMedia, 1) + ' <small>± ' + num(y.bpmDesv, 1) + '</small>' + dif(x.bpmMedia, y.bpmMedia, 1)
-      : ant ? num(ant.bpm_avg, 1) + ' <small>± ' + num(ant.bpm_mad, 1) + ' · máx. ' + ant.bpm_max + '</small>' + (conDif ? dif(x.bpmMedia, ant.bpm_avg, 1) : '') : '',
+      : ant ? num(ant.bpm_avg, 1) + ' <small>± ' + num(ant.bpm_mad, 1) + ' · máx. ' + num(ant.bpm_max, 0) + '</small>' + (conDif ? dif(x.bpmMedia, ant.bpm_avg, 1) : '') : '',
     a7 && a7.bpm_avg != null ? num(a7.bpm_avg, 1) + mas7(a7.bpm_mad, 1, '') + (conDif ? dif(x.bpmMedia, a7.bpm_avg, 1) : '') : '');
   html += tile(P.bpm, 'Tiempo con pulso de 80 o más', tiempo(ge80, x.bpmn),
     ['90 o más: ' + hms(ge90) + ' · ' + pct(ge90, x.bpmn), '100 o más: ' + hms(ge100) + ' · ' + pct(ge100, x.bpmn)],
@@ -1298,7 +1348,27 @@ function estado(tipo, html) {
   caja.className = 'estado' + (tipo ? ' visible' : '');
   caja.innerHTML = html || '';
   $('g-principal').style.display = (tipo === 'vacio' || tipo === 'error') ? 'none' : '';
-  if (tipo === 'vacio' || tipo === 'error') $('g-comparado').hidden = true;
+  if (tipo === 'vacio' || tipo === 'error') {
+    $('g-comparado').hidden = true;
+    if (AMP) history.back();          // lo que estuviera ampliado puede haber desaparecido: se cierra la ampliación
+  }
+}
+
+/* Quita de la pantalla lo que depende de las lecturas: gráfica, tarjetas e histogramas */
+function vaciarLecturas() {
+  destruirPrincipal();
+  $('tiles').innerHTML = ''; $('alcance').textContent = ''; $('info-grupo').textContent = '';
+  document.querySelector('.dos').hidden = true;
+}
+function vaciarAmbiente() {
+  AMB.forEach(function (def) {
+    var ch = A[def.id];
+    if (!ch) return;
+    ch.series.forEach(function (s) { s.setData([], false); });
+    ch.xAxis[0].update({ plotBands: [] }, false);
+    ch.redraw();
+  });
+  $('amb-nota').textContent = '';
 }
 
 function pintarBarra() {
@@ -1306,7 +1376,8 @@ function pintarBarra() {
   $('b-fecha').innerHTML = S.d ? nombreNoche(S.d) + (S.c ? '<small>comparada con ' + nombreNoche(S.c).replace('Noche del', 'la del') + '</small>' : '') : 'Cargando…';
   $('b-sig').disabled = !S.d || S.d >= hoy;
   $('b-comparar').classList.toggle('activo', !!S.c);
-  $('b-comparar').textContent = S.c ? 'Comparando' : 'Comparar';
+  // «Comparando» en pantalla grande; en el móvil el botón conserva «Comparar» (no cabe más) y se distingue por el borde
+  $('b-comparar').innerHTML = S.c ? 'Compar<span class="solo-ancho">ando</span><span class="solo-estrecho">ar</span>' : 'Comparar';
   $('b-apilar').hidden = !S.c;
   $('b-apilar').textContent = S.apilado ? 'Ver superpuestas' : 'Ver apiladas';
   $('b-tema').textContent = esClaro() ? '☾' : '☀';
@@ -1314,8 +1385,11 @@ function pintarBarra() {
   var aviso = $('aviso-reloj'), off = S.dia && S.dia.d === S.d ? S.dia.offset_s : null;
   if (off != null && Math.abs(off) > CFG.avisoRelojS) {
     var m = Math.round(Math.abs(off) / 60);
-    aviso.textContent = 'Reloj del pulsioxímetro ' + (off > 0 ? 'adelantado ' : 'atrasado ') +
-      (m >= 60 ? Math.floor(m / 60) + ' h ' + pad(m % 60) + ' min' : m + ' min') + ' esta noche: las horas de las lecturas no coinciden con las del ambiente.';
+    // En el móvil solo sale la primera parte (una línea); el resto queda en el texto emergente
+    aviso.innerHTML = 'Reloj del pulsioxímetro ' + (off > 0 ? 'adelantado ' : 'atrasado ') +
+      (m >= 60 ? Math.floor(m / 60) + ' h ' + pad(m % 60) + ' min' : m + ' min') +
+      '<span class="solo-ancho"> esta noche: las horas de las lecturas no coinciden con las del ambiente.</span>';
+    aviso.title = 'Esta noche las horas de las lecturas no coinciden con las del ambiente.';
     aviso.hidden = false;
   } else {
     aviso.hidden = true;
@@ -1325,17 +1399,18 @@ function pintarBarra() {
 function pintarTodo(conservarRango) {
   if (!S.dia) return;
   if (!S.dia.dt.length) {
-    destruirPrincipal();
+    vaciarLecturas();                 // también los histogramas: antes se quedaban los de la noche anterior
     estado('vacio', 'No hay lecturas esta noche.<br><button id="b-ir-anterior">Ir a la anterior con datos</button>');
     $('b-ir-anterior').onclick = irAnteriorConDatos;
-    $('tiles').innerHTML = ''; $('alcance').textContent = ''; $('info-grupo').textContent = '';
     pintarAmbiente(S.dia, S.otro);
     return;
   }
   estado(null);
+  document.querySelector('.dos').hidden = false;
   pintarPrincipal(S.dia, S.otro, conservarRango);
   pintarAmbiente(S.dia, S.otro);
   pintarResumen();
+  [H.spo2, H.bpm].forEach(function (c) { if (c) c.reflow(); });      // por si su caja estaba oculta
 }
 
 function mostrar(opciones) {
@@ -1348,26 +1423,27 @@ function mostrar(opciones) {
   if (G.principal) { estado(null); G.principal.showLoading('Cargando…'); }
   else estado('cargando', 'Cargando…');
 
-  // Si el día no está en memoria se espera un instante antes de pedirlo:
-  // pulsar ◀ varias veces seguidas solo descarga el último día.
-  var pausa = (S.d && !store.dias.has(S.d) && !opciones.forzar) ? 250 : 0;
+  // Si el día (o el comparado) no está en memoria se espera un instante antes de pedirlo:
+  // pulsar ◀ varias veces seguidas solo descarga el último.
+  var falta = function (d) { return !!d && !store.dias.has(d); };
+  var pausa = (!opciones.forzar && (falta(S.d) || falta(S.c))) ? 250 : 0;
   new Promise(function (ok) { setTimeout(ok, pausa); }).then(function () {
     if (seq !== S.seq) return null;
-    return obtenerDia(S.d || 'ultima', senal, opciones.forzar);
-  }).then(function (dia) {
-    if (!dia || seq !== S.seq) return null;
-    if (!S.d) { S.d = dia.d; }
-    if (!S.c) return [dia, null];
-    return obtenerDia(S.c, senal, false).then(function (otro) { return [dia, otro]; });
+    // La noche y la comparada se piden a la vez, no una tras otra
+    return Promise.all([obtenerDia(S.d || 'ultima', senal, opciones.forzar), S.c ? obtenerDia(S.c, senal, false) : null]);
   }).then(function (par) {
     if (!par || seq !== S.seq) return;
+    if (!S.d) S.d = par[0].d;
+    if (S.c && S.c === S.d) { S.c = null; S.apilado = false; par[1] = null; }
     S.dia = par[0]; S.otro = par[1];
     pintarBarra();
     pintarTodo(false);
   }).catch(function (e) {
     if (e && e.name === 'AbortError') return;
     if (seq !== S.seq) return;
-    if (G.principal) G.principal.hideLoading();
+    // Lo que había pintado era de otra noche: se quita, para que no quede bajo la fecha nueva
+    S.dia = null; S.otro = null;
+    vaciarLecturas(); vaciarAmbiente();
     estado('error', 'No se han podido cargar los datos' + (e && e.status ? ' (error ' + e.status + ')' : '') + '.<br><button id="b-reintentar">Reintentar</button>');
     $('b-reintentar').onclick = function () { mostrar(); };
   });
@@ -1399,15 +1475,15 @@ function irAnteriorConDatos() {
 function refrescar() {
   var dia = S.dia;
   if (!dia || dia.d !== S.d) return mostrar({ forzar: true });
-  if (dia.cerrado || !dia.cur) {              // día cerrado: recarga completa, sin usar la caché
-    store.dias.delete(dia.d);
+  if (dia.cerrado || !dia.cur) {              // día cerrado: se vuelve a preguntar a Oracle (si no ha cambiado, no baja nada)
     return mostrar({ forzar: true });
   }
   var boton = $('b-refrescar'); boton.disabled = true;
   pedir('day/' + dia.d + '?f=' + CFG.formato + '&tras=' + encodeURIComponent(dia.cur), { cache: 'no-store' }).then(function (j) {
     var nuevos = fusionar(dia, decodificar(j));
-    if (S.dia !== dia) return;
-    if (nuevos) { pintarBarra(); pintarTodo(true); }
+    if (S.dia !== dia || S.d !== dia.d) return;         // entre tanto se ha pasado a otra noche
+    pintarBarra();                                      // el día puede haberse cerrado
+    if (nuevos) pintarTodo(true); else pintarAmbiente(S.dia, S.otro);      // el ambiente llega aunque no haya lecturas nuevas
     toast(nuevos ? nuevos + ' lecturas nuevas' : 'Sin lecturas nuevas');
   }).catch(function () { toast('No se ha podido refrescar'); })
     .then(function () { boton.disabled = false; });
@@ -1427,7 +1503,8 @@ function pintarCalendario() {
   var base = S.calMes != null ? S.calMes : parseDia((S.eligiendoComparado && S.c) || S.d || diaDeHoy());
   var B = new Date(base), anio = B.getUTCFullYear(), mes = B.getUTCMonth();
   S.calMes = Date.UTC(anio, mes, 1);
-  $('cal-mes').textContent = fMesLargo.format(new Date(S.calMes));
+  var nombreMes = fMesLargo.format(new Date(S.calMes));
+  $('cal-mes').textContent = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);      // «Noviembre de 2026»
   var rej = $('cal-rejilla'), hoy = diaDeHoy(), lista = store.lista;
   var html = ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
   var primero = (new Date(S.calMes).getUTCDay() + 6) % 7, dias = new Date(Date.UTC(anio, mes + 1, 0)).getUTCDate();
@@ -1435,13 +1512,16 @@ function pintarCalendario() {
   for (var n = 1; n <= dias; n++) {
     var d = fmtDia(Date.UTC(anio, mes, n)), info = lista && lista.mapa.get(d), futuro = d > hoy;
     var clases = (info ? 'con-datos' : '') + (d === S.d ? ' sel' : '') + (d === S.c ? ' cmp' : '');
-    var nivel = info ? Math.min(0.75, 0.25 + 0.5 * Math.min(info.dur_s / 36000, 1)) : 0;
+    // Intensidad del fondo: de 0,12 a 0,42. Con más, el número del día se leía mal (contraste por debajo de 4,5)
+    var nivel = info ? 0.12 + 0.30 * Math.min(info.dur_s / 36000, 1) : 0;
     var titulo = info ? hms(info.dur_s) + ' grabadas · SpO2 media ' + num(info.spo2_avg, 1) : (futuro ? '' : 'Sin lecturas');
     var desactivado = futuro || (lista && !info) || (S.eligiendoComparado && d === S.d);
-    html += '<button data-d="' + d + '" class="' + clases + '" style="--nivel:' + nivel + '" title="' + titulo + '"' + (desactivado ? ' disabled' : '') + '>' + n + '</button>';
+    html += '<button data-d="' + d + '" class="' + clases + '" style="--nivel:' + nivel + '" title="' + titulo + '"' +
+            ' aria-label="Día ' + n + (titulo ? ': ' + titulo : '') + '"' + (d === S.d ? ' aria-current="date"' : '') +
+            (desactivado ? ' disabled' : '') + '>' + n + '</button>';
   }
   rej.innerHTML = html;
-  $('cal-pie').textContent = S.eligiendoComparado ? 'Elige el día con el que comparar.' : (lista ? 'Más oscuro = más horas grabadas. La fecha es el día en que empieza la noche.' : 'Cargando los días con datos…');
+  $('cal-pie').textContent = S.eligiendoComparado ? 'Elige el día con el que comparar.' : (lista ? 'Más intenso = más horas grabadas. La fecha es el día en que empieza la noche.' : 'Cargando los días con datos…');
 }
 
 function abrirCalendario() {
@@ -1546,18 +1626,30 @@ function iniciar() {
 
   $('b-ant').onclick = function () { if (S.d) ir(sumaDias(S.d, -1), -1); };
   $('b-sig').onclick = function () { if (S.d && S.d < diaDeHoy()) ir(sumaDias(S.d, 1), 1); };
-  $('b-ultima').onclick = function () { S.d = null; S.c = null; S.apilado = false; history.pushState(null, '', location.pathname); mostrar(); };
+  $('b-ultima').onclick = function () {
+    S.d = null; S.c = null; S.apilado = false;
+    if (location.search) history.pushState(null, '', location.pathname);      // sin entradas repetidas en el historial
+    mostrar();
+  };
   $('b-refrescar').onclick = refrescar;
   $('b-apilar').onclick = function () { S.apilado = !S.apilado; escribirURL(); pintarBarra(); pintarTodo(true); };
-  $('sel-grupo').onchange = function () { if (S.dia && S.dia.dt.length) { pintarPrincipal(S.dia, S.otro, true); pintarResumen(); } };
-  $('chk-auto').onchange = function () { if (S.dia && S.dia.dt.length) { pintarPrincipal(S.dia, S.otro, true); pintarResumen(); } };
+  // La agrupación y el eje Y se recuerdan en este navegador, igual que el modo día/noche
+  var recordar = function (clave, valor) { try { localStorage.setItem(clave, valor); } catch (e) {} };
+  var repintar = function () { if (S.dia && S.dia.dt.length) { pintarPrincipal(S.dia, S.otro, true); pintarResumen(); } };
+  try {
+    var grupo = localStorage.getItem('monitor.grupo');
+    if (grupo && [].some.call($('sel-grupo').options, function (o) { return o.value === grupo; })) $('sel-grupo').value = grupo;
+    $('chk-auto').checked = localStorage.getItem('monitor.ejeAuto') === '1';
+  } catch (e) {}
+  $('sel-grupo').onchange = function () { recordar('monitor.grupo', this.value); repintar(); };
+  $('chk-auto').onchange = function () { recordar('monitor.ejeAuto', this.checked ? '1' : '0'); repintar(); };
   $('b-tema').onclick = function () {
-    var claro = !esClaro();
+    var claro = !esClaro(), rango = rangoVisible();       // el tramo ampliado se lee antes de rehacer los gráficos
     document.documentElement.dataset.tema = claro ? 'claro' : 'oscuro';
     try { localStorage.setItem('monitor.tema', claro ? 'claro' : 'oscuro'); } catch (e) {}
     construirGraficos();
     pintarBarra();
-    pintarTodo(true);
+    pintarTodo(rango || false);
   };
 
   $('calendario').addEventListener('toggle', function (e) {
@@ -1586,7 +1678,8 @@ function iniciar() {
   document.addEventListener('keydown', function (e) {
     // Con algo ampliado, Esc lo cierra y las flechas no cambian de día
     if (AMP) { if (e.key === 'Escape') { e.preventDefault(); history.back(); } return; }
-    if (e.target.matches('input, select, textarea') || e.altKey || e.ctrlKey || e.metaKey) return;
+    // Las casillas no usan las flechas: tras marcar una, ← y → siguen cambiando de día
+    if (e.target.matches('select, textarea, input:not([type="checkbox"])') || e.altKey || e.ctrlKey || e.metaKey) return;
     if (document.querySelector('[popover]:popover-open')) return;
     if (e.key === 'ArrowLeft') { e.preventDefault(); $('b-ant').click(); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); $('b-sig').click(); }
