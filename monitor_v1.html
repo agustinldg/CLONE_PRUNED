@@ -226,6 +226,9 @@ footer { text-align: center; color: var(--tenue); font-size: 12px; padding: 0 12
       <label title="Desmarcado: escala fija 60–105 y PI 0–5; lo que se salga no se ve. Marcado: la escala se ajusta a los datos.">
         <input type="checkbox" id="chk-auto"> Eje Y automático
       </label>
+      <label title="Marcado: la rueda del ratón amplía y reduce los gráficos en vez de desplazar la página. Ctrl (o ⌘) + rueda amplía siempre, esté o no marcado.">
+        <input type="checkbox" id="chk-rueda"> Rueda = zoom
+      </label>
       <span class="hueco"></span>
       <button id="b-apilar" hidden title="Cambiar entre gráficas superpuestas y apiladas">Ver apiladas</button>
     </div>
@@ -279,7 +282,8 @@ var CFG = {
     : 'https://dxj025rr2cyvhje-db202003221648.adb.eu-frankfurt-1.oraclecloudapps.com/ords/monitor/api/v1/',
   diasEnCache: 15,          // días que se guardan en memoria
   avisoRelojS: 120,         // desfase del reloj a partir del cual se avisa
-  horaInicio: 18            // se actualiza con lo que diga la API
+  horaInicio: 18,           // se actualiza con lo que diga la API
+  ruedaZoom: false          // casilla "Rueda = zoom": la rueda amplía los gráficos en vez de desplazar la página
 };
 var DIA_MS = 86400000;
 
@@ -602,11 +606,12 @@ function aplicadorDeRango(chart) {
 }
 
 /* Rueda del ratón: sola, desplaza la página; con Ctrl o ⌘, amplía y reduce el gráfico.
+   Con la casilla "Rueda = zoom" marcada, la rueda sola también amplía (sobre el área del gráfico).
    (El gesto de pellizco de un trackpad llega al navegador como rueda + Ctrl, así que también amplía.) */
 function ruedaConTecla(chart) {
   var aplicar = aplicadorDeRango(chart), base = null, tBase = 0;
   chart.container.addEventListener('wheel', function (ev) {
-    if (!(ev.ctrlKey || ev.metaKey)) return;
+    if (!(ev.ctrlKey || ev.metaKey || CFG.ruedaZoom)) return;
     var ax = chart.xAxis[0], e = ax.getExtremes();
     if (e.min == null || e.max == null) return;
     var p = chart.pointer.normalize(ev);
@@ -624,7 +629,7 @@ function ruedaConTecla(chart) {
   }, { passive: false });
 }
 
-/* Gestos táctiles del gráfico principal: dos dedos amplían y desplazan; con el gráfico ampliado,
+/* Gestos táctiles (gráfico principal y gráficos de ambiente): dos dedos amplían y desplazan; con el gráfico ampliado,
    un dedo en horizontal lo desplaza. El movimiento vertical de un dedo sigue desplazando la página.
    Sustituye al gesto propio de Highcharts, que redibuja en cada movimiento y con tantos puntos va a tirones. */
 function gestosTactiles(chart) {
@@ -1085,6 +1090,7 @@ function crearAmbiente() {
       series: series
     });
     ruedaConTecla(A[def.id]);
+    gestosTactiles(A[def.id]);
   });
 }
 
@@ -1324,7 +1330,13 @@ function iniciar() {
   construirGraficos();
   $('pista').textContent = window.matchMedia('(pointer: coarse)').matches
     ? 'Dos dedos para ampliar o reducir. Con el gráfico ampliado, arrastra con un dedo para desplazarlo. La franja inferior muestra el pulso de toda la noche y también sirve para moverse.'
-    : 'Arrastra sobre el gráfico para ampliar un tramo. Ctrl (o ⌘) + rueda amplía y reduce; Mayús + arrastrar desplaza. La franja inferior muestra el pulso de toda la noche.';
+    : 'Arrastra sobre el gráfico para ampliar un tramo. Ctrl (o ⌘) + rueda amplía y reduce (o marca «Rueda = zoom» para hacerlo sin tecla); Mayús + arrastrar desplaza. La franja inferior muestra el pulso de toda la noche.';
+  try { CFG.ruedaZoom = localStorage.getItem('monitor.rueda') === 'zoom'; } catch (e) {}
+  $('chk-rueda').checked = CFG.ruedaZoom;
+  $('chk-rueda').onchange = function () {
+    CFG.ruedaZoom = this.checked;
+    try { localStorage.setItem('monitor.rueda', CFG.ruedaZoom ? 'zoom' : 'pagina'); } catch (e) {}
+  };
 
   $('b-ant').onclick = function () { if (S.d) ir(sumaDias(S.d, -1), -1); };
   $('b-sig').onclick = function () { if (S.d && S.d < diaDeHoy()) ir(sumaDias(S.d, 1), 1); };
