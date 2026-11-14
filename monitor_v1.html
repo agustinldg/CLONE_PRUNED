@@ -430,10 +430,10 @@ function hms(seg) {
 }
 function horaDe(ms) { var d = new Date(ms); return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); }
 function num(v, dec) { return v == null || isNaN(v) ? '–' : v.toFixed(dec).replace('.', ','); }
-/* Porcentaje con un decimal; con dos cuando un decimal lo dejaría en "0,0 %" o en "100,0 %" sin serlo */
+/* Porcentaje con un decimal; con dos por debajo del 1 % y cuando un decimal lo dejaría en "100,0 %" sin serlo */
 function pct(parte, total) {
   if (!(total > 0)) return '–';
-  var r = parte / total, fino = (r < 0.01 && parte > 0) || (r > 0.99 && parte < total);
+  var r = parte / total, fino = (r < 0.01 && parte > 0) || (r >= 0.9995 && parte < total);
   return num(r * 100, fino ? 2 : 1) + ' %';
 }
 function toast(texto) {
