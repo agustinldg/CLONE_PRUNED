@@ -187,6 +187,8 @@ html.con-ampliado, html.con-ampliado body { overflow: hidden; }
 .cal-rejilla button {
   height: 40px; border-radius: 8px; border: 1px solid transparent; background: transparent; cursor: pointer;
   font-variant-numeric: tabular-nums; position: relative;
+  /* mantener pulsado un día enseña sus datos: sin menú ni selección de texto del sistema */
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 .cal-rejilla button.con-datos { background: color-mix(in srgb, var(--acento) calc(var(--nivel, .4) * 100%), transparent); border-color: var(--borde); }
 .cal-rejilla button:disabled { color: var(--tenue); opacity: .45; cursor: default; }
@@ -556,6 +558,66 @@ function fusionar(dia, inc) {
   return nuevos;
 }
 
+/* ── Copia de la noche en curso en este navegador ─────────────────────────────────────────────────
+   Mientras se graba, la noche cambia con cada lectura, así que al reabrir la página el navegador no podía
+   aprovechar su copia y la bajaba entera (hasta unos 64 KB cada vez). Con esta copia propia, al reabrir
+   solo se pide a Oracle lo insertado desde la última vez (≈ 1 KB más las lecturas nuevas).
+   Solo se guarda la noche abierta, la de la ventana que contiene «ahora»; las cerradas ya las conserva el
+   navegador en su caché. Va en el mismo formato compacto que envía la API. */
+var CLAVE_NOCHE = 'monitor.noche';
+function nombresDe(mapa) { return Object.keys(mapa).sort(function (a, b) { return mapa[a] - mapa[b]; }); }
+function guardarNoche(dia) {
+  try {
+    if (dia.d !== diaDeHoy() || dia.cerrado || !dia.cur) {
+      // no es la noche en curso; si es la que estaba guardada y ya se ha cerrado, se borra
+      if (localStorage.getItem(CLAVE_NOCHE + '.d') === dia.d) { localStorage.removeItem(CLAVE_NOCHE); localStorage.removeItem(CLAVE_NOCHE + '.d'); }
+      return;
+    }
+    var seg = [], i = 0, n = dia.dt.length, j;
+    while (i < n) {                                   // segundos seguidos -> tramos [inicio, cuántos]
+      j = i;
+      while (j + 1 < n && dia.dt[j + 1] === dia.dt[j] + 1) j++;
+      seg.push([dia.dt[i], j - i + 1]);
+      i = j + 1;
+    }
+    localStorage.setItem(CLAVE_NOCHE, JSON.stringify({
+      v: CFG.formato, base: dia.base || Date.now(),
+      d: dia.d, t0: new Date(dia.t0).toISOString().slice(0, 19), h: dia.h, cerrado: false, cur: dia.cur,
+      offset_s: dia.offset_s, seg: seg, spo2: dia.spo2, bpm: dia.bpm, pi100: dia.pi100, pvi: dia.pvi,
+      amb: { cols: nombresDe(dia.ambCols), dia: dia.ambDia, ayer: dia.ambAyer, cols7: nombresDe(dia.ambCols7), m7: dia.ambM7 },
+      ant: dia.ant, ant7: dia.ant7
+    }));
+    localStorage.setItem(CLAVE_NOCHE + '.d', dia.d);
+  } catch (e) {                                       // sin sitio o sin permiso: se sigue sin copia
+    try { localStorage.removeItem(CLAVE_NOCHE); localStorage.removeItem(CLAVE_NOCHE + '.d'); } catch (e2) {}
+  }
+}
+/* La noche en curso, si se conoce: la que está en memoria o, si no, la copia guardada. null si no hay.
+   Una copia cuya descarga completa tenga más de 12 horas no se usa: se baja la noche entera otra vez. Es un
+   seguro para que nada de lo que se arrastra de refresco en refresco pueda durar más que una noche. */
+function nocheEnCurso() {
+  var hoy = diaDeHoy(), dia = store.dias.get(hoy);
+  if (!dia) {
+    try {
+      var j = JSON.parse(localStorage.getItem(CLAVE_NOCHE) || 'null');
+      if (!j || j.v !== CFG.formato || j.d !== hoy) return null;
+      dia = decodificar(j);
+      dia.base = j.base || 0;
+    } catch (e) { return null; }
+  }
+  return (!dia.cerrado && dia.cur && Date.now() - (dia.base || 0) < 12 * 3600000) ? dia : null;
+}
+/* Pide a Oracle solo lo insertado desde el cursor de ese día y lo fusiona. Devuelve cuántas lecturas son nuevas. */
+function completar(dia, senal) {
+  return pedir('day/' + dia.d + '?f=' + CFG.formato + '&tras=' + encodeURIComponent(dia.cur), { signal: senal, cache: 'no-store' }).then(function (j) {
+    var nuevos = fusionar(dia, decodificar(j));
+    dia.ruta = dia.d;
+    store.guardar(dia);
+    guardarNoche(dia);
+    return nuevos;
+  });
+}
+
 /* Un día: de la memoria si está; si no, una petición.
    forzar: vuelve a preguntar a Oracle, pero revalidando ("no-cache"): si el día no ha cambiado, Oracle
    contesta «sin cambios» y no se descarga nada. Se pregunta por la misma dirección con la que se bajó
@@ -569,13 +631,28 @@ function obtenerDia(d, senal, forzar) {
     if (j.v != null && j.v !== CFG.formato) avisarFormato(j.v);
     var dia = decodificar(j);
     dia.ruta = ruta;
+    dia.base = Date.now();                            // cuándo se bajó entera (ver nocheEnCurso)
     CFG.horaInicio = dia.h || CFG.horaInicio;
     store.guardar(dia);
+    guardarNoche(dia);                                // solo guarda si es la noche en curso
     // "ultima" ya apunta a otra noche: la que se pedía se baja por su fecha
     if (d !== 'ultima' && dia.d !== d) { if (previo) previo.ruta = d; return obtenerDia(d, senal, true); }
     return dia;
   });
 }
+/* Un día para mostrarlo; d es su fecha, o null para «la última».
+   Si es la noche en curso y ya se tiene (en memoria o guardada en este navegador), solo se baja lo nuevo, en
+   dos casos: al pedir «la última» (página recién abierta o botón Última) y al pedirla por su fecha cuando solo
+   está en la copia guardada. Si ya está en memoria y se vuelve a ella con las flechas, se enseña tal cual, sin
+   llamar a Oracle (para eso está ↻). Si pedir lo nuevo falla, se sigue por el camino normal. */
+function traer(d, senal, forzar) {
+  var normal = function () { return obtenerDia(d || 'ultima', senal, forzar); };
+  var enCurso = (!forzar && (!d || (d === diaDeHoy() && !store.dias.has(d)))) ? nocheEnCurso() : null;
+  if (!enCurso) return normal();
+  return completar(enCurso, senal).then(function () { return enCurso; },
+                                        function (e) { if (e && e.name === 'AbortError') throw e; return normal(); });
+}
+
 /* La página y Oracle deben hablar el mismo formato (primero se despliega el paquete y luego la página) */
 function avisarFormato(v) {
   if (avisarFormato.hecho) return;
@@ -848,6 +925,9 @@ function seriesDe(dia, desp) {
   return { rango: R, spo2: Sp, bpm: B, vela: O, pi: Pi, pvi: V, ini: n ? t0 + dia.dt[0] * 1000 : null, fin: n ? t0 + dia.dt[n - 1] * 1000 : null };
 }
 
+/* Pantalla baja: un móvil en horizontal (el mismo umbral que usa el CSS para la altura de la gráfica) */
+function pantallaBaja() { return window.innerHeight <= 540; }
+
 /* o: { secundaria, datos, otros, etiquetaOtro, titulo, aux: [ini, fin] | null, todo } */
 function opcionesPrincipal(o) {
   var P = paleta(), agr = agrupacion(), estrecho = window.innerWidth < 700, auto = $('chk-auto').checked, M = Highcharts.merge;
@@ -857,7 +937,7 @@ function opcionesPrincipal(o) {
   }
   var d = o.datos, velaColor = Highcharts.color(P.bpm).setOpacity(0.7).get();
   var series = [
-    { type: 'columnrange', name: 'O2%', id: 'spo2r', color: P.spo2Banda, zIndex: 1, opacity: 0.95, turboThreshold: 0, pointPlacement: 'between',
+    { type: 'columnrange', name: 'O2% (rango)', id: 'spo2r', color: P.spo2Banda, zIndex: 1, opacity: 0.95, turboThreshold: 0, pointPlacement: 'between',
       dataGrouping: agr, visible: VIS.spo2r !== false, data: d.rango },
     linea('spo2', 'O2%', P.spo2, { zIndex: 2, data: d.spo2 }),
     linea('bpm', 'BPM', P.bpm, { zIndex: 3, data: d.bpm }),
@@ -910,7 +990,8 @@ function opcionesPrincipal(o) {
         auto ? {} : { min: 0, max: 5 }),
       { opposite: false, labels: { align: 'left', x: 4, style: { fontSize: '10px' } }, title: { text: estrecho ? '' : 'PVI' }, gridLineWidth: 0, lineWidth: 0, tickLength: 0, offset: 0, showEmpty: false, tickAmount: 4 }
     ],
-    legend: { enabled: true },
+    // En una pantalla baja (móvil en horizontal) la leyenda se quita: deja más altura para las curvas
+    legend: { enabled: !pantallaBaja() },
     plotOptions: {
       series: {
         gapSize: 60, states: { inactive: { opacity: 0.6 } },
@@ -1430,7 +1511,7 @@ function mostrar(opciones) {
   new Promise(function (ok) { setTimeout(ok, pausa); }).then(function () {
     if (seq !== S.seq) return null;
     // La noche y la comparada se piden a la vez, no una tras otra
-    return Promise.all([obtenerDia(S.d || 'ultima', senal, opciones.forzar), S.c ? obtenerDia(S.c, senal, false) : null]);
+    return Promise.all([traer(S.d, senal, opciones.forzar), S.c ? traer(S.c, senal, false) : null]);
   }).then(function (par) {
     if (!par || seq !== S.seq) return;
     if (!S.d) S.d = par[0].d;
@@ -1473,14 +1554,16 @@ function irAnteriorConDatos() {
 }
 
 function refrescar() {
-  var dia = S.dia;
+  var dia = S.dia, otro = S.otro;
   if (!dia || dia.d !== S.d) return mostrar({ forzar: true });
-  if (dia.cerrado || !dia.cur) {              // día cerrado: se vuelve a preguntar a Oracle (si no ha cambiado, no baja nada)
+  var abierta = function (x) { return !!x && !x.cerrado && !!x.cur; };
+  if (!abierta(dia) && !abierta(otro)) {      // todo cerrado: se vuelve a preguntar a Oracle (si no ha cambiado, no baja nada)
     return mostrar({ forzar: true });
   }
   var boton = $('b-refrescar'); boton.disabled = true;
-  pedir('day/' + dia.d + '?f=' + CFG.formato + '&tras=' + encodeURIComponent(dia.cur), { cache: 'no-store' }).then(function (j) {
-    var nuevos = fusionar(dia, decodificar(j));
+  // Solo lo nuevo de cada noche que siga abierta: la principal y, si se compara con la noche en curso, también esa
+  Promise.all([abierta(dia) ? completar(dia) : 0, abierta(otro) ? completar(otro) : 0]).then(function (n) {
+    var nuevos = n[0] + n[1];
     if (S.dia !== dia || S.d !== dia.d) return;         // entre tanto se ha pasado a otra noche
     pintarBarra();                                      // el día puede haberse cerrado
     if (nuevos) pintarTodo(true); else pintarAmbiente(S.dia, S.otro);      // el ambiente llega aunque no haya lecturas nuevas
@@ -1523,7 +1606,9 @@ function pintarCalendario() {
             (desactivado ? ' disabled' : '') + '>' + n + '</button>';
   }
   rej.innerHTML = html;
-  $('cal-pie').textContent = S.eligiendoComparado ? 'Elige el día con el que comparar.' : (lista ? 'Más intenso = más horas grabadas. La fecha es el día en que empieza la noche.' : 'Cargando los días con datos…');
+  $('cal-pie').textContent = S.eligiendoComparado ? 'Elige el día con el que comparar.' : (lista ? 'Más intenso = más horas grabadas. La fecha es el día en que empieza la noche.' +
+               (window.matchMedia('(pointer: coarse)').matches ? ' Mantén pulsado un día para ver sus datos.' : '')
+             : 'Cargando los días con datos…');
 }
 
 function abrirCalendario() {
@@ -1638,11 +1723,20 @@ function iniciar() {
   // La agrupación y el eje Y se recuerdan en este navegador, igual que el modo día/noche
   var recordar = function (clave, valor) { try { localStorage.setItem(clave, valor); } catch (e) {} };
   var repintar = function () { if (S.dia && S.dia.dt.length) { pintarPrincipal(S.dia, S.otro, true); pintarResumen(); } };
+  var grupo = null;
   try {
-    var grupo = localStorage.getItem('monitor.grupo');
-    if (grupo && [].some.call($('sel-grupo').options, function (o) { return o.value === grupo; })) $('sel-grupo').value = grupo;
+    grupo = localStorage.getItem('monitor.grupo');
     $('chk-auto').checked = localStorage.getItem('monitor.ejeAuto') === '1';
   } catch (e) {}
+  if (grupo && [].some.call($('sel-grupo').options, function (o) { return o.value === grupo; })) $('sel-grupo').value = grupo;
+  // La primera vez en el móvil, «10 px»: unos 30 min por punto, como se ve en pantalla grande (con «50 px» eran 2 h)
+  else if (window.matchMedia('(max-width: 768px)').matches) $('sel-grupo').value = 'px:10';
+  // Al girar el móvil cambia si la pantalla es baja (y con ello si hay leyenda): se repinta la gráfica principal
+  var eraBaja = pantallaBaja(), tGiro = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(tGiro);
+    tGiro = setTimeout(function () { if (pantallaBaja() !== eraBaja) { eraBaja = pantallaBaja(); repintar(); } }, 200);
+  });
   $('sel-grupo').onchange = function () { recordar('monitor.grupo', this.value); repintar(); };
   $('chk-auto').onchange = function () { recordar('monitor.ejeAuto', this.checked ? '1' : '0'); repintar(); };
   $('b-tema').onclick = function () {
@@ -1659,7 +1753,27 @@ function iniciar() {
   });
   $('cal-ant').onclick = function () { var B = new Date(S.calMes); S.calMes = Date.UTC(B.getUTCFullYear(), B.getUTCMonth() - 1, 1); pintarCalendario(); };
   $('cal-sig').onclick = function () { var B = new Date(S.calMes); S.calMes = Date.UTC(B.getUTCFullYear(), B.getUTCMonth() + 1, 1); pintarCalendario(); };
+  // En una pantalla táctil no hay aviso emergente: mantener pulsado un día enseña sus datos (duración, SpO2 y
+  // pulso medios) en el pie del calendario. Un toque normal sigue abriendo el día.
+  var tPulsacion = null, pulsacionLarga = false, rejilla = $('cal-rejilla');
+  rejilla.addEventListener('touchstart', function (e) {
+    var b = e.target.closest('button[data-d]');
+    clearTimeout(tPulsacion);
+    pulsacionLarga = false;
+    if (!b || !b.title) return;
+    tPulsacion = setTimeout(function () {
+      pulsacionLarga = true;
+      $('cal-pie').textContent = b.getAttribute('aria-label');
+    }, 450);
+  }, { passive: true });
+  rejilla.addEventListener('touchmove', function () { clearTimeout(tPulsacion); }, { passive: true });
+  rejilla.addEventListener('touchcancel', function () { clearTimeout(tPulsacion); pulsacionLarga = false; }, { passive: true });
+  rejilla.addEventListener('touchend', function (e) {
+    clearTimeout(tPulsacion);
+    if (pulsacionLarga && e.cancelable) e.preventDefault();       // al soltar no se abre el día
+  });
   $('cal-rejilla').addEventListener('click', function (e) {
+    if (pulsacionLarga) { pulsacionLarga = false; return; }       // por si el navegador envía el clic de todos modos
     var b = e.target.closest('button[data-d]');
     if (!b || b.disabled) return;
     var eligiendo = S.eligiendoComparado;
