@@ -1071,6 +1071,52 @@ function pintarPrincipal(dia, otro, conservarRango) {
   if (rango) G.principal.xAxis[0].setExtremes(rango.min, rango.max, true, false);
 }
 
+/* Refresco sin repintar: mete los datos en la gráfica que ya está en pantalla, sin animación y sin perder el
+   zoom. Si se veía la noche entera, se sigue viendo entera (con lo nuevo); si se seguía el final (por ejemplo
+   con el botón 10M), la ventana se desliza hasta el nuevo final; si se miraba otro tramo, no se mueve.
+   Devuelve false si no hay gráfica que aprovechar o ha cambiado lo que se compara: entonces se pinta de cero. */
+var SIN_ANIMAR = false;       // durante un refresco, tampoco se animan los histogramas
+function actualizarPrincipal(dia, otro) {
+  var P = G.principal, C = G.comparado;
+  if (!P || !P.xAxis || !dia.dt.length) return false;
+  var superpuesto = !!otro && !S.apilado, apilado = !!otro && S.apilado;
+  if (!!C !== apilado || !!P.get('c_spo2') !== superpuesto) return false;
+  var desp = otro ? dia.t0 - otro.t0 : 0, d = seriesDe(dia, 0), c = otro ? seriesDe(otro, desp) : null;
+
+  function poner(chart, datos, otros, aux) {
+    function set(id, valores) { var s = chart.get(id); if (s) s.setData(valores, false, false, false); }
+    set('spo2r', datos.rango); set('spo2', datos.spo2); set('bpm', datos.bpm); set('bpm_stats', datos.vela);
+    set('pi', datos.pi); set('pvi', datos.pvi);
+    set('c_rango', aux ? [[aux[0], null], [aux[1], null]] : []);
+    if (otros) { set('c_spo2', otros.spo2); set('c_bpm', otros.bpm); set('c_pi', otros.pi); set('c_pvi', otros.pvi); }
+    var nav = chart.navigator && chart.navigator.series && chart.navigator.series[0];
+    if (nav) nav.setData(datos.bpm.slice(), false, false, false);
+    chart.redraw(false);
+  }
+
+  var eje = P.xAxis[0], e = eje.getExtremes();
+  var todo = e.min == null || e.dataMin == null || (e.min <= e.dataMin + 1000 && e.max >= e.dataMax - 1000);
+  var alFinal = !todo && e.max >= e.dataMax - 1000, ancho = e.max - e.min;
+  // Apiladas y viendo la noche entera: se pinta de cero. Al fijar «todo» en dos gráficas ya creadas, Highcharts
+  // deja el borde izquierdo de cada una en un sitio distinto (medido: 8 minutos); recién pintadas coinciden.
+  if (apilado && todo) return false;
+  poner(P, d, superpuesto ? c : null, apilado && c.ini != null ? [c.ini, c.fin] : null);
+  if (apilado) poner(C, c, null, d.ini != null ? [d.ini, d.fin] : null);
+  var n = eje.getExtremes();
+  // «Noche entera» se fija con sus valores, como hace el botón Todo (con el modo automático del eje, la gráfica
+  // de arriba y la de abajo de las apiladas no quedaban en el mismo tramo)
+  if (todo) eje.setExtremes(n.dataMin, n.dataMax, true, false);
+  else if (alFinal) eje.setExtremes(n.dataMax - ancho, n.dataMax, true, false);
+  else eje.setExtremes(e.min, e.max, true, false);
+  if (apilado) {                                      // las dos apiladas, siempre en el mismo tramo
+    var x = eje.getExtremes();
+    G.sincronizando = true;
+    C.xAxis[0].setExtremes(x.min, x.max, true, false);
+    G.sincronizando = false;
+  }
+  return true;
+}
+
 function prepararInteraccion(chart, conCursor) {
   ruedaConTecla(chart);
   gestosTactiles(chart);
@@ -1305,7 +1351,7 @@ function pintarHistograma(clave, el, titulo, categorias, bins, total, binsOtro, 
   }
   // Con dos días hay dos barras por tramo: la etiqueta baja de tamaño para que no se toquen
   ch.update({ legend: { enabled: !!binsOtro }, plotOptions: { bar: { dataLabels: { style: { fontSize: binsOtro ? '11px' : '13px' } } } } }, false);
-  ch.redraw();
+  ch.redraw(SIN_ANIMAR ? false : undefined);
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -1368,7 +1414,8 @@ function filasM7(dia, columna) {
   return out;
 }
 
-function pintarAmbiente(dia, otro) {
+/* enRefresco: se actualizan los datos sin animación y sin quitar el zoom que hubiera */
+function pintarAmbiente(dia, otro, enRefresco) {
   var desp = otro ? dia.t0 - otro.t0 : DIA_MS, etq = otro ? diaCorto(otro.d) : 'ayer';
   var banda = dia.dt.length ? [{ id: 'sesion', from: dia.t0 + dia.dt[0] * 1000, to: dia.t0 + dia.dt[dia.dt.length - 1] * 1000,
     color: esClaro() ? 'rgba(75,54,201,0.08)' : 'rgba(255,255,255,0.07)', zIndex: 0,
@@ -1390,6 +1437,7 @@ function pintarAmbiente(dia, otro) {
     ch.get('in7').update({ showInLegend: m7.length > 0, durmiendo: m7.length && media != null ? num(media, def.dec) + def.unidad : '' }, false);
     ch.get('in7').setData(m7, false);
     ch.xAxis[0].update({ min: dia.t0, max: dia.t0 + DIA_MS, plotBands: banda }, false);
+    if (enRefresco) { ch.redraw(false); return; }
     ch.xAxis[0].setExtremes(null, null, false);      // cada día empieza sin zoom
     ch.redraw();
   });
@@ -1566,7 +1614,15 @@ function refrescar() {
     var nuevos = n[0] + n[1];
     if (S.dia !== dia || S.d !== dia.d) return;         // entre tanto se ha pasado a otra noche
     pintarBarra();                                      // el día puede haberse cerrado
-    if (nuevos) pintarTodo(true); else pintarAmbiente(S.dia, S.otro);      // el ambiente llega aunque no haya lecturas nuevas
+    // Lo nuevo se añade a los gráficos que ya están en pantalla: sin volver a crearlos, sin animación y sin
+    // perder el zoom. Solo si no hay gráfica que aprovechar (la noche estaba vacía) se pinta todo de cero.
+    SIN_ANIMAR = true;
+    setTimeout(function () { SIN_ANIMAR = false; }, 500);
+    if (nuevos && !actualizarPrincipal(S.dia, S.otro)) pintarTodo(true);
+    else {
+      pintarAmbiente(S.dia, S.otro, true);              // el ambiente llega aunque no haya lecturas nuevas
+      if (nuevos) pintarResumen();
+    }
     toast(nuevos ? nuevos + ' lecturas nuevas' : 'Sin lecturas nuevas');
   }).catch(function () { toast('No se ha podido refrescar'); })
     .then(function () { boton.disabled = false; });
